@@ -1,0 +1,357 @@
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "./theme";
+
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { NotificationProvider, useNotifications } from "./context/NotificationContext";
+import { VideoSoundProvider } from "./context/VideoSoundContext";
+import { registerForPushNotificationsAsync, registerNotificationResponseHandler } from "./services/pushNotifications";
+import { registerLocationAsync } from "./services/location";
+import { navigationRef } from "./navigation/navigationRef";
+import SideMenu from "./components/SideMenu";
+import WelcomeScreen from "./screens/WelcomeScreen";
+import LoginScreen from "./screens/LoginScreen";
+import RegisterScreen from "./screens/RegisterScreen";
+import CheckEmailScreen from "./screens/CheckEmailScreen";
+import ForgotPasswordScreen from "./screens/ForgotPasswordScreen";
+import FeedScreen from "./screens/FeedScreen";
+import ReelsScreen from "./screens/ReelsScreen";
+import GroupsScreen from "./screens/GroupsScreen";
+import GroupDetailScreen from "./screens/GroupDetailScreen";
+import GroupVideoPlayerScreen from "./screens/GroupVideoPlayerScreen";
+import FeedVideoFullscreenScreen from "./screens/FeedVideoFullscreenScreen";
+import CreateGroupScreen from "./screens/CreateGroupScreen";
+import SpinWinScreen from "./screens/SpinWinScreen";
+import RecentWinnersScreen from "./screens/RecentWinnersScreen";
+import CoinBalanceScreen from "./screens/CoinBalanceScreen";
+import WatchAdScreen from "./screens/WatchAdScreen";
+import BeTheStarScreen from "./screens/BeTheStarScreen";
+import StarContestListScreen from "./screens/StarContestListScreen";
+import StarContestDetailScreen from "./screens/StarContestDetailScreen";
+import StarSubmitVideoScreen from "./screens/StarSubmitVideoScreen";
+import StarSubmissionDetailScreen from "./screens/StarSubmissionDetailScreen";
+import MyStarSubmissionsScreen from "./screens/MyStarSubmissionsScreen";
+import StarLeaderboardScreen from "./screens/StarLeaderboardScreen";
+import StarTipsScreen from "./screens/StarTipsScreen";
+import BoostPostScreen from "./screens/BoostPostScreen";
+import MySponsoredPostsScreen from "./screens/MySponsoredPostsScreen";
+import BoostGroupScreen from "./screens/BoostGroupScreen";
+import MyBoostedGroupsScreen from "./screens/MyBoostedGroupsScreen";
+import SavedScreen from "./screens/SavedScreen";
+import JobsScreen from "./screens/JobsScreen";
+import CreateJobScreen from "./screens/CreateJobScreen";
+import JobDetailScreen from "./screens/JobDetailScreen";
+import StudentLeadersScreen from "./screens/StudentLeadersScreen";
+import StudentLeaderApplyScreen from "./screens/StudentLeaderApplyScreen";
+import MyStudentLeaderApplicationsScreen from "./screens/MyStudentLeaderApplicationsScreen";
+import ReportImposterScreen from "./screens/ReportImposterScreen";
+import WalletScreen from "./screens/WalletScreen";
+import ProfileScreen from "./screens/ProfileScreen";
+import AccountSettingsScreen from "./screens/AccountSettingsScreen";
+import PrivacySettingsScreen from "./screens/PrivacySettingsScreen";
+import WalletSettingsScreen from "./screens/WalletSettingsScreen";
+import EventsScreen from "./screens/EventsScreen";
+import EventDetailScreen from "./screens/EventDetailScreen";
+import CreateEventScreen from "./screens/CreateEventScreen";
+import InboxScreen from "./screens/InboxScreen";
+import NewMessageScreen from "./screens/NewMessageScreen";
+import ChatScreen from "./screens/ChatScreen";
+import NotificationsScreen from "./screens/NotificationsScreen";
+import UserProfileScreen from "./screens/UserProfileScreen";
+import FollowListScreen from "./screens/FollowListScreen";
+import SearchScreen from "./screens/SearchScreen";
+import OnboardingProfileScreen from "./screens/OnboardingProfileScreen";
+import OnboardingFollowScreen from "./screens/OnboardingFollowScreen";
+import CreatePostScreen from "./screens/CreatePostScreen";
+import CommentsScreen from "./screens/CommentsScreen";
+import ReshareComposerScreen from "./screens/ReshareComposerScreen";
+import CreateStoryScreen from "./screens/CreateStoryScreen";
+import StoryViewerScreen from "./screens/StoryViewerScreen";
+import AvatarViewerScreen from "./screens/AvatarViewerScreen";
+import StoryInsightsScreen from "./screens/StoryInsightsScreen";
+import EditPostScreen from "./screens/EditPostScreen";
+import ReportPostScreen from "./screens/ReportPostScreen";
+import BlockedUsersScreen from "./screens/BlockedUsersScreen";
+import SupportScreen from "./screens/SupportScreen";
+import NewTicketScreen from "./screens/NewTicketScreen";
+import TicketDetailScreen from "./screens/TicketDetailScreen";
+
+const AuthStack = createNativeStackNavigator();
+const OnboardingStack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator();
+const Tabs = createBottomTabNavigator();
+
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Welcome" component={WelcomeScreen} />
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="CheckEmail" component={CheckEmailScreen} />
+      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
+// Shown for a logged-in user whose onboardingCompletedAt is still null —
+// re-evaluated on every app launch via Gate(), not just right after
+// registering, so closing the app mid-onboarding correctly resumes here
+// next time instead of leaking into the main app.
+function OnboardingNavigator() {
+  return (
+    <OnboardingStack.Navigator screenOptions={{ headerShown: false }}>
+      <OnboardingStack.Screen name="OnboardingProfile" component={OnboardingProfileScreen} />
+      <OnboardingStack.Screen name="OnboardingFollow" component={OnboardingFollowScreen} />
+    </OnboardingStack.Navigator>
+  );
+}
+
+function NotificationBell({ navigation }) {
+  const { unreadCount } = useNotifications();
+  return (
+    <TouchableOpacity onPress={() => navigation.navigate("Notifications")} style={{ marginRight: 16 }}>
+      <Ionicons name="notifications-outline" size={24} color={COLORS.accent} />
+      {unreadCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+// Order matches the app's header spec: notifications, inbox, search.
+function HeaderIcons({ navigation }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", marginRight: 12 }}>
+      <NotificationBell navigation={navigation} />
+      <TouchableOpacity onPress={() => navigation.navigate("Inbox")} style={{ marginRight: 16 }}>
+        <Ionicons name="chatbubble-outline" size={24} color={COLORS.accent} />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate("Search")}>
+        <Ionicons name="search-outline" size={24} color={COLORS.accent} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function Wordmark() {
+  return <Text style={styles.wordmark}>The CBC</Text>;
+}
+
+function MainTabs({ navigation }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <>
+      <Tabs.Navigator
+        screenOptions={{
+          headerTitleAlign: "left",
+          headerTitle: () => <Wordmark />,
+          headerRight: () => <HeaderIcons navigation={navigation} />,
+          headerStyle: { backgroundColor: COLORS.accentInk },
+          tabBarStyle: { backgroundColor: COLORS.accentInk },
+          tabBarActiveTintColor: COLORS.accent,
+          tabBarInactiveTintColor: COLORS.wash,
+        }}
+      >
+        <Tabs.Screen
+          name="Home"
+          component={FeedScreen}
+          options={{ tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }}
+        />
+        <Tabs.Screen
+          name="SpinWinTab"
+          component={SpinWinScreen}
+          options={{
+            title: "Tap & Win",
+            tabBarLabel: "Tap & Win",
+            tabBarIcon: ({ color, size }) => <Ionicons name="game-controller-outline" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="CreateTab"
+          component={FeedScreen}
+          options={{
+            tabBarLabel: "Create",
+            tabBarIcon: () => (
+              <View style={styles.createTabIcon}>
+                <Ionicons name="add" size={24} color={COLORS.accentInk} />
+              </View>
+            ),
+          }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              navigation.navigate("CreatePost");
+            },
+          }}
+        />
+        <Tabs.Screen
+          name="BeTheStarTab"
+          component={FeedScreen}
+          options={{
+            tabBarLabel: "Be the STAR",
+            tabBarIcon: ({ color, size }) => <Ionicons name="star-outline" size={size} color={color} />,
+          }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              navigation.navigate("BeTheStar");
+            },
+          }}
+        />
+        <Tabs.Screen
+          name="MenuTab"
+          component={FeedScreen}
+          options={{
+            tabBarLabel: "Menu",
+            tabBarIcon: ({ color, size }) => <Ionicons name="menu" size={size} color={color} />,
+          }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              setMenuOpen(true);
+            },
+          }}
+        />
+      </Tabs.Navigator>
+      <SideMenu visible={menuOpen} onClose={() => setMenuOpen(false)} navigation={navigation} />
+    </>
+  );
+}
+
+function RootNavigator() {
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+    registerLocationAsync();
+    const subscription = registerNotificationResponseHandler(navigationRef);
+    return () => subscription.remove();
+  }, []);
+
+  return (
+    <NotificationProvider>
+      <VideoSoundProvider>
+      <StatusBar style="light" />
+      <RootStack.Navigator
+        screenOptions={{
+          headerStyle: { backgroundColor: COLORS.accentInk },
+          headerTintColor: "#fff",
+          headerTitleStyle: { color: "#fff" },
+        }}
+      >
+        <RootStack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+        <RootStack.Screen name="CreatePost" component={CreatePostScreen} options={{ title: "Create Post", presentation: "modal" }} />
+        <RootStack.Screen name="Groups" component={GroupsScreen} options={{ title: "Groups" }} />
+        <RootStack.Screen name="Wallet" component={WalletScreen} options={{ title: "My Wallet" }} />
+        <RootStack.Screen name="Reels" component={ReelsScreen} options={{ headerShown: false }} />
+        <RootStack.Screen name="Profile" component={ProfileScreen} options={{ title: "My Profile" }} />
+        <RootStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: "Group" }} />
+        <RootStack.Screen name="GroupVideoPlayer" component={GroupVideoPlayerScreen} options={{ headerShown: false }} />
+        <RootStack.Screen name="FeedVideoFullscreen" component={FeedVideoFullscreenScreen} options={{ headerShown: false }} />
+        <RootStack.Screen name="RecentWinners" component={RecentWinnersScreen} options={{ title: "Recent Winners" }} />
+        <RootStack.Screen name="CoinBalance" component={CoinBalanceScreen} options={{ title: "My Coin Balance" }} />
+        <RootStack.Screen
+          name="WatchAd"
+          component={WatchAdScreen}
+          options={{ title: "Watch & Earn", headerShown: false, gestureEnabled: false }}
+        />
+        <RootStack.Screen name="BeTheStar" component={BeTheStarScreen} options={{ title: "Be the STAR" }} />
+        <RootStack.Screen name="StarContestList" component={StarContestListScreen} options={{ title: "Contests" }} />
+        <RootStack.Screen name="StarContestDetail" component={StarContestDetailScreen} options={{ title: "Contest" }} />
+        <RootStack.Screen
+          name="StarSubmitVideo"
+          component={StarSubmitVideoScreen}
+          options={{ title: "Submit Your Video", presentation: "modal" }}
+        />
+        <RootStack.Screen name="StarSubmissionDetail" component={StarSubmissionDetailScreen} options={{ title: "Video" }} />
+        <RootStack.Screen name="MyStarSubmissions" component={MyStarSubmissionsScreen} options={{ title: "My Submissions" }} />
+        <RootStack.Screen name="StarLeaderboard" component={StarLeaderboardScreen} options={{ title: "Leaderboard" }} />
+        <RootStack.Screen name="StarTips" component={StarTipsScreen} options={{ title: "Tips to WIN" }} />
+        <RootStack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: "Create Group" }} />
+        <RootStack.Screen name="BoostPost" component={BoostPostScreen} options={{ title: "Boost Post" }} />
+        <RootStack.Screen name="MySponsoredPosts" component={MySponsoredPostsScreen} options={{ title: "My Sponsored Posts" }} />
+        <RootStack.Screen name="BoostGroup" component={BoostGroupScreen} options={{ title: "Boost Group" }} />
+        <RootStack.Screen name="MyBoostedGroups" component={MyBoostedGroupsScreen} options={{ title: "My Boosted Groups" }} />
+        <RootStack.Screen name="Saved" component={SavedScreen} options={{ title: "Saved" }} />
+        <RootStack.Screen name="Jobs" component={JobsScreen} options={{ title: "Jobs Board" }} />
+        <RootStack.Screen name="CreateJob" component={CreateJobScreen} options={{ title: "Post a Job" }} />
+        <RootStack.Screen name="JobDetail" component={JobDetailScreen} options={{ title: "Job" }} />
+        <RootStack.Screen name="StudentLeaders" component={StudentLeadersScreen} options={{ title: "Student Leaders" }} />
+        <RootStack.Screen name="StudentLeaderApply" component={StudentLeaderApplyScreen} options={{ title: "Apply" }} />
+        <RootStack.Screen name="MyStudentLeaderApplications" component={MyStudentLeaderApplicationsScreen} options={{ title: "My Applications" }} />
+        <RootStack.Screen name="ReportImposter" component={ReportImposterScreen} options={{ title: "Report Imposter" }} />
+        <RootStack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ title: "Account Settings" }} />
+        <RootStack.Screen name="PrivacySettings" component={PrivacySettingsScreen} options={{ title: "Privacy" }} />
+        <RootStack.Screen name="WalletSettings" component={WalletSettingsScreen} options={{ title: "Wallet Settings" }} />
+        <RootStack.Screen name="Events" component={EventsScreen} options={{ title: "Events" }} />
+        <RootStack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: "Event" }} />
+        <RootStack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: "Create Event" }} />
+        <RootStack.Screen name="Inbox" component={InboxScreen} options={{ title: "Inbox" }} />
+        <RootStack.Screen name="NewMessage" component={NewMessageScreen} options={{ title: "New Message" }} />
+        <RootStack.Screen name="Chat" component={ChatScreen} />
+        <RootStack.Screen name="Notifications" component={NotificationsScreen} options={{ title: "Notifications" }} />
+        <RootStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: "Profile" }} />
+        <RootStack.Screen name="FollowList" component={FollowListScreen} />
+        <RootStack.Screen name="Search" component={SearchScreen} options={{ title: "Search" }} />
+        <RootStack.Screen name="Comments" component={CommentsScreen} options={{ title: "Comments" }} />
+        <RootStack.Screen name="ReshareComposer" component={ReshareComposerScreen} options={{ title: "Reshare" }} />
+        <RootStack.Screen name="CreateStory" component={CreateStoryScreen} options={{ title: "New Story", presentation: "modal" }} />
+        <RootStack.Screen name="StoryViewer" component={StoryViewerScreen} options={{ headerShown: false, presentation: "fullScreenModal" }} />
+        <RootStack.Screen name="AvatarViewer" component={AvatarViewerScreen} options={{ headerShown: false, presentation: "fullScreenModal" }} />
+        <RootStack.Screen name="StoryInsights" component={StoryInsightsScreen} options={{ title: "Story Insights" }} />
+        <RootStack.Screen name="EditPost" component={EditPostScreen} options={{ title: "Edit Post", presentation: "modal" }} />
+        <RootStack.Screen name="ReportPost" component={ReportPostScreen} options={{ title: "Report Post", presentation: "modal" }} />
+        <RootStack.Screen name="BlockedUsers" component={BlockedUsersScreen} options={{ title: "Blocked Users" }} />
+        <RootStack.Screen name="Support" component={SupportScreen} options={{ title: "Support" }} />
+        <RootStack.Screen name="NewTicket" component={NewTicketScreen} options={{ title: "New Ticket" }} />
+        <RootStack.Screen name="TicketDetail" component={TicketDetailScreen} options={{ title: "Ticket" }} />
+      </RootStack.Navigator>
+      </VideoSoundProvider>
+    </NotificationProvider>
+  );
+}
+
+function Gate() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color={COLORS.accent} />
+      </View>
+    );
+  }
+  if (!user) return <AuthNavigator />;
+  if (!user.onboardingCompletedAt) return <OnboardingNavigator />;
+  return <RootNavigator />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <NavigationContainer ref={navigationRef}>
+        <StatusBar style="dark" />
+        <Gate />
+      </NavigationContainer>
+    </AuthProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  badge: {
+    position: "absolute", top: -4, right: -6, backgroundColor: "#D32F2F", borderRadius: 9,
+    minWidth: 18, height: 18, alignItems: "center", justifyContent: "center", paddingHorizontal: 4,
+  },
+  badgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+  wordmark: { fontSize: 19, fontWeight: "800", color: COLORS.accent, marginLeft: 16 },
+  createTabIcon: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.accent,
+    alignItems: "center", justifyContent: "center", marginTop: -14,
+    shadowColor: COLORS.accent, shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4,
+  },
+});

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "918090700954",
+    "project_id": "the-cbc-b2ab6",
+    "storage_bucket": "the-cbc-b2ab6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:918090700954:android:242f01e2a7aa93c3792723",
+        "android_client_info": {
+          "package_name": "the.campusbiashara.club"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZlovPU46OuUuyP9C8E4xpGZMV-N_z844"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
