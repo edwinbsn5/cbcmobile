@@ -4,6 +4,7 @@ import {
   Alert, KeyboardAvoidingView, Platform,
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -33,6 +34,7 @@ function timeAgo(ts) {
 export default function StoryViewerScreen({ route, navigation }) {
   const { storyGroups, startGroupId } = route.params;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [groups, setGroups] = useState(storyGroups);
   const [groupIndex, setGroupIndex] = useState(Math.max(0, storyGroups.findIndex((g) => g.author.id === startGroupId)));
   const [storyIndex, setStoryIndex] = useState(0);
@@ -210,7 +212,7 @@ export default function StoryViewerScreen({ route, navigation }) {
         <Image source={{ uri: story.mediaUrl }} style={styles.media} resizeMode="contain" />
       )}
 
-      <View style={styles.progressRow}>
+      <View style={[styles.progressRow, { top: insets.top + 10 }]}>
         {group.stories.map((s, i) => (
           <View key={s.id} style={styles.progressTrack}>
             <View
@@ -223,7 +225,7 @@ export default function StoryViewerScreen({ route, navigation }) {
         ))}
       </View>
 
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { top: insets.top + 22 }]}>
         <Avatar uri={group.author.avatar} name={group.author.name} style={styles.headerAvatar} />
         <View style={{ flex: 1 }}>
           <Text style={styles.headerName}>{group.author.name}</Text>
@@ -242,19 +244,22 @@ export default function StoryViewerScreen({ route, navigation }) {
       </View>
 
       <Pressable
-        style={styles.tapZoneLeft}
+        style={[styles.tapZoneLeft, { top: insets.top + 100, bottom: insets.bottom + 90 }]}
         onPressIn={() => setPaused(true)}
         onPressOut={() => setPaused(false)}
         onPress={goPrev}
       />
       <Pressable
-        style={styles.tapZoneRight}
+        style={[styles.tapZoneRight, { top: insets.top + 100, bottom: insets.bottom + 90 }]}
         onPressIn={() => setPaused(true)}
         onPressOut={() => setPaused(false)}
         onPress={goNext}
       />
 
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.bottomArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={[styles.bottomArea, { paddingBottom: insets.bottom + 16 }]}
+      >
         {isOwn ? (
           <TouchableOpacity style={styles.statsBar} onPress={() => navigation.navigate("StoryInsights", { storyId: story.id })}>
             <Ionicons name="stats-chart-outline" size={16} color="#fff" />
@@ -309,17 +314,17 @@ const styles = StyleSheet.create({
   media: { width: "100%", height: "100%" },
   textStoryBox: { justifyContent: "center", paddingHorizontal: 28 },
   textStoryContent: { fontSize: 30, fontWeight: "700", lineHeight: 40 },
-  progressRow: { position: "absolute", top: 46, left: 10, right: 10, flexDirection: "row", gap: 4 },
+  progressRow: { position: "absolute", left: 10, right: 10, flexDirection: "row", gap: 4 },
   progressTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.35)", overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: "#fff" },
-  headerRow: { position: "absolute", top: 58, left: 10, right: 10, flexDirection: "row", alignItems: "center", gap: 10 },
+  headerRow: { position: "absolute", left: 10, right: 10, flexDirection: "row", alignItems: "center", gap: 10 },
   headerAvatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: "rgba(255,255,255,0.5)" },
   headerName: { color: "#fff", fontWeight: "700", fontSize: 14 },
   headerMeta: { color: "rgba(255,255,255,0.8)", fontSize: 11.5, marginTop: 1 },
   deleteButton: { marginRight: 4 },
-  tapZoneLeft: { position: "absolute", top: 100, bottom: 90, left: 0, width: "30%" },
-  tapZoneRight: { position: "absolute", top: 100, bottom: 90, right: 0, width: "70%" },
-  bottomArea: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 10, paddingBottom: 16 },
+  tapZoneLeft: { position: "absolute", left: 0, width: "30%" },
+  tapZoneRight: { position: "absolute", right: 0, width: "70%" },
+  bottomArea: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 10 },
   replyRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   input: {
     flex: 1, height: 40, borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.6)",

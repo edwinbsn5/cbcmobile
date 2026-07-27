@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Image, ScrollView, ActivityIndicator, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -15,6 +16,7 @@ import { prepareVideoUpload } from "../utils/prepareVideoUpload";
 const MAX_PHOTOS = 10;
 
 export default function CreatePostScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [composerText, setComposerText] = useState("");
   const [media, setMedia] = useState(null); // { uri, type: "video", mimeType, fileName } — single video only
@@ -157,7 +159,7 @@ export default function CreatePostScreen({ navigation }) {
   const busy = posting || uploading || preparingVideo;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       {bgColor ? (
         <View style={[styles.styledComposerBox, { backgroundColor: bgColor }]}>
           <TextInput

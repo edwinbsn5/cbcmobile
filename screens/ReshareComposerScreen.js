@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import Avatar from "../components/Avatar";
 import { COLORS } from "../theme";
 
 export default function ReshareComposerScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { post } = route.params;
   const [caption, setCaption] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +24,10 @@ export default function ReshareComposerScreen({ route, navigation }) {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingBottom: insets.bottom + 14 }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <TextInput
         style={styles.captionInput}
         placeholder="Say something about this (optional)"

@@ -1,5 +1,6 @@
 import React from "react";
 import { View, FlatList, Dimensions, StyleSheet, TouchableOpacity } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import FeedVideoPlayer from "../components/FeedVideoPlayer";
@@ -16,6 +17,7 @@ const { height } = Dimensions.get("window");
 export default function FeedVideoFullscreenScreen({ route, navigation }) {
   const { videos, startIndex = 0 } = route.params;
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
   const { activeIndex, viewabilityConfig, onViewableItemsChanged } = useSingleActiveVideo({ threshold: 80 });
 
   return (
@@ -41,7 +43,11 @@ export default function FeedVideoFullscreenScreen({ route, navigation }) {
           />
         )}
       />
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <TouchableOpacity
+        style={[styles.backButton, { top: insets.top + 10 }]}
+        onPress={() => navigation.goBack()}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
         <Ionicons name="chevron-back" size={26} color="#fff" />
       </TouchableOpacity>
     </View>
@@ -50,5 +56,5 @@ export default function FeedVideoFullscreenScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
-  backButton: { position: "absolute", top: 50, left: 16 },
+  backButton: { position: "absolute", left: 16 },
 });

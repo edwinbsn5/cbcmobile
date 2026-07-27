@@ -44,10 +44,19 @@ module.exports = {
     android: {
       package: "the.campusbiashara.club",
       googleServicesFile: "./google-services.json",
+      // Play Store requires a strictly increasing versionCode on every
+      // upload; bump this each time you build a new release for the Store
+      // (it defaulted to 1 previously since this field was never set).
+      versionCode: 2,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#0B1F3A",
       },
+      // Android 16 (API 36) no longer allows opting out of edge-to-edge, so
+      // this can't stay implicit/false — declaring it explicitly lets the
+      // react-native-edge-to-edge config plugin set it up properly (theme,
+      // nav bar contrast) instead of Android forcing it on unconfigured.
+      edgeToEdgeEnabled: true,
     },
     plugins: [
       "expo-location",
@@ -73,6 +82,11 @@ module.exports = {
             buildToolsVersion: "36.0.0",
             ndkVersion: "27.1.12297006",
             newArchEnabled: false,
+            // R8/ProGuard: shrinks + obfuscates the release build (smaller
+            // APK/AAB, and Play Console wants the resulting mapping.txt for
+            // readable crash/ANR stack traces).
+            enableProguardInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
           },
         },
       ],

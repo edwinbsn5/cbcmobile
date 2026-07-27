@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import CampusPicker from "../components/CampusPicker";
 import CountyPicker from "../components/CountyPicker";
@@ -10,6 +11,7 @@ const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
 const BOOST_COST_KES = 100; // must match backend/routes/groupBoosts.js
 
 export default function BoostGroupScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { group } = route.params;
   const { updateWalletBalance } = useAuth();
   const [targetCampus, setTargetCampus] = useState("");
@@ -62,7 +64,7 @@ export default function BoostGroupScreen({ route, navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}>
       <View style={styles.previewCard}>
         <Text style={styles.previewLabel}>Boosting this group</Text>
         <View style={styles.previewRow}>

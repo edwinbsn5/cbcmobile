@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { Video, ResizeMode } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { COLORS } from "../theme";
 
@@ -8,6 +9,7 @@ import { COLORS } from "../theme";
 // flow than a basic "fix the caption" edit needs); the existing media, if
 // any, is just shown for context.
 export default function EditPostScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { post } = route.params;
   const [content, setContent] = useState(post.content || "");
   const [saving, setSaving] = useState(false);
@@ -27,7 +29,7 @@ export default function EditPostScreen({ route, navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       <TextInput
         style={styles.input}
         value={content}

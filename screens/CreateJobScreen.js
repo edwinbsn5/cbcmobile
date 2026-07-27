@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { COLORS } from "../theme";
 
 const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Internship", "Remote"];
 
 export default function CreateJobScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [location, setLocation] = useState("");
@@ -42,7 +44,7 @@ export default function CreateJobScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}>
       <View style={styles.card}>
         <Text style={styles.label}>Job title</Text>
         <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Software Engineer" />

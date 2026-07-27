@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { COLORS } from "../theme";
 
 export default function CreateGroupScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [cover, setCover] = useState(null); // { uri, mimeType, fileName }
@@ -69,7 +71,7 @@ export default function CreateGroupScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}>
       <View style={styles.card}>
         <Text style={styles.label}>Group name</Text>
         <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Nairobi Entrepreneurs Hub" />

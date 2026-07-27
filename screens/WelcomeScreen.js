@@ -1,11 +1,13 @@
 import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../theme";
 
 export default function WelcomeScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 48 }]}>
       <StatusBar style="light" />
       <View style={styles.hero}>
         <Image source={require("../assets/icon.png")} style={styles.logo} />

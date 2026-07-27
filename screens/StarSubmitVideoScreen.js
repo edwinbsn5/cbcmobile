@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { COLORS } from "../theme";
 import { prepareVideoUpload } from "../utils/prepareVideoUpload";
 
 export default function StarSubmitVideoScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { contestId } = route.params;
   const [media, setMedia] = useState(null);
   const [caption, setCaption] = useState("");
@@ -56,7 +58,7 @@ export default function StarSubmitVideoScreen({ route, navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 20 }]}>
       <Text style={styles.hint}>One submission per contest — make it count!</Text>
 
       {media ? (

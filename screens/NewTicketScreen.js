@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { COLORS } from "../theme";
 
 const CATEGORIES = ["Account Issues", "Report a Bug", "Suggest New Ideas", "Others"];
 
 export default function NewTicketScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [category, setCategory] = useState(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -28,7 +30,7 @@ export default function NewTicketScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 20 }}>
       <Text style={styles.label}>Category</Text>
       <View style={styles.chipRow}>
         {CATEGORIES.map((c) => (

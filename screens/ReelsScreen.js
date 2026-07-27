@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -21,6 +22,7 @@ export default function ReelsScreen({ route, navigation }) {
   const { authorId, startIndex = 0 } = route.params || {};
   const { user } = useAuth();
   const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
   const [reels, setReels] = useState([]);
   const [loading, setLoading] = useState(true);
   const { isSaved, toggleSave, loadSaved } = useSaved();
@@ -79,13 +81,13 @@ export default function ReelsScreen({ route, navigation }) {
             variant="fullscreen"
             onPressBody={() => {}}
           />
-          <View style={styles.overlay} pointerEvents="box-none">
+          <View style={[styles.overlay, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
             <TouchableOpacity onPress={() => item.author?.id && navigation.navigate("UserProfile", { userId: item.author.id })}>
               <Text style={styles.author}>@{item.author?.name.replace(" ", "").toLowerCase()}</Text>
             </TouchableOpacity>
             <Text style={styles.caption}>{item.caption}</Text>
           </View>
-          <View style={styles.reactionColumn} pointerEvents="box-none">
+          <View style={[styles.reactionColumn, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
             <ReactionBar reactions={item.reactions} myUserId={user?.id} onReact={(r) => handleReact(item.id, r)} />
             <TouchableOpacity style={styles.saveButton} onPress={() => toggleSave("reel", item.id)}>
               <Ionicons name={isSaved("reel", item.id) ? "bookmark" : "bookmark-outline"} size={28} color="#fff" />
@@ -101,10 +103,10 @@ const styles = StyleSheet.create({
   slide: { width, height, backgroundColor: "#000" },
   // Both pushed up from their old bottom:40 to clear FeedVideoPlayer's own
   // progress-bar/timestamp/mute overlay, which now occupies the bottom
-  // ~45px of every slide.
-  overlay: { position: "absolute", bottom: 70, left: 16, right: 100 },
+  // ~45px of every slide (plus the bottom safe-area inset, applied inline).
+  overlay: { position: "absolute", left: 16, right: 100 },
   author: { color: "#fff", fontWeight: "700", fontSize: 15, marginBottom: 4 },
   caption: { color: "#fff", fontSize: 14 },
-  reactionColumn: { position: "absolute", bottom: 70, right: 16 },
+  reactionColumn: { position: "absolute", right: 16 },
   saveButton: { marginTop: 16, alignItems: "center" },
 });

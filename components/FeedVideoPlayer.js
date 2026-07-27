@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions, ActivityIndicator, Image } from "react-native";
 import { Video, ResizeMode } from "expo-av";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { useVideoSound } from "../context/VideoSoundContext";
@@ -42,6 +43,7 @@ function formatTime(ms) {
 export default function FeedVideoPlayer({ uri, poster, isActive, shouldMount, onPressBody, variant = "card" }) {
   const { soundEnabled, toggleSound } = useVideoSound();
   const appIsActive = useAppIsActive();
+  const insets = useSafeAreaInsets();
   const tracksViewport = isActive !== undefined;
   const [userPaused, setUserPaused] = useState(!tracksViewport);
   const [naturalRatio, setNaturalRatio] = useState(null);
@@ -150,7 +152,10 @@ export default function FeedVideoPlayer({ uri, poster, isActive, shouldMount, on
           </TouchableOpacity>
         </View>
 
-        <View style={styles.bottomBar} pointerEvents="box-none">
+        <View
+          style={[styles.bottomBar, variant === "fullscreen" && { paddingBottom: 6 + insets.bottom }]}
+          pointerEvents="box-none"
+        >
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${Math.min(100, progress * 100)}%` }]} />
           </View>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { COLORS } from "../theme";
@@ -12,6 +13,7 @@ const TIME_RE = /^\d{2}:\d{2}$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default function CreateEventScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
@@ -85,7 +87,7 @@ export default function CreateEventScreen({ navigation }) {
   const busy = submitting || uploading;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}>
       <View style={styles.card}>
         <Text style={styles.label}>Event name</Text>
         <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Founders Meetup" />

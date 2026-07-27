@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -11,6 +12,7 @@ import { BG_COLORS, TEXT_COLORS } from "../utils/textStyleColors";
 import { prepareVideoUpload } from "../utils/prepareVideoUpload";
 
 export default function CreateStoryScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [mode, setMode] = useState("media");
   const [media, setMedia] = useState(null); // { uri, type, mimeType, fileName }
   const [posting, setPosting] = useState(false);
@@ -98,7 +100,7 @@ export default function CreateStoryScreen({ navigation }) {
   const canShare = mode === "media" ? !!media : !!text.trim();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       <View style={styles.modeRow}>
         <TouchableOpacity focusable={false} style={[styles.modeButton, mode === "media" && styles.modeButtonActive]} onPress={() => setMode("media")}>
           <Text style={[styles.modeText, mode === "media" && styles.modeTextActive]}>Photo/Video</Text>
