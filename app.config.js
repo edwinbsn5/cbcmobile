@@ -47,7 +47,7 @@ module.exports = {
       // Play Store requires a strictly increasing versionCode on every
       // upload; bump this each time you build a new release for the Store
       // (it defaulted to 1 previously since this field was never set).
-      versionCode: 2,
+      versionCode: 3,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#0B1F3A",
