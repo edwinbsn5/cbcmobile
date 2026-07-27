@@ -60,6 +60,22 @@ module.exports = {
           iosAppId: process.env.ADMOB_IOS_APP_ID || "ca-app-pub-3940256099942544~1458002511",
         },
       ],
+      // Google Play requires targeting API 36 (Android 16) and 16KB memory
+      // page size support; NDK 27+ is required for 16KB-aligned native libs.
+      // newArchEnabled stays false to match the pre-upgrade build — turning
+      // it on is a separate, larger migration.
+      [
+        "expo-build-properties",
+        {
+          android: {
+            compileSdkVersion: 36,
+            targetSdkVersion: 36,
+            buildToolsVersion: "36.0.0",
+            ndkVersion: "27.1.12297006",
+            newArchEnabled: false,
+          },
+        },
+      ],
     ],
   },
 };
