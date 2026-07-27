@@ -4,11 +4,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { COLORS } from "../theme";
 
-const CATEGORIES = ["Account Issues", "Report a Bug", "Suggest New Ideas", "Others"];
+const CATEGORIES = ["Child Safety (CSAE)", "Account Issues", "Report a Bug", "Suggest New Ideas", "Others"];
 
-export default function NewTicketScreen({ navigation }) {
+export default function NewTicketScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
-  const [category, setCategory] = useState(null);
+  const [category, setCategory] = useState(route.params?.category || null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);

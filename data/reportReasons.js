@@ -1,5 +1,6 @@
 // Keys must match backend/data/reportReasons.js exactly.
 export default [
+  { key: "csae", label: "Child sexual abuse or exploitation" },
   { key: "harassment", label: "Harassment or bullying" },
   { key: "adult_content", label: "Adult content" },
   { key: "abuse", label: "Abuse or hate speech" },

@@ -6,6 +6,7 @@ import client from "../api/client";
 import { COLORS } from "../theme";
 
 const CATEGORY_ICONS = {
+  "Child Safety (CSAE)": "alert-circle-outline",
   "Account Issues": "person-circle-outline",
   "Report a Bug": "bug-outline",
   "Suggest New Ideas": "bulb-outline",

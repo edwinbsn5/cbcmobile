@@ -30,6 +30,7 @@ const FEATURE_ITEMS = [
 const SETTINGS_ITEMS = [
   { icon: "settings-outline", label: "Account Settings", screen: "AccountSettings" },
   { icon: "shield-checkmark-outline", label: "Privacy", screen: "PrivacySettings" },
+  { icon: "alert-circle-outline", label: "Child Safety", screen: "ChildSafety" },
   { icon: "help-buoy-outline", label: "Support", screen: "Support" },
 ];
 

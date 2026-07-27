@@ -81,6 +81,7 @@ import BlockedUsersScreen from "./screens/BlockedUsersScreen";
 import SupportScreen from "./screens/SupportScreen";
 import NewTicketScreen from "./screens/NewTicketScreen";
 import TicketDetailScreen from "./screens/TicketDetailScreen";
+import ChildSafetyScreen from "./screens/ChildSafetyScreen";
 
 const AuthStack = createNativeStackNavigator();
 const OnboardingStack = createNativeStackNavigator();
@@ -312,6 +313,7 @@ function RootNavigator() {
         <RootStack.Screen name="Support" component={SupportScreen} options={{ title: "Support" }} />
         <RootStack.Screen name="NewTicket" component={NewTicketScreen} options={{ title: "New Ticket" }} />
         <RootStack.Screen name="TicketDetail" component={TicketDetailScreen} options={{ title: "Ticket" }} />
+        <RootStack.Screen name="ChildSafety" component={ChildSafetyScreen} options={{ title: "Child Safety" }} />
       </RootStack.Navigator>
       </VideoSoundProvider>
     </NotificationProvider>
