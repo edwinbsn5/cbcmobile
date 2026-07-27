@@ -52,6 +52,7 @@ module.exports = {
     plugins: [
       "expo-location",
       "expo-notifications",
+      "expo-web-browser",
       [
         "react-native-google-mobile-ads",
         {
