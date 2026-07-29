@@ -4,6 +4,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import LinkifiedText from "../components/LinkifiedText";
+import MentionTextInput from "../components/MentionTextInput";
 import { COLORS } from "../theme";
 
 function timeAgo(ts) {
@@ -20,7 +22,7 @@ function CommentNode({ comment, depth, myUserId, onReply, onDelete }) {
     <View style={[styles.node, depth > 0 && styles.nodeNested]}>
       <View style={styles.bubble}>
         <Text style={styles.author}>{comment.author?.name}</Text>
-        <Text style={styles.content}>{comment.content}</Text>
+        <LinkifiedText text={comment.content} style={styles.content} />
       </View>
       <View style={styles.metaRow}>
         <Text style={styles.time}>{timeAgo(comment.createdAt)}</Text>
@@ -41,11 +43,12 @@ function CommentNode({ comment, depth, myUserId, onReply, onDelete }) {
 }
 
 // Group posts have their own membership-gated comment endpoint
-// (/groups/:groupId/posts/:postId/comments); the main feed's is
-// /feed/:postId/comments. route.params.groupId being present is what
-// distinguishes the two — everything else about this screen is identical.
+// (/groups/:groupId/posts/:postId/comments); Page posts have their own too
+// (/pages/:pageId/feed/:postId/comments); the main feed's is
+// /feed/:postId/comments. route.params.groupId/pageId being present is what
+// distinguishes the three — everything else about this screen is identical.
 export default function CommentsScreen({ route }) {
-  const { postId, groupId } = route.params;
+  const { postId, groupId, pageId } = route.params;
   const { user } = useAuth();
   const [tree, setTree] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +57,11 @@ export default function CommentsScreen({ route }) {
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef(null);
 
-  const basePath = groupId ? `/groups/${groupId}/posts/${postId}/comments` : `/feed/${postId}/comments`;
+  const basePath = pageId
+    ? `/pages/${pageId}/feed/${postId}/comments`
+    : groupId
+    ? `/groups/${groupId}/posts/${postId}/comments`
+    : `/feed/${postId}/comments`;
 
   const load = useCallback(() => {
     client.get(basePath).then((r) => setTree(r.data)).finally(() => setLoading(false));
@@ -120,7 +127,7 @@ export default function CommentsScreen({ route }) {
       )}
 
       <View style={styles.inputRow}>
-        <TextInput
+        <MentionTextInput
           ref={inputRef}
           style={styles.input}
           placeholder={replyTarget ? `Reply to ${replyTarget.authorName}...` : "Write a comment..."}

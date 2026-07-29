@@ -10,6 +10,7 @@ import AdMobBanner from "../components/AdMobBanner";
 import StoriesBar from "../components/StoriesBar";
 import ComradesNearby from "../components/ComradesNearby";
 import FeaturedGroupCard from "../components/FeaturedGroupCard";
+import FeaturedPageCard from "../components/FeaturedPageCard";
 import Avatar from "../components/Avatar";
 import { useSaved } from "../hooks/useSaved";
 import { useReshared } from "../hooks/useReshared";
@@ -181,6 +182,14 @@ export default function FeedScreen({ navigation }) {
             <FeaturedGroupCard
               group={item}
               onPress={() => navigation.navigate("GroupDetail", { groupId: item.groupId })}
+            />
+          );
+        }
+        if (item.kind === "featuredPages") {
+          return (
+            <FeaturedPageCard
+              page={item}
+              onPress={() => navigation.navigate("PageDetail", { pageId: item.pageId })}
             />
           );
         }

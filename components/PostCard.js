@@ -8,6 +8,7 @@ import FeedVideoPlayer from "./FeedVideoPlayer";
 import PhotoCarousel from "./PhotoCarousel";
 import FeedImage from "./FeedImage";
 import LinkPreviewCard from "./LinkPreviewCard";
+import LinkifiedText from "./LinkifiedText";
 import Avatar from "./Avatar";
 import VerifiedBadge from "./VerifiedBadge";
 import client from "../api/client";
@@ -81,6 +82,7 @@ export default function PostCard({
   }
 
   const isGroupIdentity = !!post.author?.isGroup;
+  const isPageIdentity = !!post.author?.isPage;
 
   return (
     <View style={styles.card}>
@@ -89,7 +91,8 @@ export default function PostCard({
           style={styles.headerLeft}
           onPress={() => {
             if (!post.author?.id) return;
-            if (isGroupIdentity) navigation.navigate("GroupDetail", { groupId: post.groupId });
+            if (isPageIdentity) navigation.navigate("PageDetail", { pageId: post.pageId });
+            else if (isGroupIdentity) navigation.navigate("GroupDetail", { groupId: post.groupId });
             else navigation.navigate("UserProfile", { userId: post.author.id });
           }}
         >
@@ -112,6 +115,9 @@ export default function PostCard({
       {!!post.groupTag && (
         <Text style={styles.groupTagText}>📍 Posted in {post.groupTag.name}</Text>
       )}
+      {!!post.pageTag && (
+        <Text style={styles.groupTagText}>📍 Posted on {post.pageTag.name}</Text>
+      )}
 
       <PostOptionsMenu
         visible={menuOpen}
@@ -120,9 +126,9 @@ export default function PostCard({
         authorFirstName={post.author?.name?.split(" ")[0] || "user"}
         onEdit={() => navigation.navigate("EditPost", { post })}
         onDelete={handleDelete}
-        onReport={() => navigation.navigate("ReportPost", { postId: post.id, groupId: post.groupId || undefined })}
-        onUnfollow={isGroupIdentity ? undefined : handleUnfollow}
-        onBlock={isGroupIdentity ? undefined : handleBlock}
+        onReport={() => navigation.navigate("ReportPost", { postId: post.id, groupId: post.groupId || undefined, pageId: post.pageId || undefined })}
+        onUnfollow={isGroupIdentity || isPageIdentity ? undefined : handleUnfollow}
+        onBlock={isGroupIdentity || isPageIdentity ? undefined : handleBlock}
       />
 
       {!!post.title && <Text style={styles.blogTitle}>{post.title}</Text>}
@@ -135,7 +141,7 @@ export default function PostCard({
           </View>
         </View>
       ) : (
-        !!post.content && <Text style={styles.content}>{post.content}</Text>
+        !!post.content && <LinkifiedText text={post.content} style={styles.content} />
       )}
       {!!post.linkPreview && <LinkPreviewCard preview={post.linkPreview} />}
       {post.mediaUrl && post.type === "video" && (
@@ -165,13 +171,13 @@ export default function PostCard({
 
         <TouchableOpacity
           style={styles.pill}
-          onPress={() => navigation.navigate("Comments", { postId: post.id, groupId: post.groupId || undefined })}
+          onPress={() => navigation.navigate("Comments", { postId: post.id, groupId: post.groupId || undefined, pageId: post.pageId || undefined })}
         >
           <Ionicons name="chatbubble-outline" size={14} color={COLORS.accent} />
           <Text style={styles.pillText}>{formatCount(post.commentCount || 0)}</Text>
         </TouchableOpacity>
 
-        {!post.groupId ? (
+        {!post.groupId && !post.pageId ? (
           <TouchableOpacity
             style={[styles.pill, isReshared && styles.pillActive]}
             onPress={() => {
@@ -208,7 +214,7 @@ export default function PostCard({
         )}
       </View>
 
-      {post.userId === user?.id && !post.groupId && (
+      {post.userId === user?.id && !post.groupId && !post.pageId && (
         <TouchableOpacity style={styles.boostRow} onPress={() => navigation.navigate("BoostPost", { post })}>
           <Text style={styles.boostText}>📣 Boost this post</Text>
         </TouchableOpacity>

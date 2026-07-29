@@ -18,7 +18,11 @@ export default function EditPostScreen({ route, navigation }) {
     if (!content.trim()) return Alert.alert("Content required", "Your post can't be empty");
     setSaving(true);
     try {
-      const path = post.groupId ? `/groups/${post.groupId}/posts/${post.id}` : `/feed/${post.id}`;
+      const path = post.pageId
+        ? `/pages/${post.pageId}/feed/${post.id}`
+        : post.groupId
+        ? `/groups/${post.groupId}/posts/${post.id}`
+        : `/feed/${post.id}`;
       await client.patch(path, { content: content.trim() });
       navigation.goBack();
     } catch (e) {

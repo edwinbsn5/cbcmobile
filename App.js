@@ -25,6 +25,16 @@ import ReelsScreen from "./screens/ReelsScreen";
 import GroupsScreen from "./screens/GroupsScreen";
 import GroupDetailScreen from "./screens/GroupDetailScreen";
 import GroupVideoPlayerScreen from "./screens/GroupVideoPlayerScreen";
+import PagesListScreen from "./screens/PagesListScreen";
+import PageDetailScreen from "./screens/PageDetailScreen";
+import CreatePageScreen from "./screens/CreatePageScreen";
+import PageTeamManagementScreen from "./screens/PageTeamManagementScreen";
+import PageVideoPlayerScreen from "./screens/PageVideoPlayerScreen";
+import PageCategoriesScreen from "./screens/PageCategoriesScreen";
+import BoostPageScreen from "./screens/BoostPageScreen";
+import MyBoostedPagesScreen from "./screens/MyBoostedPagesScreen";
+import HashtagFeedScreen from "./screens/HashtagFeedScreen";
+import TrendingHashtagsScreen from "./screens/TrendingHashtagsScreen";
 import FeedVideoFullscreenScreen from "./screens/FeedVideoFullscreenScreen";
 import CreateGroupScreen from "./screens/CreateGroupScreen";
 import SpinWinScreen from "./screens/SpinWinScreen";
@@ -255,6 +265,16 @@ function RootNavigator() {
         <RootStack.Screen name="Profile" component={ProfileScreen} options={{ title: "My Profile" }} />
         <RootStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: "Group" }} />
         <RootStack.Screen name="GroupVideoPlayer" component={GroupVideoPlayerScreen} options={{ headerShown: false }} />
+        <RootStack.Screen name="Pages" component={PagesListScreen} options={{ title: "Pages" }} />
+        <RootStack.Screen name="PageDetail" component={PageDetailScreen} options={{ title: "Page" }} />
+        <RootStack.Screen name="CreatePage" component={CreatePageScreen} options={{ title: "Create Page" }} />
+        <RootStack.Screen name="PageTeamManagement" component={PageTeamManagementScreen} options={{ title: "Manage Team" }} />
+        <RootStack.Screen name="PageVideoPlayer" component={PageVideoPlayerScreen} options={{ headerShown: false }} />
+        <RootStack.Screen name="PageCategories" component={PageCategoriesScreen} options={{ title: "Browse Categories" }} />
+        <RootStack.Screen name="BoostPage" component={BoostPageScreen} options={{ title: "Boost Page" }} />
+        <RootStack.Screen name="MyBoostedPages" component={MyBoostedPagesScreen} options={{ title: "My Boosted Pages" }} />
+        <RootStack.Screen name="HashtagFeed" component={HashtagFeedScreen} options={({ route }) => ({ title: `#${route.params.tag}` })} />
+        <RootStack.Screen name="TrendingHashtags" component={TrendingHashtagsScreen} options={{ title: "Trending" }} />
         <RootStack.Screen name="FeedVideoFullscreen" component={FeedVideoFullscreenScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="RecentWinners" component={RecentWinnersScreen} options={{ title: "Recent Winners" }} />
         <RootStack.Screen name="CoinBalance" component={CoinBalanceScreen} options={{ title: "My Coin Balance" }} />

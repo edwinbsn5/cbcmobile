@@ -10,6 +10,7 @@ import { COLORS } from "../theme";
 import ColorSwatchPicker from "../components/ColorSwatchPicker";
 import TextAlignPicker from "../components/TextAlignPicker";
 import Avatar from "../components/Avatar";
+import MentionTextInput from "../components/MentionTextInput";
 import { BG_COLORS, TEXT_COLORS } from "../utils/textStyleColors";
 import { prepareVideoUpload } from "../utils/prepareVideoUpload";
 
@@ -162,7 +163,7 @@ export default function CreatePostScreen({ navigation }) {
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       {bgColor ? (
         <View style={[styles.styledComposerBox, { backgroundColor: bgColor }]}>
-          <TextInput
+          <MentionTextInput
             ref={styledInputRef}
             style={[styles.styledComposerInput, { color: textColor || "#FFFFFF", textAlign }]}
             placeholder="What's on your mind?"
@@ -175,7 +176,7 @@ export default function CreatePostScreen({ navigation }) {
       ) : (
         <View style={styles.composerRow}>
           <Avatar uri={user?.avatar} name={user?.name} style={styles.avatar} />
-          <TextInput
+          <MentionTextInput
             style={styles.composerInput}
             placeholder="What's on your mind?"
             value={composerText}
