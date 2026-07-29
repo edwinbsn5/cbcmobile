@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   postAsButtonActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
   postAsText: { fontSize: 12, fontWeight: "700", color: COLORS.sub },
   postAsTextActive: { color: COLORS.accentInk },
-  composerInput: { minHeight: 40, fontSize: 15 },
+  composerInput: { minHeight: 40, fontSize: 15, color: COLORS.ink },
   previewWrap: { marginTop: 10, borderRadius: 8, overflow: "hidden" },
   preview: { width: "100%", height: 180, backgroundColor: "#000" },
   removeButton: {
@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
   replyText: { fontSize: 13, color: COLORS.ink, lineHeight: 18 },
   replyLink: { color: COLORS.accent, fontWeight: "700", fontSize: 12.5, marginTop: 8 },
   replyForm: { marginTop: 8 },
-  replyInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 13, minHeight: 50, textAlignVertical: "top" },
+  replyInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 13, minHeight: 50, textAlignVertical: "top", color: COLORS.ink },
   replyFormActions: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 14, marginTop: 6 },
   replyCancelText: { color: COLORS.sub, fontSize: 12.5, fontWeight: "600" },
   replySubmitButton: { backgroundColor: COLORS.accent, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 },

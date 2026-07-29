@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   roleOptionActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
   roleOptionText: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub },
   roleOptionTextActive: { color: COLORS.accentInk },
-  searchInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 14 },
+  searchInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 14, color: COLORS.ink },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   inviteAction: { color: COLORS.accent, fontWeight: "700", fontSize: 12 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#eee" },

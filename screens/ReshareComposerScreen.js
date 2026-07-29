@@ -31,6 +31,7 @@ export default function ReshareComposerScreen({ route, navigation }) {
       <TextInput
         style={styles.captionInput}
         placeholder="Say something about this (optional)"
+        placeholderTextColor={COLORS.sub}
         value={caption}
         onChangeText={setCaption}
         multiline
@@ -60,7 +61,7 @@ export default function ReshareComposerScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg, padding: 14 },
-  captionInput: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, fontSize: 15, minHeight: 60, textAlignVertical: "top" },
+  captionInput: { backgroundColor: COLORS.surface, color: COLORS.ink, borderRadius: 10, padding: 12, fontSize: 15, minHeight: 60, textAlignVertical: "top" },
   preview: { backgroundColor: COLORS.surface, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border, padding: 12, marginTop: 14 },
   previewHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
   avatar: { width: 28, height: 28, borderRadius: 14 },
