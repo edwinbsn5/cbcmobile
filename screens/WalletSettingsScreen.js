@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   hint: { fontSize: 12.5, color: COLORS.sub, marginBottom: 16, lineHeight: 18 },
   card: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginBottom: 20 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, color: COLORS.ink },
   button: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 12, alignItems: "center", marginTop: 18 },
   buttonText: { color: COLORS.accentInk, fontWeight: "700" },
   resend: { color: COLORS.accent, fontWeight: "700", textAlign: "center", marginTop: 12, fontSize: 13 },

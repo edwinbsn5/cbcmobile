@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, paddingBottom: 28 },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },
   sheetTitle: { fontWeight: "800", fontSize: 16, marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, marginBottom: 10 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, marginBottom: 10, color: COLORS.ink },
   sheetBtn: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 13, alignItems: "center" },
   sheetBtnText: { color: COLORS.accentInk, fontWeight: "700" },
   feeNote: { color: COLORS.sub, fontSize: 12, lineHeight: 17, marginBottom: 10 },

@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
   chipText: { color: COLORS.ink, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: COLORS.accentInk },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 12, backgroundColor: COLORS.surface, fontSize: 14 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 12, backgroundColor: COLORS.surface, fontSize: 14, color: COLORS.ink },
   textarea: { height: 140 },
   button: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 28 },
   buttonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 16 },

@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   bubbleTextMine: { color: COLORS.accentInk },
   composerWrap: { borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.surface, padding: 10 },
   composerRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  composerInput: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, maxHeight: 100, fontSize: 14.5 },
+  composerInput: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, maxHeight: 100, fontSize: 14.5, color: COLORS.ink },
   sendButton: { backgroundColor: COLORS.accent, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10 },
   sendButtonText: { color: COLORS.accentInk, fontWeight: "700" },
   closeButton: { alignItems: "center", marginTop: 10, paddingVertical: 6 },

@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 16 },
   sectionTitle: { fontSize: 15, fontWeight: "700", marginTop: 20 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 4, marginTop: 12 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, color: COLORS.ink },
   multiline: { minHeight: 70, textAlignVertical: "top" },
   coverPicker: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,

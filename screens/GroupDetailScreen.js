@@ -737,8 +737,8 @@ const styles = StyleSheet.create({
   tabText: { color: COLORS.sub, fontWeight: "700", fontSize: 14 },
   tabTextActive: { color: COLORS.accent },
   composer: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 4 },
-  blogTitleInput: { fontSize: 16, fontWeight: "700", paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: COLORS.bg, marginBottom: 8 },
-  composerInput: { minHeight: 40, fontSize: 15 },
+  blogTitleInput: { fontSize: 16, fontWeight: "700", paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: COLORS.bg, marginBottom: 8, color: COLORS.ink },
+  composerInput: { minHeight: 40, fontSize: 15, color: COLORS.ink },
   previewWrap: { marginTop: 10, borderRadius: 8, overflow: "hidden" },
   preview: { width: "100%", height: 180, backgroundColor: "#000" },
   removeButton: {

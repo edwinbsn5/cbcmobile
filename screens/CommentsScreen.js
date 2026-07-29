@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   replyBanner: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: COLORS.wash, paddingHorizontal: 14, paddingVertical: 6 },
   replyBannerText: { fontSize: 12, color: COLORS.sub, fontWeight: "600" },
   inputRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, padding: 10, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border },
-  input: { flex: 1, backgroundColor: COLORS.bg, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, maxHeight: 100, fontSize: 14 },
+  input: { flex: 1, backgroundColor: COLORS.bg, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, maxHeight: 100, fontSize: 14, color: COLORS.ink },
   sendButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.accent, alignItems: "center", justifyContent: "center" },
   empty: { textAlign: "center", color: "#999", marginTop: 30 },
 });

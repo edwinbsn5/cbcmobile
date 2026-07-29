@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   card: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 16 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 4, marginTop: 12 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, color: COLORS.ink },
   multiline: { minHeight: 70, textAlignVertical: "top" },
   coverPicker: {
     height: 120, alignItems: "center", justifyContent: "center", gap: 6,

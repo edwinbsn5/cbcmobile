@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "800" },
   subtitle: { color: COLORS.sub, marginTop: 4, marginBottom: 20 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 6, marginTop: 14 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 15 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 15, color: COLORS.ink },
   multiline: { minHeight: 70, textAlignVertical: "top" },
   chipRow: { flexDirection: "row", flexWrap: "wrap" },
   chip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, marginBottom: 8 },

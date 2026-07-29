@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   modalContainer: { flex: 1, backgroundColor: COLORS.bg, paddingTop: 50 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 10 },
   modalTitle: { fontSize: 18, fontWeight: "800", color: COLORS.ink },
-  searchInput: { marginHorizontal: 16, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, backgroundColor: COLORS.surface, marginBottom: 8 },
+  searchInput: { marginHorizontal: 16, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, backgroundColor: COLORS.surface, marginBottom: 8, color: COLORS.ink },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   rowText: { fontSize: 15, color: COLORS.ink },
   empty: { textAlign: "center", color: COLORS.sub, marginTop: 30 },

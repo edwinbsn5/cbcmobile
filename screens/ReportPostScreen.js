@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   option: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: COLORS.surface, borderRadius: 10, padding: 13, marginBottom: 8 },
   optionText: { fontSize: 14, color: COLORS.ink, flex: 1 },
   label: { fontSize: 13, color: COLORS.sub, marginTop: 14, marginBottom: 6 },
-  input: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, fontSize: 14, minHeight: 80, textAlignVertical: "top", borderWidth: 1, borderColor: COLORS.border },
+  input: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, fontSize: 14, minHeight: 80, textAlignVertical: "top", borderWidth: 1, borderColor: COLORS.border, color: COLORS.ink },
   submitButton: { backgroundColor: COLORS.accent, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 20 },
   submitButtonDisabled: { opacity: 0.5 },
   submitButtonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 15 },

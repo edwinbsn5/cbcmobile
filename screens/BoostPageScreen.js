@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: "700" },
   hint: { color: COLORS.sub, fontSize: 12, marginTop: 4, marginBottom: 16 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 6, marginTop: 12 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, backgroundColor: COLORS.surface },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, backgroundColor: COLORS.surface, color: COLORS.ink },
   chipRow: { flexDirection: "row", flexWrap: "wrap" },
   chip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, marginBottom: 8, backgroundColor: COLORS.surface },
   chipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },

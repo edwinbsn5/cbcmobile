@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   composer: { flexDirection: "row", alignItems: "flex-end", backgroundColor: COLORS.surface, padding: 8, borderTopWidth: 1, borderTopColor: "#EEE" },
   attachButton: { padding: 8, marginRight: 4 },
   attachButtonText: { fontSize: 20 },
-  input: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, maxHeight: 100 },
+  input: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 8, maxHeight: 100, color: COLORS.ink },
   sendButton: { marginLeft: 8, backgroundColor: COLORS.accent, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 10 },
   sendButtonText: { color: COLORS.accentInk, fontWeight: "700" },
 });

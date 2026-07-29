@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.surface, padding: 16 },
   composerRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.wash },
-  composerInput: { flex: 1, minHeight: 100, fontSize: 16, textAlignVertical: "top" },
+  composerInput: { flex: 1, minHeight: 100, fontSize: 16, textAlignVertical: "top", color: COLORS.ink },
   styledComposerBox: { borderRadius: 14, minHeight: 220, padding: 20, justifyContent: "center" },
   styledComposerInput: { fontSize: 26, fontWeight: "700" },
   styleSection: { marginTop: 16 },

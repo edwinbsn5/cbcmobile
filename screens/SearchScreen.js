@@ -117,7 +117,7 @@ export default function SearchScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   searchBar: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, margin: 10, borderRadius: 8, paddingHorizontal: 12 },
-  input: { flex: 1, paddingVertical: 10, fontSize: 15 },
+  input: { flex: 1, paddingVertical: 10, fontSize: 15, color: COLORS.ink },
   sectionHeader: { fontWeight: "700", fontSize: 13, color: COLORS.sub, textTransform: "uppercase", backgroundColor: COLORS.bg, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 6 },
   row: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, padding: 12, marginHorizontal: 10, marginBottom: 6, borderRadius: 8 },
   avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 12, backgroundColor: "#eee" },

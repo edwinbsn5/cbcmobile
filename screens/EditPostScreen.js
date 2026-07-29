@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg, padding: 16 },
   input: {
     backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, fontSize: 15, minHeight: 100,
-    textAlignVertical: "top", borderWidth: 1, borderColor: COLORS.border,
+    textAlignVertical: "top", borderWidth: 1, borderColor: COLORS.border, color: COLORS.ink,
   },
   mediaWrap: { marginTop: 14 },
   media: { width: "100%", height: 200, borderRadius: 8, backgroundColor: "#000" },

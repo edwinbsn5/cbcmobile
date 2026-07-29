@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub, marginTop: 20, marginBottom: 6 },
   input: {
     backgroundColor: COLORS.surface, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border,
-    padding: 12, fontSize: 14, minHeight: 70, textAlignVertical: "top",
+    padding: 12, fontSize: 14, minHeight: 70, textAlignVertical: "top", color: COLORS.ink,
   },
   submitButton: { backgroundColor: COLORS.accent, borderRadius: 10, paddingVertical: 15, alignItems: "center", marginTop: 24 },
   submitButtonText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 15 },

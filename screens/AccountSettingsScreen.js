@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   avatarRowText: { color: COLORS.accent, fontWeight: "600", fontSize: 13 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 4, marginTop: 8 },
   hint: { fontSize: 11, color: COLORS.sub, marginTop: 4 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, color: COLORS.ink },
   button: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 12, alignItems: "center", marginTop: 16 },
   buttonText: { color: COLORS.accentInk, fontWeight: "700" },
   dangerCopy: { color: COLORS.sub, fontSize: 13, marginBottom: 12 },
