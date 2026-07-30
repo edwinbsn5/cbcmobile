@@ -104,7 +104,7 @@ export default function AccountSettingsScreen() {
           placeholder="yourtiktokhandle"
           autoCapitalize="none"
         />
-        <Text style={styles.hint}>If we ever repost your Be the STAR video, we'll credit this handle.</Text>
+        <Text style={styles.hint}>If we ever repost your video content, we'll credit this handle.</Text>
         <TouchableOpacity style={styles.button} onPress={handleSaveProfile} disabled={savingProfile}>
           {savingProfile ? <ActivityIndicator color={COLORS.accentInk} /> : <Text style={styles.buttonText}>Save profile</Text>}
         </TouchableOpacity>

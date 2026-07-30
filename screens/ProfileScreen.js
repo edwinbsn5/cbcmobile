@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -19,7 +18,6 @@ export default function ProfileScreen({ navigation }) {
   const [counts, setCounts] = useState({ followerCount: 0, followingCount: 0 });
   const [posts, setPosts] = useState([]);
   const [reels, setReels] = useState([]);
-  const [contests, setContests] = useState([]);
   const [activeTab, setActiveTab] = useState("Posts");
   const [loading, setLoading] = useState(true);
   const { isSaved, toggleSave, loadSaved } = useSaved();
@@ -27,16 +25,14 @@ export default function ProfileScreen({ navigation }) {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [profileRes, postsRes, reelsRes, contestsRes] = await Promise.all([
+    const [profileRes, postsRes, reelsRes] = await Promise.all([
       client.get(`/users/${user.id}`),
       client.get(`/users/${user.id}/posts`),
       client.get(`/users/${user.id}/reels`),
-      client.get(`/users/${user.id}/star-submissions`),
     ]);
     setCounts(profileRes.data);
     setPosts(postsRes.data);
     setReels(reelsRes.data);
-    setContests(contestsRes.data);
     loadSaved();
     loadReshared();
   }, [user?.id, loadSaved, loadReshared]);
@@ -119,40 +115,9 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity style={[styles.segmentItem, activeTab === "Reels" && styles.segmentItemActive]} onPress={() => setActiveTab("Reels")}>
           <Text style={[styles.segmentText, activeTab === "Reels" && styles.segmentTextActive]}>Reels</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.segmentItem, activeTab === "Contests" && styles.segmentItemActive]} onPress={() => setActiveTab("Contests")}>
-          <Text style={[styles.segmentText, activeTab === "Contests" && styles.segmentTextActive]}>My Contests</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
-
-  if (activeTab === "Contests") {
-    return (
-      <FlatList
-        key="Contests"
-        style={styles.container}
-        data={contests}
-        numColumns={3}
-        keyExtractor={(s) => s.id}
-        ListHeaderComponent={header}
-        ListEmptyComponent={<Text style={styles.empty}>No contest entries yet — try Be the STAR!</Text>}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.reelTile}
-            onPress={() => navigation.navigate("StarSubmissionDetail", { submissionId: item.id })}
-          >
-            <Video source={{ uri: item.videoUrl }} style={styles.reelTileMedia} resizeMode={ResizeMode.COVER} shouldPlay={false} isMuted />
-            <View style={styles.contestTileTag}><Text style={styles.contestTileTagText}>#{item.code}</Text></View>
-            <View style={styles.contestTilePts}><Text style={styles.contestTilePtsText}>{item.points}</Text></View>
-            <View style={[styles.contestStatusPill, item.contestEnded ? styles.contestStatusEnded : styles.contestStatusLive]}>
-              <Text style={styles.contestStatusText}>{item.contestEnded ? "ENDED" : "LIVE"}</Text>
-            </View>
-            <Ionicons name="play" size={16} color="#fff" style={styles.reelTilePlayIcon} />
-          </TouchableOpacity>
-        )}
-      />
-    );
-  }
 
   if (activeTab === "Reels") {
     return (
@@ -235,13 +200,5 @@ const styles = StyleSheet.create({
   reelTileMedia: { width: "100%", height: "100%" },
   reelTilePlaceholder: { backgroundColor: "#000" },
   reelTilePlayIcon: { position: "absolute", top: 8, right: 8 },
-  contestTileTag: { position: "absolute", left: 3, bottom: 3, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 },
-  contestTileTagText: { color: "#fff", fontSize: 8, fontWeight: "700" },
-  contestTilePts: { position: "absolute", top: 3, left: 3, backgroundColor: "#F5A623", borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 },
-  contestTilePtsText: { color: "#241a06", fontSize: 8, fontWeight: "800" },
-  contestStatusPill: { position: "absolute", right: 3, bottom: 3, borderRadius: 4, paddingHorizontal: 4, paddingVertical: 2 },
-  contestStatusLive: { backgroundColor: COLORS.accentInk },
-  contestStatusEnded: { backgroundColor: "rgba(0,0,0,0.55)" },
-  contestStatusText: { color: "#fff", fontSize: 7, fontWeight: "800" },
   empty: { textAlign: "center", color: "#999", marginTop: 20 },
 });

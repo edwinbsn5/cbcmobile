@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { COLORS } from "../theme";
 
 // "Which category do you want to browse?" — shown before both Browse by
-// Photos and Browse by Videos. Only main (top-level) categories + an "All
-// Categories" option, per spec — no subcategory drill-down here (that
-// granularity lives in the multi-select picker at listing-creation time).
+// Photos and Browse by Videos. Tag Clusters layout: bold category name,
+// non-bold subcategory chips below it, centered. Tapping a category OR a
+// subcategory chip browses that id directly — the market's categoryIds
+// filter is an ANY-match against the junction table, so a subcategory id
+// is just as valid a filter as its parent's.
 export default function MarketCategoryChooserScreen({ route, navigation }) {
   const { mediaType } = route.params;
   const [categories, setCategories] = useState([]);
@@ -26,30 +27,38 @@ export default function MarketCategoryChooserScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.prompt}>Which category do you want to browse?</Text>
-      <TouchableOpacity style={styles.row} onPress={() => choose(null, "All Categories")}>
-        <View style={styles.icon}><Ionicons name="apps-outline" size={18} color={COLORS.accent} /></View>
-        <Text style={styles.rowText}>All Categories</Text>
-        <Ionicons name="chevron-forward" size={18} color={COLORS.sub} />
+      <Text style={styles.label}>Browse by category</Text>
+      <TouchableOpacity style={styles.allChip} onPress={() => choose(null, "All Categories")}>
+        <Text style={styles.allChipText}>All Categories</Text>
       </TouchableOpacity>
-      {categories.map((c) => (
-        <TouchableOpacity key={c.id} style={styles.row} onPress={() => choose(c.id, c.name)}>
-          <View style={styles.icon}><Ionicons name="pricetag-outline" size={18} color={COLORS.accent} /></View>
-          <Text style={styles.rowText}>{c.name}</Text>
-          <Ionicons name="chevron-forward" size={18} color={COLORS.sub} />
-        </TouchableOpacity>
+      {categories.map((cat) => (
+        <View key={cat.id} style={styles.catBlock}>
+          <TouchableOpacity onPress={() => choose(cat.id, cat.name)}>
+            <Text style={styles.catName}>{cat.name}</Text>
+          </TouchableOpacity>
+          {cat.subcategories.length > 0 && (
+            <View style={styles.chipsRow}>
+              {cat.subcategories.map((sub) => (
+                <TouchableOpacity key={sub.id} style={styles.chip} onPress={() => choose(sub.id, sub.name)}>
+                  <Text style={styles.chipText}>{sub.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg, padding: 16 },
-  prompt: { fontSize: 15, fontWeight: "700", color: COLORS.ink, marginBottom: 14 },
-  row: {
-    flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: COLORS.surface,
-    borderRadius: 10, padding: 14, marginBottom: 8,
-  },
-  icon: { width: 30, height: 30, borderRadius: 8, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
-  rowText: { flex: 1, fontSize: 14, fontWeight: "600", color: COLORS.ink },
+  container: { flex: 1, backgroundColor: COLORS.bg, paddingVertical: 20, paddingHorizontal: 20, alignItems: "center" },
+  label: { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: COLORS.sub, marginBottom: 16 },
+  allChip: { backgroundColor: COLORS.accent, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 18 },
+  allChipText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 12.5 },
+  catBlock: { alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.border, borderStyle: "dashed", width: "100%" },
+  catName: { fontWeight: "700", color: COLORS.ink, fontSize: 14, marginBottom: 10, textAlign: "center" },
+  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 7, justifyContent: "center" },
+  chip: { backgroundColor: COLORS.wash, borderRadius: 12, paddingHorizontal: 11, paddingVertical: 5 },
+  chipText: { fontWeight: "400", fontSize: 11.5, color: COLORS.sub },
 });

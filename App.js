@@ -30,7 +30,6 @@ import PageDetailScreen from "./screens/PageDetailScreen";
 import CreatePageScreen from "./screens/CreatePageScreen";
 import PageTeamManagementScreen from "./screens/PageTeamManagementScreen";
 import PageVideoPlayerScreen from "./screens/PageVideoPlayerScreen";
-import PageCategoriesScreen from "./screens/PageCategoriesScreen";
 import BoostPageScreen from "./screens/BoostPageScreen";
 import MyBoostedPagesScreen from "./screens/MyBoostedPagesScreen";
 import MyAdsBoardScreen from "./screens/MyAdsBoardScreen";
@@ -47,18 +46,6 @@ import HashtagFeedScreen from "./screens/HashtagFeedScreen";
 import TrendingHashtagsScreen from "./screens/TrendingHashtagsScreen";
 import FeedVideoFullscreenScreen from "./screens/FeedVideoFullscreenScreen";
 import CreateGroupScreen from "./screens/CreateGroupScreen";
-import SpinWinScreen from "./screens/SpinWinScreen";
-import RecentWinnersScreen from "./screens/RecentWinnersScreen";
-import CoinBalanceScreen from "./screens/CoinBalanceScreen";
-import WatchAdScreen from "./screens/WatchAdScreen";
-import BeTheStarScreen from "./screens/BeTheStarScreen";
-import StarContestListScreen from "./screens/StarContestListScreen";
-import StarContestDetailScreen from "./screens/StarContestDetailScreen";
-import StarSubmitVideoScreen from "./screens/StarSubmitVideoScreen";
-import StarSubmissionDetailScreen from "./screens/StarSubmissionDetailScreen";
-import MyStarSubmissionsScreen from "./screens/MyStarSubmissionsScreen";
-import StarLeaderboardScreen from "./screens/StarLeaderboardScreen";
-import StarTipsScreen from "./screens/StarTipsScreen";
 import BoostPostScreen from "./screens/BoostPostScreen";
 import MySponsoredPostsScreen from "./screens/MySponsoredPostsScreen";
 import BoostGroupScreen from "./screens/BoostGroupScreen";
@@ -177,7 +164,8 @@ function MainTabs({ navigation }) {
           headerTitle: () => <Wordmark />,
           headerRight: () => <HeaderIcons navigation={navigation} />,
           headerStyle: { backgroundColor: COLORS.accentInk },
-          tabBarStyle: { backgroundColor: COLORS.accentInk },
+          tabBarStyle: { backgroundColor: COLORS.accentInk, height: 64, paddingTop: 6, paddingBottom: 8 },
+          tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
           tabBarActiveTintColor: COLORS.accent,
           tabBarInactiveTintColor: COLORS.wash,
         }}
@@ -191,8 +179,8 @@ function MainTabs({ navigation }) {
           name="HustleHubTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "Hustle Hub",
-            tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color} />,
+            tabBarLabel: "Mtu Wako",
+            tabBarIcon: ({ color, size }) => <Ionicons name="flash-outline" size={size} color={color} />,
           }}
           listeners={{
             tabPress: (e) => {
@@ -285,7 +273,6 @@ function RootNavigator() {
         <RootStack.Screen name="CreatePage" component={CreatePageScreen} options={{ title: "Create Page" }} />
         <RootStack.Screen name="PageTeamManagement" component={PageTeamManagementScreen} options={{ title: "Manage Team" }} />
         <RootStack.Screen name="PageVideoPlayer" component={PageVideoPlayerScreen} options={{ headerShown: false }} />
-        <RootStack.Screen name="PageCategories" component={PageCategoriesScreen} options={{ title: "Browse Categories" }} />
         <RootStack.Screen name="BoostPage" component={BoostPageScreen} options={{ title: "Boost Page" }} />
         <RootStack.Screen name="MyBoostedPages" component={MyBoostedPagesScreen} options={{ title: "My Boosted Pages" }} />
         <RootStack.Screen name="MyAdsBoard" component={MyAdsBoardScreen} options={{ title: "My Ads Board" }} />
@@ -301,26 +288,6 @@ function RootNavigator() {
         <RootStack.Screen name="HashtagFeed" component={HashtagFeedScreen} options={({ route }) => ({ title: `#${route.params.tag}` })} />
         <RootStack.Screen name="TrendingHashtags" component={TrendingHashtagsScreen} options={{ title: "Trending" }} />
         <RootStack.Screen name="FeedVideoFullscreen" component={FeedVideoFullscreenScreen} options={{ headerShown: false }} />
-        <RootStack.Screen name="RecentWinners" component={RecentWinnersScreen} options={{ title: "Recent Winners" }} />
-        <RootStack.Screen name="CoinBalance" component={CoinBalanceScreen} options={{ title: "My Coin Balance" }} />
-        <RootStack.Screen
-          name="WatchAd"
-          component={WatchAdScreen}
-          options={{ title: "Watch & Earn", headerShown: false, gestureEnabled: false }}
-        />
-        <RootStack.Screen name="BeTheStar" component={BeTheStarScreen} options={{ title: "Be the STAR" }} />
-        <RootStack.Screen name="SpinWin" component={SpinWinScreen} options={{ title: "Tap & Win" }} />
-        <RootStack.Screen name="StarContestList" component={StarContestListScreen} options={{ title: "Contests" }} />
-        <RootStack.Screen name="StarContestDetail" component={StarContestDetailScreen} options={{ title: "Contest" }} />
-        <RootStack.Screen
-          name="StarSubmitVideo"
-          component={StarSubmitVideoScreen}
-          options={{ title: "Submit Your Video", presentation: "modal" }}
-        />
-        <RootStack.Screen name="StarSubmissionDetail" component={StarSubmissionDetailScreen} options={{ title: "Video" }} />
-        <RootStack.Screen name="MyStarSubmissions" component={MyStarSubmissionsScreen} options={{ title: "My Submissions" }} />
-        <RootStack.Screen name="StarLeaderboard" component={StarLeaderboardScreen} options={{ title: "Leaderboard" }} />
-        <RootStack.Screen name="StarTips" component={StarTipsScreen} options={{ title: "Tips to WIN" }} />
         <RootStack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: "Create Group" }} />
         <RootStack.Screen name="BoostPost" component={BoostPostScreen} options={{ title: "Boost Post" }} />
         <RootStack.Screen name="MySponsoredPosts" component={MySponsoredPostsScreen} options={{ title: "My Sponsored Posts" }} />

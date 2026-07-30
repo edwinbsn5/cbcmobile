@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,6 +17,15 @@ export default function PagesListScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [directory, setDirectory] = useState([]);
+
+  useEffect(() => {
+    client.get("/categories/pages").then((r) => setDirectory(r.data)).catch(() => {});
+  }, []);
+
+  function browseCategory(id, name) {
+    navigation.setParams({ categoryId: id, categoryName: name });
+  }
 
   const load = useCallback(() => {
     const params = {};
@@ -52,14 +61,25 @@ export default function PagesListScreen({ navigation, route }) {
         keyExtractor={(p) => p.id}
         ListHeaderComponent={
           <View>
-            <View style={styles.actionRow}>
-              <TouchableOpacity style={[styles.createButton, { flex: 1 }]} onPress={() => navigation.navigate("CreatePage")}>
-                <Text style={styles.createButtonText}>+ Create Page</Text>
+            <View style={styles.actionBar}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("CreatePage")}>
+                <Ionicons name="add-circle-outline" size={20} color={COLORS.accent} />
+                <Text style={styles.actionLabel}>Create Page</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.browseButton, { flex: 1 }]} onPress={() => navigation.navigate("PageCategories")}>
-                <Text style={styles.browseButtonText}>Browse by Category</Text>
+              <TouchableOpacity style={styles.actionButton} onPress={() => setPickerOpen(true)}>
+                <Ionicons name="filter-outline" size={20} color={COLORS.accent} />
+                <Text style={styles.actionLabel}>{activeFilter?.key ? activeFilter.label : "Filter Pages"}</Text>
               </TouchableOpacity>
             </View>
+
+            <View style={styles.hero}>
+              <Text style={styles.heroBadge}>✦ Find Mtu Wako! ✦</Text>
+              <Text style={styles.heroTitle}>Reliable Services, Just When You Need It</Text>
+              <Text style={styles.heroSubtitle}>
+                Mama Fua, Hair Stylists, Sales &amp; Marketers, Errand Services, Electricians, Gardeners, Massage Services.. ETC...
+              </Text>
+            </View>
+
             {categoryId ? (
               <View style={styles.browsingBanner}>
                 <Text style={styles.browsingBannerText}>Browsing: {categoryName}</Text>
@@ -68,10 +88,25 @@ export default function PagesListScreen({ navigation, route }) {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.filterButton} onPress={() => setPickerOpen(true)}>
-                <Ionicons name="filter-outline" size={16} color={COLORS.accent} />
-                <Text style={styles.filterButtonText}>{activeFilter?.key ? activeFilter.label : "Filter Pages"}</Text>
-              </TouchableOpacity>
+              <View style={styles.directory}>
+                <Text style={styles.directoryLabel}>Browse by category</Text>
+                {directory.map((cat) => (
+                  <View key={cat.id} style={styles.catBlock}>
+                    <TouchableOpacity onPress={() => browseCategory(cat.id, cat.name)}>
+                      <Text style={styles.catName}>{cat.name}</Text>
+                    </TouchableOpacity>
+                    {cat.subcategories.length > 0 && (
+                      <View style={styles.chipsRow}>
+                        {cat.subcategories.map((sub) => (
+                          <TouchableOpacity key={sub.id} style={styles.chip} onPress={() => browseCategory(sub.id, sub.name)}>
+                            <Text style={styles.chipText}>{sub.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
             )}
           </View>
         }
@@ -136,21 +171,25 @@ export default function PagesListScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  actionRow: { flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 12 },
-  createButton: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 12, alignItems: "center" },
-  createButtonText: { color: COLORS.accentInk, fontWeight: "700" },
-  browseButton: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.accent, borderRadius: 8, padding: 12, alignItems: "center" },
-  browseButtonText: { color: COLORS.accent, fontWeight: "700" },
-  filterButton: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.accent, marginHorizontal: 12, marginTop: 8, borderRadius: 8, padding: 11,
-  },
-  filterButtonText: { color: COLORS.accent, fontWeight: "700" },
+  actionBar: { flexDirection: "row", backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  actionButton: { flex: 1, alignItems: "center", gap: 4, paddingVertical: 14 },
+  actionLabel: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink },
+  hero: { backgroundColor: COLORS.accentInk, paddingVertical: 26, paddingHorizontal: 22, alignItems: "center" },
+  heroBadge: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
+  heroTitle: { color: "#fff", fontSize: 19, fontWeight: "800", textAlign: "center", marginTop: 10, lineHeight: 25 },
+  heroSubtitle: { color: "#B9C6DC", fontSize: 12, marginTop: 8, textAlign: "center", lineHeight: 18 },
   browsingBanner: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: COLORS.wash, marginHorizontal: 12, marginTop: 8, borderRadius: 8, padding: 11,
+    backgroundColor: COLORS.wash, marginHorizontal: 12, marginTop: 12, borderRadius: 8, padding: 11,
   },
   browsingBannerText: { color: COLORS.ink, fontWeight: "700", fontSize: 13 },
+  directory: { paddingVertical: 20, paddingHorizontal: 20, alignItems: "center" },
+  directoryLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: COLORS.sub, marginBottom: 16 },
+  catBlock: { alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.border, borderStyle: "dashed", width: "100%" },
+  catName: { fontWeight: "700", color: COLORS.ink, fontSize: 14, marginBottom: 10, textAlign: "center" },
+  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 7, justifyContent: "center" },
+  chip: { backgroundColor: COLORS.wash, borderRadius: 12, paddingHorizontal: 11, paddingVertical: 5 },
+  chipText: { fontWeight: "400", fontSize: 11.5, color: COLORS.sub },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },
   card: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 10, overflow: "hidden" },
   cover: { width: "100%", height: 100, backgroundColor: "#eee" },

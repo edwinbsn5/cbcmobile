@@ -52,6 +52,13 @@ export default function GroupsScreen({ navigation }) {
             <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate("CreateGroup")}>
               <Text style={styles.createButtonText}>+ Create Group</Text>
             </TouchableOpacity>
+
+            <View style={styles.hero}>
+              <Text style={styles.heroBadge}>✦ Groups ✦</Text>
+              <Text style={styles.heroTitle}>Find Your People.</Text>
+              <Text style={styles.heroSubtitle}>Communities, causes &amp; interests worth joining on The CBC.</Text>
+            </View>
+
             <TouchableOpacity style={styles.filterButton} onPress={() => setPickerOpen(true)}>
               <Ionicons name="filter-outline" size={16} color={COLORS.accent} />
               <Text style={styles.filterButtonText}>{activeFilter ? activeFilter.label : "Filter Groups"}</Text>
@@ -136,6 +143,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   createButton: { backgroundColor: COLORS.accent, marginHorizontal: 12, marginTop: 12, borderRadius: 8, padding: 12, alignItems: "center" },
   createButtonText: { color: COLORS.accentInk, fontWeight: "700" },
+  hero: { backgroundColor: COLORS.accentInk, marginHorizontal: 12, marginTop: 12, borderRadius: 12, paddingVertical: 22, paddingHorizontal: 20, alignItems: "center" },
+  heroBadge: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
+  heroTitle: { color: "#fff", fontSize: 19, fontWeight: "800", textAlign: "center", marginTop: 10 },
+  heroSubtitle: { color: "#B9C6DC", fontSize: 12, marginTop: 8, textAlign: "center", lineHeight: 18 },
   filterButton: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
     backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.accent, marginHorizontal: 12, marginTop: 8, borderRadius: 8, padding: 11,
