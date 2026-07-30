@@ -13,11 +13,57 @@ import { useSaved } from "../hooks/useSaved";
 import { useReshared } from "../hooks/useReshared";
 import { COLORS } from "../theme";
 
+function StarRow({ value, size = 14 }) {
+  return (
+    <View style={{ flexDirection: "row", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Ionicons key={n} name={n <= value ? "star" : "star-outline"} size={size} color="#F5A623" />
+      ))}
+    </View>
+  );
+}
+
+function RatingBreakdown({ breakdown, totalCount }) {
+  return (
+    <View style={styles.breakdown}>
+      {[5, 4, 3, 2, 1].map((n) => {
+        const count = breakdown?.[n] || 0;
+        const pct = totalCount ? (count / totalCount) * 100 : 0;
+        return (
+          <View key={n} style={styles.breakdownRow}>
+            <Text style={styles.breakdownLabel}>{n}★</Text>
+            <View style={styles.breakdownTrack}>
+              <View style={[styles.breakdownFill, { width: `${pct}%` }]} />
+            </View>
+            <Text style={styles.breakdownCount}>{count}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function ReviewCard({ review }) {
+  return (
+    <View style={styles.reviewCard}>
+      <View style={styles.reviewHeader}>
+        <Avatar uri={review.author?.avatar} name={review.author?.name} style={styles.reviewAvatar} />
+        <View>
+          <Text style={styles.reviewName}>{review.author?.name}</Text>
+          <StarRow value={review.rating} size={12} />
+        </View>
+      </View>
+      {!!review.content && <Text style={styles.reviewContent}>{review.content}</Text>}
+    </View>
+  );
+}
+
 export default function ProfileScreen({ navigation }) {
   const { user } = useAuth();
-  const [counts, setCounts] = useState({ followerCount: 0, followingCount: 0 });
+  const [counts, setCounts] = useState({ followerCount: 0, followingCount: 0, avgRating: 0, reviewCount: 0 });
   const [posts, setPosts] = useState([]);
   const [reels, setReels] = useState([]);
+  const [reviews, setReviews] = useState({ items: [], avgRating: 0, reviewCount: 0, breakdown: {} });
   const [activeTab, setActiveTab] = useState("Posts");
   const [loading, setLoading] = useState(true);
   const { isSaved, toggleSave, loadSaved } = useSaved();
@@ -25,14 +71,16 @@ export default function ProfileScreen({ navigation }) {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [profileRes, postsRes, reelsRes] = await Promise.all([
+    const [profileRes, postsRes, reelsRes, reviewsRes] = await Promise.all([
       client.get(`/users/${user.id}`),
       client.get(`/users/${user.id}/posts`),
       client.get(`/users/${user.id}/reels`),
+      client.get(`/users/${user.id}/reviews`),
     ]);
     setCounts(profileRes.data);
     setPosts(postsRes.data);
     setReels(reelsRes.data);
+    setReviews(reviewsRes.data);
     loadSaved();
     loadReshared();
   }, [user?.id, loadSaved, loadReshared]);
@@ -98,12 +146,12 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.statValue}>{counts.followingCount}</Text>
           <Text style={styles.statLabel}>Following</Text>
         </TouchableOpacity>
-        {!user?.hideWalletBalance && (
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{user?.walletBalance?.toLocaleString?.() ?? 0}</Text>
-            <Text style={styles.statLabel}>Wallet (KES)</Text>
-          </View>
-        )}
+        <TouchableOpacity style={styles.statCard} onPress={() => setActiveTab("Reviews")}>
+          <Text style={styles.statValue}>
+            {counts.reviewCount > 0 ? counts.avgRating.toFixed(1) : "—"} <Ionicons name="star" size={12} color="#F5A623" />
+          </Text>
+          <Text style={styles.statLabel}>Reviews</Text>
+        </TouchableOpacity>
       </View>
 
       <StudentLeaderCard info={counts.studentLeaderInfo} />
@@ -115,9 +163,37 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity style={[styles.segmentItem, activeTab === "Reels" && styles.segmentItemActive]} onPress={() => setActiveTab("Reels")}>
           <Text style={[styles.segmentText, activeTab === "Reels" && styles.segmentTextActive]}>Reels</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={[styles.segmentItem, activeTab === "Reviews" && styles.segmentItemActive]} onPress={() => setActiveTab("Reviews")}>
+          <Text style={[styles.segmentText, activeTab === "Reviews" && styles.segmentTextActive]}>Reviews</Text>
+        </TouchableOpacity>
       </View>
+
+      {activeTab === "Reviews" && reviews.reviewCount > 0 && (
+        <View style={styles.reviewSummary}>
+          <View style={styles.reviewScoreBlock}>
+            <Text style={styles.reviewScore}>{reviews.avgRating.toFixed(1)}</Text>
+            <StarRow value={Math.round(reviews.avgRating)} size={13} />
+            <Text style={styles.reviewScoreSub}>{reviews.reviewCount} review{reviews.reviewCount === 1 ? "" : "s"}</Text>
+          </View>
+          <RatingBreakdown breakdown={reviews.breakdown} totalCount={reviews.reviewCount} />
+        </View>
+      )}
     </View>
   );
+
+  if (activeTab === "Reviews") {
+    return (
+      <FlatList
+        key="Reviews"
+        style={styles.container}
+        data={reviews.items}
+        keyExtractor={(r) => r.id}
+        ListHeaderComponent={header}
+        ListEmptyComponent={<Text style={styles.empty}>No reviews yet</Text>}
+        renderItem={({ item }) => <ReviewCard review={item} />}
+      />
+    );
+  }
 
   if (activeTab === "Reels") {
     return (
@@ -201,4 +277,19 @@ const styles = StyleSheet.create({
   reelTilePlaceholder: { backgroundColor: "#000" },
   reelTilePlayIcon: { position: "absolute", top: 8, right: 8 },
   empty: { textAlign: "center", color: "#999", marginTop: 20 },
+  reviewSummary: { flexDirection: "row", gap: 16, alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 12, padding: 14, marginTop: 4 },
+  reviewScoreBlock: { alignItems: "center" },
+  reviewScore: { fontSize: 28, fontWeight: "800", color: COLORS.ink, lineHeight: 32 },
+  reviewScoreSub: { fontSize: 11, color: COLORS.sub, marginTop: 4 },
+  breakdown: { flex: 1 },
+  breakdownRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
+  breakdownLabel: { width: 22, fontSize: 12, color: COLORS.sub, fontWeight: "600" },
+  breakdownTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: COLORS.wash, overflow: "hidden" },
+  breakdownFill: { height: "100%", backgroundColor: "#F5A623", borderRadius: 3 },
+  breakdownCount: { width: 20, fontSize: 11, color: COLORS.sub, textAlign: "right" },
+  reviewCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginHorizontal: 10, marginVertical: 6 },
+  reviewHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 },
+  reviewAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: COLORS.wash },
+  reviewName: { fontSize: 13, fontWeight: "700", color: COLORS.ink, marginBottom: 2 },
+  reviewContent: { fontSize: 13, color: COLORS.ink, lineHeight: 18 },
 });
