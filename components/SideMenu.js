@@ -7,14 +7,15 @@ import { COLORS } from "../theme";
 
 const PANEL_WIDTH = Math.round(Dimensions.get("window").width * 0.78);
 
-// Home stays one-tap-only in the bottom bar. Tap & Win and Be the STAR are
-// also one tap away down there, but are deliberately duplicated here too
-// (by explicit request) for easier access from the menu as well.
+// Home stays one-tap-only in the bottom bar. The bottom bar's other slots
+// now point at Hustle Hub (Pages) and A Girls Market instead of Tap & Win /
+// Be the STAR — both of those still exist as full features, just reachable
+// from here instead of a dedicated tab.
 const FEATURE_ITEMS = [
   { icon: "person-circle-outline", label: "My Profile", screen: "Profile" },
   { icon: "add-circle-outline", label: "Add to Story", screen: "CreateStory" },
   { icon: "film-outline", label: "Reels", screen: "Reels" },
-  { icon: "game-controller-outline", label: "Tap & Win", screen: "MainTabs", params: { screen: "SpinWinTab" } },
+  { icon: "game-controller-outline", label: "Tap & Win", screen: "SpinWin" },
   { icon: "star-outline", label: "Be the STAR", screen: "BeTheStar" },
   { icon: "stats-chart-outline", label: "My Ads Board", screen: "MyAdsBoard" },
   { icon: "people-outline", label: "Groups", screen: "Groups" },

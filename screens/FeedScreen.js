@@ -20,7 +20,7 @@ import { COLORS } from "../theme";
 const QUICK_LINKS = [
   { icon: "people-outline", label: "Groups", screen: "Groups" },
   { icon: "calendar-outline", label: "Events", screen: "Events" },
-  { icon: "briefcase-outline", label: "Jobs", screen: "Jobs" },
+  { icon: "bookmark-outline", label: "Saved", screen: "Saved" },
   { icon: "wallet-outline", label: "My Wallet", screen: "Wallet" },
 ];
 

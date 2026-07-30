@@ -188,12 +188,17 @@ function MainTabs({ navigation }) {
           options={{ tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }}
         />
         <Tabs.Screen
-          name="SpinWinTab"
-          component={SpinWinScreen}
+          name="HustleHubTab"
+          component={FeedScreen}
           options={{
-            title: "Tap & Win",
-            tabBarLabel: "Tap & Win",
-            tabBarIcon: ({ color, size }) => <Ionicons name="game-controller-outline" size={size} color={color} />,
+            tabBarLabel: "Hustle Hub",
+            tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color} />,
+          }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              navigation.navigate("Pages");
+            },
           }}
         />
         <Tabs.Screen
@@ -215,16 +220,16 @@ function MainTabs({ navigation }) {
           }}
         />
         <Tabs.Screen
-          name="BeTheStarTab"
+          name="AGirlsMarketTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "Be the STAR",
-            tabBarIcon: ({ color, size }) => <Ionicons name="star-outline" size={size} color={color} />,
+            tabBarLabel: "A Girls Market",
+            tabBarIcon: ({ color, size }) => <Ionicons name="female-outline" size={size} color={color} />,
           }}
           listeners={{
             tabPress: (e) => {
               e.preventDefault();
-              navigation.navigate("BeTheStar");
+              navigation.navigate("AGirlsMarket");
             },
           }}
         />
@@ -304,6 +309,7 @@ function RootNavigator() {
           options={{ title: "Watch & Earn", headerShown: false, gestureEnabled: false }}
         />
         <RootStack.Screen name="BeTheStar" component={BeTheStarScreen} options={{ title: "Be the STAR" }} />
+        <RootStack.Screen name="SpinWin" component={SpinWinScreen} options={{ title: "Tap & Win" }} />
         <RootStack.Screen name="StarContestList" component={StarContestListScreen} options={{ title: "Contests" }} />
         <RootStack.Screen name="StarContestDetail" component={StarContestDetailScreen} options={{ title: "Contest" }} />
         <RootStack.Screen
