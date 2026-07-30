@@ -6,11 +6,13 @@ import CAMPUSES from "../data/campuses";
 import COUNTIES from "../data/counties";
 import CampusPicker from "../components/CampusPicker";
 import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import DateOfBirthPicker from "../components/DateOfBirthPicker";
 import { COLORS } from "../theme";
 
 const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const COUNTY_NAMES = COUNTIES.map((c) => c.name);
 
 export default function OnboardingProfileScreen({ navigation }) {
   const { user, updateUser, logout } = useAuth();
@@ -20,18 +22,28 @@ export default function OnboardingProfileScreen({ navigation }) {
   // actual suggestion tap — free-typed text that was never selected can't
   // silently pass validation below.
   const [campus, setCampus] = useState(user?.campus && CAMPUSES.includes(user.campus) ? user.campus : "");
-  const [county, setCounty] = useState(user?.county && COUNTIES.includes(user.county) ? user.county : "");
+  const [county, setCounty] = useState(user?.county && COUNTY_NAMES.includes(user.county) ? user.county : "");
+  const [subCounty, setSubCounty] = useState(user?.subCounty || "");
   const [yearOfJoining, setYearOfJoining] = useState(user?.yearOfJoining ? String(user.yearOfJoining) : "");
   const [dateOfBirth, setDateOfBirth] = useState(user?.dateOfBirth || "");
   const [submitting, setSubmitting] = useState(false);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+  }
 
   async function handleContinue() {
     if (!gender) return Alert.alert("Gender required", "Select one of the options");
     if (!CAMPUSES.includes(campus)) {
       return Alert.alert("Campus/college required", "Type your campus/college name and select it from the suggestions");
     }
-    if (!COUNTIES.includes(county)) {
+    if (!COUNTY_NAMES.includes(county)) {
       return Alert.alert("County required", "Select your county from the list");
+    }
+    const countyRow = COUNTIES.find((c) => c.name === county);
+    if (!countyRow.subCounties.includes(subCounty)) {
+      return Alert.alert("Sub-county required", "Select your sub-county from the list");
     }
 
     const year = parseInt(yearOfJoining, 10);
@@ -45,7 +57,7 @@ export default function OnboardingProfileScreen({ navigation }) {
     setSubmitting(true);
     try {
       const { data } = await client.patch("/auth/me", {
-        gender, bio: bio.trim(), campus, county, yearOfJoining: year, dateOfBirth,
+        gender, bio: bio.trim(), campus, county, subCounty, yearOfJoining: year, dateOfBirth,
       });
       await updateUser(data.user);
       navigation.navigate("OnboardingFollow");
@@ -88,7 +100,10 @@ export default function OnboardingProfileScreen({ navigation }) {
       <CampusPicker value={campus} onChange={setCampus} />
 
       <Text style={styles.label}>County</Text>
-      <CountyPicker value={county} onChange={setCounty} />
+      <CountyPicker value={county} onChange={handleCountyChange} />
+
+      <Text style={styles.label}>Sub-county</Text>
+      <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
 
       <Text style={styles.label}>Year of joining</Text>
       <TextInput style={styles.input} placeholder="e.g. 2023" keyboardType="number-pad" value={yearOfJoining} onChangeText={setYearOfJoining} />

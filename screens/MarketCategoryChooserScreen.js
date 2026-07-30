@@ -10,7 +10,7 @@ import { COLORS } from "../theme";
 // filter is an ANY-match against the junction table, so a subcategory id
 // is just as valid a filter as its parent's.
 export default function MarketCategoryChooserScreen({ route, navigation }) {
-  const { mediaType } = route.params;
+  const { mediaType, county, subCounty } = route.params;
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const destination = mediaType === "video" ? "MarketVideoFeed" : "MarketSwipe";
@@ -20,7 +20,7 @@ export default function MarketCategoryChooserScreen({ route, navigation }) {
   }, []);
 
   function choose(categoryId, categoryName) {
-    navigation.navigate(destination, { mediaType, categoryId, categoryName });
+    navigation.navigate(destination, { mediaType, categoryId, categoryName, county, subCounty });
   }
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;

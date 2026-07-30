@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import CampusPicker from "../components/CampusPicker";
 import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
@@ -16,6 +17,7 @@ export default function BoostGroupScreen({ route, navigation }) {
   const { updateWalletBalance } = useAuth();
   const [targetCampus, setTargetCampus] = useState("");
   const [targetCounty, setTargetCounty] = useState("");
+  const [targetSubCounty, setTargetSubCounty] = useState("");
   const [targetGender, setTargetGender] = useState("");
   const [targetAgeMin, setTargetAgeMin] = useState("");
   const [targetAgeMax, setTargetAgeMax] = useState("");
@@ -36,6 +38,7 @@ export default function BoostGroupScreen({ route, navigation }) {
         groupId: group.id,
         targetCampus: targetCampus || undefined,
         targetCounty: targetCounty || undefined,
+        targetSubCounty: targetSubCounty || undefined,
         targetGender: targetGender || undefined,
         targetAgeMin: targetAgeMin || undefined,
         targetAgeMax: targetAgeMax || undefined,
@@ -83,7 +86,14 @@ export default function BoostGroupScreen({ route, navigation }) {
       <CampusPicker value={targetCampus} onChange={setTargetCampus} placeholder="Any campus" />
 
       <Text style={styles.label}>County</Text>
-      <CountyPicker value={targetCounty} onChange={setTargetCounty} placeholder="Any county" />
+      <CountyPicker
+        value={targetCounty}
+        onChange={(c) => { setTargetCounty(c); setTargetSubCounty(""); }}
+        placeholder="Any county"
+      />
+
+      <Text style={styles.label}>Sub-county</Text>
+      <SubCountyPicker county={targetCounty} value={targetSubCounty} onChange={setTargetSubCounty} placeholder="Any sub-county" />
 
       <Text style={styles.label}>Gender</Text>
       <View style={styles.chipRow}>

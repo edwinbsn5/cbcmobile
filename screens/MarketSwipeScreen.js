@@ -13,7 +13,7 @@ import { COLORS } from "../theme";
 // (see MarketSwipeCard) so the deck can hold hundreds of products without
 // hundreds of Animated.Image instances alive.
 export default function MarketSwipeScreen({ route, navigation }) {
-  const { categoryId, categoryName } = route.params;
+  const { categoryId, categoryName, county, subCounty } = route.params;
   const [deck, setDeck] = useState([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -26,6 +26,8 @@ export default function MarketSwipeScreen({ route, navigation }) {
     setLoading(true);
     const params = { mediaType: "photo" };
     if (categoryId) params.categoryIds = categoryId;
+    if (county) params.county = county;
+    if (subCounty) params.subCounty = subCounty;
     const { data } = await client.get("/market/products", { params });
     setDeck(data);
     setIndex(0);

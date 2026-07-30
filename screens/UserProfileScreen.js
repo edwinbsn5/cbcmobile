@@ -183,7 +183,9 @@ export default function UserProfileScreen({ route, navigation }) {
 
       {!!profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
       {!!campusYear && <Text style={styles.metaLine}>{campusYear}</Text>}
-      {!!profile.county && <Text style={styles.metaLine}>{profile.county}</Text>}
+      {!!profile.county && (
+        <Text style={styles.metaLine}>{profile.subCounty ? `${profile.county} - ${profile.subCounty}` : profile.county}</Text>
+      )}
 
       {!isMe && (
         <View style={styles.actionRow}>

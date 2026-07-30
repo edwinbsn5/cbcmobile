@@ -34,7 +34,7 @@ function HeartBurst({ trigger }) {
 }
 
 export default function MarketVideoFeedScreen({ route, navigation }) {
-  const { categoryId, categoryName } = route.params;
+  const { categoryId, categoryName, county, subCounty } = route.params;
   const { user } = useAuth();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
@@ -53,6 +53,8 @@ export default function MarketVideoFeedScreen({ route, navigation }) {
     setLoading(true);
     const params = { mediaType: "video" };
     if (categoryId) params.categoryIds = categoryId;
+    if (county) params.county = county;
+    if (subCounty) params.subCounty = subCounty;
     const { data } = await client.get("/market/products", { params });
     setVideos(data);
     setLoading(false);
@@ -71,6 +73,8 @@ export default function MarketVideoFeedScreen({ route, navigation }) {
     setLoadingMore(true);
     const params = { mediaType: "video", excludeIds: videos.map((v) => v.id).join(",") };
     if (categoryId) params.categoryIds = categoryId;
+    if (county) params.county = county;
+    if (subCounty) params.subCounty = subCounty;
     try {
       const { data } = await client.get("/market/products", { params });
       if (data.length) setVideos((prev) => [...prev, ...data]);

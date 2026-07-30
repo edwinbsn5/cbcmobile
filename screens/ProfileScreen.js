@@ -127,7 +127,9 @@ export default function ProfileScreen({ navigation }) {
 
       {!!counts.bio && <Text style={styles.bio}>{counts.bio}</Text>}
       {!!campusYear && <Text style={styles.metaLine}>{campusYear}</Text>}
-      {!!counts.county && <Text style={styles.metaLine}>{counts.county}</Text>}
+      {!!counts.county && (
+        <Text style={styles.metaLine}>{counts.subCounty ? `${counts.county} - ${counts.subCounty}` : counts.county}</Text>
+      )}
 
       <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("AccountSettings")}>
         <Text style={styles.actionButtonText}>Edit Profile</Text>

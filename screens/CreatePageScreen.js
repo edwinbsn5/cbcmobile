@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import CategoryPicker from "../components/CategoryPicker";
+import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { COLORS } from "../theme";
 
 async function pickImage() {
@@ -32,14 +34,22 @@ export default function CreatePageScreen({ navigation }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [categoryIds, setCategoryIds] = useState([]);
+  const [county, setCounty] = useState("");
+  const [subCounty, setSubCounty] = useState("");
   const [avatar, setAvatar] = useState(null);
   const [cover, setCover] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+  }
+
   async function handleCreate() {
     if (!name.trim()) return Alert.alert("Name required", "Give your Page a name");
     if (!categoryIds.length) return Alert.alert("Category required", "Pick at least one category for your Page");
+    if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county your Page operates in");
 
     setSubmitting(true);
     try {
@@ -55,6 +65,8 @@ export default function CreatePageScreen({ navigation }) {
         categoryIds,
         avatarUrl,
         coverUrl,
+        county,
+        subCounty,
       });
       navigation.replace("PageDetail", { pageId: data.id });
     } catch (e) {
@@ -105,6 +117,12 @@ export default function CreatePageScreen({ navigation }) {
         )}
 
         <CategoryPicker selectedIds={categoryIds} onChange={setCategoryIds} />
+
+        <Text style={styles.label}>County</Text>
+        <CountyPicker value={county} onChange={handleCountyChange} />
+
+        <Text style={styles.label}>Sub-county</Text>
+        <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
 
         <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting}>
           {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{uploading ? "Uploading..." : "Create Page"}</Text>}
