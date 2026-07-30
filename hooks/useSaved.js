@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import client from "../api/client";
 
-const EMPTY = { post: [], reel: [], group: [], event: [] };
+const EMPTY = { post: [], reel: [], group: [], event: [], product: [] };
 
 /**
  * Shared saved-items state for any screen that renders posts, reels,

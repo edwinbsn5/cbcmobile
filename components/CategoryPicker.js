@@ -5,23 +5,24 @@ import client from "../api/client";
 import { COLORS } from "../theme";
 
 /**
- * Multi-select category/subcategory picker for Pages, fed from GET
- * /api/categories/pages (fetched once — small server-seeded reference
- * data). A Page can be tagged with any mix of top-level categories and
- * subcategories — tapping a category row toggles it directly (selecting
- * the parent itself is a valid tag, not just a group of children); the
- * chevron expands/collapses its subcategories, each with its own
- * independent checkbox. `selectedIds` is a plain array of page_categories
- * ids; onChange(nextIds) fires on every toggle.
+ * Multi-select category/subcategory picker, fed from a two-tier tree
+ * endpoint (defaults to GET /api/categories/pages; pass endpoint="/market/
+ * categories/tree" for A Girls Market's taxonomy — same {id,name,slug,
+ * subcategories} shape both return). An item can be tagged with any mix of
+ * top-level categories and subcategories — tapping a category row toggles
+ * it directly (selecting the parent itself is a valid tag, not just a
+ * group of children); the chevron expands/collapses its subcategories,
+ * each with its own independent checkbox. `selectedIds` is a plain array
+ * of category ids; onChange(nextIds) fires on every toggle.
  */
-export default function CategoryPicker({ selectedIds, onChange }) {
+export default function CategoryPicker({ selectedIds, onChange, endpoint = "/categories/pages" }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
-    client.get("/categories/pages").then((r) => setCategories(r.data)).finally(() => setLoading(false));
-  }, []);
+    client.get(endpoint).then((r) => setCategories(r.data)).finally(() => setLoading(false));
+  }, [endpoint]);
 
   function toggle(id) {
     const next = selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id];

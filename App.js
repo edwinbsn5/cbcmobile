@@ -34,6 +34,15 @@ import PageCategoriesScreen from "./screens/PageCategoriesScreen";
 import BoostPageScreen from "./screens/BoostPageScreen";
 import MyBoostedPagesScreen from "./screens/MyBoostedPagesScreen";
 import MyAdsBoardScreen from "./screens/MyAdsBoardScreen";
+import AGirlsMarketScreen from "./screens/AGirlsMarketScreen";
+import CreateMarketProductScreen from "./screens/CreateMarketProductScreen";
+import MyMarketProductsScreen from "./screens/MyMarketProductsScreen";
+import EditMarketProductScreen from "./screens/EditMarketProductScreen";
+import SavedMarketProductsScreen from "./screens/SavedMarketProductsScreen";
+import MarketProductDetailScreen from "./screens/MarketProductDetailScreen";
+import MarketCategoryChooserScreen from "./screens/MarketCategoryChooserScreen";
+import MarketSwipeScreen from "./screens/MarketSwipeScreen";
+import MarketVideoFeedScreen from "./screens/MarketVideoFeedScreen";
 import HashtagFeedScreen from "./screens/HashtagFeedScreen";
 import TrendingHashtagsScreen from "./screens/TrendingHashtagsScreen";
 import FeedVideoFullscreenScreen from "./screens/FeedVideoFullscreenScreen";
@@ -275,6 +284,15 @@ function RootNavigator() {
         <RootStack.Screen name="BoostPage" component={BoostPageScreen} options={{ title: "Boost Page" }} />
         <RootStack.Screen name="MyBoostedPages" component={MyBoostedPagesScreen} options={{ title: "My Boosted Pages" }} />
         <RootStack.Screen name="MyAdsBoard" component={MyAdsBoardScreen} options={{ title: "My Ads Board" }} />
+        <RootStack.Screen name="AGirlsMarket" component={AGirlsMarketScreen} options={{ title: "A Girls Market" }} />
+        <RootStack.Screen name="CreateMarketProduct" component={CreateMarketProductScreen} options={{ title: "Create Product" }} />
+        <RootStack.Screen name="MyMarketProducts" component={MyMarketProductsScreen} options={{ title: "My Products" }} />
+        <RootStack.Screen name="EditMarketProduct" component={EditMarketProductScreen} options={{ title: "Edit Product" }} />
+        <RootStack.Screen name="SavedMarketProducts" component={SavedMarketProductsScreen} options={{ title: "Saved Products" }} />
+        <RootStack.Screen name="MarketProductDetail" component={MarketProductDetailScreen} options={{ title: "Product" }} />
+        <RootStack.Screen name="MarketCategoryChooser" component={MarketCategoryChooserScreen} options={{ title: "Browse" }} />
+        <RootStack.Screen name="MarketSwipe" component={MarketSwipeScreen} options={{ title: "Browse" }} />
+        <RootStack.Screen name="MarketVideoFeed" component={MarketVideoFeedScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="HashtagFeed" component={HashtagFeedScreen} options={({ route }) => ({ title: `#${route.params.tag}` })} />
         <RootStack.Screen name="TrendingHashtags" component={TrendingHashtagsScreen} options={{ title: "Trending" }} />
         <RootStack.Screen name="FeedVideoFullscreen" component={FeedVideoFullscreenScreen} options={{ headerShown: false }} />

@@ -19,6 +19,7 @@ const FEATURE_ITEMS = [
   { icon: "stats-chart-outline", label: "My Ads Board", screen: "MyAdsBoard" },
   { icon: "people-outline", label: "Groups", screen: "Groups" },
   { icon: "flag-outline", label: "Pages", screen: "Pages" },
+  { icon: "female-outline", label: "A Girls Market", screen: "AGirlsMarket" },
   { icon: "flame-outline", label: "Trending Hashtags", screen: "TrendingHashtags" },
   { icon: "calendar-outline", label: "Events", screen: "Events" },
   { icon: "chatbubble-outline", label: "Inbox", screen: "Inbox" },
