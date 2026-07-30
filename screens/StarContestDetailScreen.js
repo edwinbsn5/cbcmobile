@@ -86,6 +86,14 @@ export default function StarContestDetailScreen({ route, navigation }) {
             </Text>
           </View>
 
+          {!!contest.sponsorName && (
+            <View style={styles.sponsorCard}>
+              <Text style={styles.sponsorLabel}>Presented by</Text>
+              <Text style={styles.sponsorName}>{contest.sponsorName}</Text>
+              {!!contest.sponsorMessage && <Text style={styles.sponsorMessage}>{contest.sponsorMessage}</Text>}
+            </View>
+          )}
+
           <TouchableOpacity style={styles.leaderboardButton} onPress={() => navigation.navigate("StarLeaderboard", { contestId })}>
             <Ionicons name="trophy-outline" size={16} color={COLORS.accent} />
             <Text style={styles.leaderboardButtonText}>Leaderboard</Text>
@@ -155,6 +163,10 @@ const styles = StyleSheet.create({
   datesRow: { flexDirection: "row", gap: 14, marginTop: 8 },
   dateText: { fontSize: 11, color: COLORS.accent, fontWeight: "700" },
   prizeText: { fontSize: 12.5, color: "#7a4e00", fontWeight: "700", marginTop: 8 },
+  sponsorCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, marginTop: 10, borderWidth: 1, borderColor: COLORS.border },
+  sponsorLabel: { fontSize: 10.5, color: COLORS.sub, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  sponsorName: { fontSize: 14.5, fontWeight: "800", color: COLORS.ink, marginTop: 2 },
+  sponsorMessage: { fontSize: 12.5, color: COLORS.sub, lineHeight: 18, marginTop: 6 },
   leaderboardButton: {
     flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 8,
   },

@@ -1,7 +1,9 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Linking } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../theme";
+
+const CONTESTS_EMAIL = "contests@campusbiasharaclub.com";
 
 export default function BeTheStarScreen({ navigation }) {
   return (
@@ -48,6 +50,17 @@ export default function BeTheStarScreen({ navigation }) {
           </View>
           <Ionicons name="chevron-forward" size={18} color={COLORS.sub} />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.sponsorRow}
+          onPress={() => Linking.openURL(`mailto:${CONTESTS_EMAIL}?subject=${encodeURIComponent("Sponsor / host a contest")}`)}
+        >
+          <View style={styles.icon}><Ionicons name="mail-outline" size={16} color={COLORS.accent} /></View>
+          <View style={styles.buttonText}>
+            <Text style={styles.buttonLabel}>Sponsor or request a contest</Text>
+            <Text style={styles.buttonHint}>{CONTESTS_EMAIL}</Text>
+          </View>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -61,6 +74,10 @@ const styles = StyleSheet.create({
   subtitle: { color: "#bcd9d2", fontSize: 12.5, marginTop: 6, textAlign: "center", lineHeight: 18 },
   buttons: { padding: 16, gap: 10 },
   button: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: COLORS.surface, borderRadius: 12, padding: 16 },
+  sponsorRow: {
+    flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: COLORS.surface, borderRadius: 12, padding: 16,
+    marginTop: 6, borderWidth: 1, borderColor: COLORS.border, borderStyle: "dashed",
+  },
   icon: { width: 34, height: 34, borderRadius: 9, backgroundColor: COLORS.bg, alignItems: "center", justifyContent: "center" },
   buttonText: { flex: 1 },
   buttonLabel: { fontSize: 14.5, fontWeight: "800", color: COLORS.ink },
