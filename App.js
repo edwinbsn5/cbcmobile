@@ -33,6 +33,7 @@ import PageVideoPlayerScreen from "./screens/PageVideoPlayerScreen";
 import PageCategoriesScreen from "./screens/PageCategoriesScreen";
 import BoostPageScreen from "./screens/BoostPageScreen";
 import MyBoostedPagesScreen from "./screens/MyBoostedPagesScreen";
+import MyAdsBoardScreen from "./screens/MyAdsBoardScreen";
 import HashtagFeedScreen from "./screens/HashtagFeedScreen";
 import TrendingHashtagsScreen from "./screens/TrendingHashtagsScreen";
 import FeedVideoFullscreenScreen from "./screens/FeedVideoFullscreenScreen";
@@ -273,6 +274,7 @@ function RootNavigator() {
         <RootStack.Screen name="PageCategories" component={PageCategoriesScreen} options={{ title: "Browse Categories" }} />
         <RootStack.Screen name="BoostPage" component={BoostPageScreen} options={{ title: "Boost Page" }} />
         <RootStack.Screen name="MyBoostedPages" component={MyBoostedPagesScreen} options={{ title: "My Boosted Pages" }} />
+        <RootStack.Screen name="MyAdsBoard" component={MyAdsBoardScreen} options={{ title: "My Ads Board" }} />
         <RootStack.Screen name="HashtagFeed" component={HashtagFeedScreen} options={({ route }) => ({ title: `#${route.params.tag}` })} />
         <RootStack.Screen name="TrendingHashtags" component={TrendingHashtagsScreen} options={{ title: "Trending" }} />
         <RootStack.Screen name="FeedVideoFullscreen" component={FeedVideoFullscreenScreen} options={{ headerShown: false }} />
