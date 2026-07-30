@@ -24,7 +24,6 @@ const FEATURE_ITEMS = [
   { icon: "chatbubble-outline", label: "Inbox", screen: "Inbox" },
   { icon: "wallet-outline", label: "Wallet", screen: "Wallet" },
   { icon: "bookmark-outline", label: "Saved", screen: "Saved" },
-  { icon: "briefcase-outline", label: "Jobs Board", screen: "Jobs" },
   { icon: "school-outline", label: "Student Leaders", screen: "StudentLeaders" },
 ];
 

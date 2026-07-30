@@ -51,9 +51,6 @@ import MySponsoredPostsScreen from "./screens/MySponsoredPostsScreen";
 import BoostGroupScreen from "./screens/BoostGroupScreen";
 import MyBoostedGroupsScreen from "./screens/MyBoostedGroupsScreen";
 import SavedScreen from "./screens/SavedScreen";
-import JobsScreen from "./screens/JobsScreen";
-import CreateJobScreen from "./screens/CreateJobScreen";
-import JobDetailScreen from "./screens/JobDetailScreen";
 import StudentLeadersScreen from "./screens/StudentLeadersScreen";
 import StudentLeaderApplyScreen from "./screens/StudentLeaderApplyScreen";
 import MyStudentLeaderApplicationsScreen from "./screens/MyStudentLeaderApplicationsScreen";
@@ -294,9 +291,6 @@ function RootNavigator() {
         <RootStack.Screen name="BoostGroup" component={BoostGroupScreen} options={{ title: "Boost Group" }} />
         <RootStack.Screen name="MyBoostedGroups" component={MyBoostedGroupsScreen} options={{ title: "My Boosted Groups" }} />
         <RootStack.Screen name="Saved" component={SavedScreen} options={{ title: "Saved" }} />
-        <RootStack.Screen name="Jobs" component={JobsScreen} options={{ title: "Jobs Board" }} />
-        <RootStack.Screen name="CreateJob" component={CreateJobScreen} options={{ title: "Post a Job" }} />
-        <RootStack.Screen name="JobDetail" component={JobDetailScreen} options={{ title: "Job" }} />
         <RootStack.Screen name="StudentLeaders" component={StudentLeadersScreen} options={{ title: "Student Leaders" }} />
         <RootStack.Screen name="StudentLeaderApply" component={StudentLeaderApplyScreen} options={{ title: "Apply" }} />
         <RootStack.Screen name="MyStudentLeaderApplications" component={MyStudentLeaderApplicationsScreen} options={{ title: "My Applications" }} />
