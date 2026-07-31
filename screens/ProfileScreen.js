@@ -9,7 +9,7 @@ import AdCard from "../components/AdCard";
 import AdMobBanner from "../components/AdMobBanner";
 import Avatar from "../components/Avatar";
 import VerifiedBadge from "../components/VerifiedBadge";
-import StudentLeaderCard from "../components/StudentLeaderCard";
+import InfluencerQuestCard from "../components/InfluencerQuestCard";
 import { useSaved } from "../hooks/useSaved";
 import { useReshared } from "../hooks/useReshared";
 import { COLORS } from "../theme";
@@ -123,7 +123,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.topRowText}>
           <View style={styles.nameRow}>
             <Text style={styles.name}>{user?.name}</Text>
-            {!!user?.isStudentLeader && <VerifiedBadge size={17} />}
+            {!!user?.isStudentLeader && <VerifiedBadge size={17} tier={counts.influencerQuest?.badge} />}
           </View>
           {!!user?.username && <Text style={styles.username}>@{user.username}</Text>}
         </View>
@@ -160,7 +160,7 @@ export default function ProfileScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <StudentLeaderCard info={counts.studentLeaderInfo} />
+      <InfluencerQuestCard progress={counts.influencerQuest} />
 
       <View style={styles.segment}>
         <TouchableOpacity style={[styles.segmentItem, activeTab === "Posts" && styles.segmentItemActive]} onPress={() => setActiveTab("Posts")}>

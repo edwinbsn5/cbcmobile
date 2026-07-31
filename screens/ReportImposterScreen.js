@@ -9,12 +9,12 @@ export default function ReportImposterScreen({ navigation }) {
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit() {
-    if (!username.trim()) return Alert.alert("Username required", "Enter the username of the Student Leader you're reporting");
-    if (!reason.trim()) return Alert.alert("Reason required", "Explain why you believe this leader didn't qualify or cheated");
+    if (!username.trim()) return Alert.alert("Username required", "Enter the username of the verified user you're reporting");
+    if (!reason.trim()) return Alert.alert("Reason required", "Explain why you believe they gamed their tier");
 
     setSubmitting(true);
     try {
-      await client.post("/student-leaders/report-imposter", { username: username.trim(), reason: reason.trim() });
+      await client.post("/influencer-quest/report-imposter", { username: username.trim(), reason: reason.trim() });
       Alert.alert("Report submitted", "Thanks — our team will review this.");
       navigation.goBack();
     } catch (e) {
@@ -28,7 +28,7 @@ export default function ReportImposterScreen({ navigation }) {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
       <Text style={styles.title}>Report Imposter</Text>
       <Text style={styles.intro}>
-        If you believe an approved Student Leader didn't qualify, or cheated to get approved, tell us who and why.
+        If you believe a verified user gamed their points or doesn't deserve their tick, tell us who and why.
       </Text>
 
       <View style={styles.card}>

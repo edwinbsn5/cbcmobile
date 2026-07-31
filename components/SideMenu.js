@@ -24,7 +24,7 @@ const FEATURE_ITEMS = [
   { icon: "chatbubble-outline", label: "Inbox", screen: "Inbox" },
   { icon: "wallet-outline", label: "Wallet", screen: "Wallet" },
   { icon: "bookmark-outline", label: "Saved", screen: "Saved" },
-  { icon: "school-outline", label: "Influencer Quest", screen: "StudentLeaders" },
+  { icon: "school-outline", label: "Influencer Quest", screen: "InfluencerQuest" },
 ];
 
 const SETTINGS_ITEMS = [

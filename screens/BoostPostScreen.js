@@ -28,7 +28,7 @@ export default function BoostPostScreen({ route, navigation }) {
   // backend/services/studentLeaderBenefits.js) — the wallet charge is
   // waived server-side automatically; this just decides what to show here.
   useEffect(() => {
-    client.get("/student-leaders/benefits").then((r) => setFreeBoostAvailable(r.data.freePostBoostAvailable)).catch(() => {});
+    client.get("/influencer-quest/benefits").then((r) => setFreeBoostAvailable(r.data.freePostBoostAvailable)).catch(() => {});
   }, []);
 
   async function handleBoost() {

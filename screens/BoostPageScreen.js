@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
@@ -22,6 +22,15 @@ export default function BoostPageScreen({ route, navigation }) {
   const [targetAgeMin, setTargetAgeMin] = useState("");
   const [targetAgeMax, setTargetAgeMax] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [freeBoostAvailable, setFreeBoostAvailable] = useState(false);
+
+  // Gold-tier Influencer Quest users get one free Page boost every 30 days
+  // (see backend/services/influencerQuest.js's isGoldTier) — the wallet
+  // charge is waived server-side automatically; this just decides what to
+  // show here.
+  useEffect(() => {
+    client.get("/influencer-quest/benefits").then((r) => setFreeBoostAvailable(r.data.freePageBoostAvailable)).catch(() => {});
+  }, []);
 
   async function handleBoost() {
     setSubmitting(true);
@@ -36,7 +45,12 @@ export default function BoostPageScreen({ route, navigation }) {
         targetAgeMax: targetAgeMax || undefined,
       });
       updateWalletBalance(data.walletBalance);
-      Alert.alert("Page boosted!", "Your Page is now featured in the home feed's Featured Pages slot for the next 7 days.");
+      Alert.alert(
+        "Page boosted!",
+        data.usedFreeBoost
+          ? "Your Page is now featured in the home feed for the next 7 days — this month's free Gold tier perk."
+          : "Your Page is now featured in the home feed's Featured Pages slot for the next 7 days."
+      );
       navigation.goBack();
     } catch (e) {
       if (e.response?.status === 402) {
@@ -101,12 +115,20 @@ export default function BoostPageScreen({ route, navigation }) {
       <Text style={styles.label}>Max age</Text>
       <TextInput style={styles.input} value={targetAgeMax} onChangeText={setTargetAgeMax} placeholder="Any" keyboardType="number-pad" />
 
-      <View style={styles.costBox}>
-        <Text style={styles.costText}>Cost: KES {BOOST_COST_KES} for 7 days</Text>
-      </View>
+      {freeBoostAvailable ? (
+        <View style={styles.freeBox}>
+          <Text style={styles.freeText}>🔵 Free this month — your Gold tier benefit covers this boost for 7 days</Text>
+        </View>
+      ) : (
+        <View style={styles.costBox}>
+          <Text style={styles.costText}>Cost: KES {BOOST_COST_KES} for 7 days</Text>
+        </View>
+      )}
 
       <TouchableOpacity style={styles.button} onPress={handleBoost} disabled={submitting}>
-        {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : <Text style={styles.buttonText}>Boost for KES {BOOST_COST_KES}</Text>}
+        {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : (
+          <Text style={styles.buttonText}>{freeBoostAvailable ? "Boost for free" : `Boost for KES ${BOOST_COST_KES}`}</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -131,6 +153,8 @@ const styles = StyleSheet.create({
   chipTextActive: { color: COLORS.accentInk },
   costBox: { backgroundColor: COLORS.wash, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24 },
   costText: { color: COLORS.accent, fontWeight: "700" },
+  freeBox: { backgroundColor: "#E6F4EA", borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24 },
+  freeText: { color: "#1E7E34", fontWeight: "700", textAlign: "center" },
   button: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 16 },
   buttonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 16 },
 });

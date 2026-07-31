@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
@@ -16,6 +16,15 @@ export default function MarketBoostProductScreen({ route, navigation }) {
   const [targetCounty, setTargetCounty] = useState("");
   const [targetSubCounty, setTargetSubCounty] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [freeBoostAvailable, setFreeBoostAvailable] = useState(false);
+
+  // Gold-tier Influencer Quest users get one free Market product boost
+  // every 30 days (see backend/services/influencerQuest.js's isGoldTier) —
+  // the wallet charge is waived server-side automatically; this just
+  // decides what to show here.
+  useEffect(() => {
+    client.get("/influencer-quest/benefits").then((r) => setFreeBoostAvailable(r.data.freeMarketBoostAvailable)).catch(() => {});
+  }, []);
 
   async function handleBoost() {
     setSubmitting(true);
@@ -26,7 +35,12 @@ export default function MarketBoostProductScreen({ route, navigation }) {
         targetSubCounty: targetSubCounty || undefined,
       });
       updateWalletBalance(data.walletBalance);
-      Alert.alert("Listing boosted!", "Your listing may now appear as a featured pick in Browse by Photos/Videos for the next 7 days.");
+      Alert.alert(
+        "Listing boosted!",
+        data.usedFreeBoost
+          ? "Your listing may now appear as a featured pick for the next 7 days — this month's free Gold tier perk."
+          : "Your listing may now appear as a featured pick in Browse by Photos/Videos for the next 7 days."
+      );
       navigation.goBack();
     } catch (e) {
       if (e.response?.status === 402) {
@@ -73,13 +87,21 @@ export default function MarketBoostProductScreen({ route, navigation }) {
       <Text style={styles.label}>Sub-county</Text>
       <SubCountyPicker county={targetCounty} value={targetSubCounty} onChange={setTargetSubCounty} placeholder="Any sub-county" />
 
-      <View style={styles.costBox}>
-        <Text style={styles.costText}>Cost: KES {BOOST_COST_KES} for 7 days</Text>
-        <Text style={styles.costHint}>Your listing gets a random chance to show as a featured pick at position 2 of Browse by Photos/Videos.</Text>
-      </View>
+      {freeBoostAvailable ? (
+        <View style={styles.freeBox}>
+          <Text style={styles.freeText}>🔵 Free this month — your Gold tier benefit covers this boost for 7 days</Text>
+        </View>
+      ) : (
+        <View style={styles.costBox}>
+          <Text style={styles.costText}>Cost: KES {BOOST_COST_KES} for 7 days</Text>
+        </View>
+      )}
+      <Text style={styles.costHint}>Your listing gets a random chance to show as a featured pick at position 2 of Browse by Photos/Videos.</Text>
 
       <TouchableOpacity style={styles.button} onPress={handleBoost} disabled={submitting}>
-        {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : <Text style={styles.buttonText}>Boost for KES {BOOST_COST_KES}</Text>}
+        {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : (
+          <Text style={styles.buttonText}>{freeBoostAvailable ? "Boost for free" : `Boost for KES ${BOOST_COST_KES}`}</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -96,9 +118,11 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: "700", color: COLORS.ink },
   hint: { color: COLORS.sub, fontSize: 12, marginTop: 4, marginBottom: 16 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 6, marginTop: 12 },
-  costBox: { backgroundColor: COLORS.wash, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24, gap: 6 },
+  costBox: { backgroundColor: COLORS.wash, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24 },
   costText: { color: COLORS.accent, fontWeight: "700" },
-  costHint: { color: COLORS.sub, fontSize: 11.5, textAlign: "center" },
+  freeBox: { backgroundColor: "#E6F4EA", borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24 },
+  freeText: { color: "#1E7E34", fontWeight: "700", textAlign: "center" },
+  costHint: { color: COLORS.sub, fontSize: 11.5, textAlign: "center", marginTop: 6 },
   button: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 16 },
   buttonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 16 },
 });

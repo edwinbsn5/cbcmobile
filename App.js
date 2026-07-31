@@ -54,9 +54,7 @@ import MySponsoredPostsScreen from "./screens/MySponsoredPostsScreen";
 import BoostGroupScreen from "./screens/BoostGroupScreen";
 import MyBoostedGroupsScreen from "./screens/MyBoostedGroupsScreen";
 import SavedScreen from "./screens/SavedScreen";
-import StudentLeadersScreen from "./screens/StudentLeadersScreen";
-import StudentLeaderApplyScreen from "./screens/StudentLeaderApplyScreen";
-import MyStudentLeaderApplicationsScreen from "./screens/MyStudentLeaderApplicationsScreen";
+import InfluencerQuestScreen from "./screens/InfluencerQuestScreen";
 import ReportImposterScreen from "./screens/ReportImposterScreen";
 import WalletScreen from "./screens/WalletScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -318,9 +316,7 @@ function RootNavigator() {
         <RootStack.Screen name="BoostGroup" component={BoostGroupScreen} options={{ title: "Boost Group" }} />
         <RootStack.Screen name="MyBoostedGroups" component={MyBoostedGroupsScreen} options={{ title: "My Boosted Groups" }} />
         <RootStack.Screen name="Saved" component={SavedScreen} options={{ title: "Saved" }} />
-        <RootStack.Screen name="StudentLeaders" component={StudentLeadersScreen} options={{ title: "Student Leaders" }} />
-        <RootStack.Screen name="StudentLeaderApply" component={StudentLeaderApplyScreen} options={{ title: "Apply" }} />
-        <RootStack.Screen name="MyStudentLeaderApplications" component={MyStudentLeaderApplicationsScreen} options={{ title: "My Applications" }} />
+        <RootStack.Screen name="InfluencerQuest" component={InfluencerQuestScreen} options={{ title: "Influencer Quest" }} />
         <RootStack.Screen name="ReportImposter" component={ReportImposterScreen} options={{ title: "Report Imposter" }} />
         <RootStack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ title: "Account Settings" }} />
         <RootStack.Screen name="PrivacySettings" component={PrivacySettingsScreen} options={{ title: "Privacy" }} />
