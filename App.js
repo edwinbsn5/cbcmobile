@@ -193,16 +193,16 @@ function MainTabs({ navigation }) {
           options={{ tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }}
         />
         <Tabs.Screen
-          name="HustleHubTab"
+          name="WalletTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "Mtu Wako",
-            tabBarIcon: ({ color, size }) => <Ionicons name="flash-outline" size={size} color={color} />,
+            tabBarLabel: "My Wallet",
+            tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
           }}
           listeners={{
             tabPress: (e) => {
               e.preventDefault();
-              navigation.navigate("Pages");
+              navigation.navigate("Wallet");
             },
           }}
         />
@@ -225,16 +225,16 @@ function MainTabs({ navigation }) {
           }}
         />
         <Tabs.Screen
-          name="AGirlsMarketTab"
+          name="SavedTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "A Girls Market",
-            tabBarIcon: ({ color, size }) => <Ionicons name="female-outline" size={size} color={color} />,
+            tabBarLabel: "Saved",
+            tabBarIcon: ({ color, size }) => <Ionicons name="bookmark-outline" size={size} color={color} />,
           }}
           listeners={{
             tabPress: (e) => {
               e.preventDefault();
-              navigation.navigate("AGirlsMarket");
+              navigation.navigate("Saved");
             },
           }}
         />

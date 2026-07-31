@@ -12,10 +12,15 @@ const ACTIONS = [
 export default function StudentLeadersScreen({ navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
-      <Text style={styles.title}>Student Leaders</Text>
+      <View style={styles.hero}>
+        <Text style={styles.heroBadge}>✦ Influencer Quest ✦</Text>
+        <Text style={styles.heroTitle}>Earn Your Tick.</Text>
+        <Text style={styles.heroSubtitle}>Rack up points from everyday activity — unlock a verified Blue or Gold tick on The CBC.</Text>
+      </View>
+
       <Text style={styles.intro}>
-        Recognition for comrades who've served in student leadership — official or campus-elected positions,
-        club leads, and similar roles. Approved leaders get a blue verified badge on their profile.
+        Recognition for comrades who are active on the app — post, react, follow, and show up daily to earn
+        points automatically. Hit the target within 30 days and get a verified badge on your profile.
       </Text>
 
       <View style={styles.benefitsCard}>
@@ -53,6 +58,10 @@ export default function StudentLeadersScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   title: { fontSize: 22, fontWeight: "800", color: COLORS.ink },
+  hero: { backgroundColor: COLORS.accentInk, borderRadius: 12, paddingVertical: 22, paddingHorizontal: 20, alignItems: "center", marginBottom: 16 },
+  heroBadge: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
+  heroTitle: { color: "#fff", fontSize: 19, fontWeight: "800", textAlign: "center", marginTop: 10 },
+  heroSubtitle: { color: "#B9C6DC", fontSize: 12, marginTop: 8, textAlign: "center", lineHeight: 18 },
   intro: { color: COLORS.sub, fontSize: 13.5, lineHeight: 19, marginTop: 8, marginBottom: 18 },
   benefitsCard: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginBottom: 20 },
   benefitsTitle: { fontSize: 12, fontWeight: "700", color: COLORS.sub, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 10 },

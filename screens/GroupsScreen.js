@@ -54,8 +54,8 @@ export default function GroupsScreen({ navigation }) {
             </TouchableOpacity>
 
             <View style={styles.hero}>
-              <Text style={styles.heroBadge}>✦ Groups ✦</Text>
-              <Text style={styles.heroTitle}>Find Your People.</Text>
+              <Text style={styles.heroBadge}>✦ Plugs Wako ✦</Text>
+              <Text style={styles.heroTitle}>Find Plug Wako</Text>
               <Text style={styles.heroSubtitle}>Communities, causes &amp; interests worth joining on The CBC.</Text>
             </View>
 

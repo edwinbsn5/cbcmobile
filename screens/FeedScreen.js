@@ -18,10 +18,10 @@ import { useSingleActiveVideo } from "../hooks/useSingleActiveVideo";
 import { COLORS } from "../theme";
 
 const QUICK_LINKS = [
-  { icon: "people-outline", label: "Groups", screen: "Groups" },
+  { icon: "flash-outline", label: "Mtu Wako", screen: "Pages" },
   { icon: "calendar-outline", label: "Events", screen: "Events" },
-  { icon: "bookmark-outline", label: "Saved", screen: "Saved" },
-  { icon: "wallet-outline", label: "My Wallet", screen: "Wallet" },
+  { icon: "cart-outline", label: "A Girls Market", screen: "AGirlsMarket" },
+  { icon: "people-outline", label: "Plugs Wako", screen: "Groups" },
 ];
 
 // A feed row counts as "a video" for autoplay/fullscreen purposes whether
