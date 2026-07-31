@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import FeedVideoPlayer from "../components/FeedVideoPlayer";
 import Avatar from "../components/Avatar";
+import AdMobBanner from "../components/AdMobBanner";
 import { useSingleActiveVideo } from "../hooks/useSingleActiveVideo";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
@@ -57,7 +58,23 @@ export default function MarketVideoFeedScreen({ route, navigation }) {
     if (county) params.county = county;
     if (subCounty) params.subCounty = subCounty;
     const { data } = await client.get("/market/products", { params });
-    setVideos(data);
+
+    // Slot 2 of the feed: a random active boosted listing, or a Google ad
+    // fallback when nothing's currently boosted (see services/marketBoosts.js).
+    // Only applied to this initial load, not loadMore's appended pages —
+    // "2nd position" is a one-time concept, not a per-page one.
+    let nextVideos = data;
+    try {
+      const { data: slot2 } = await client.get("/market-boosts/feed-slot2", {
+        params: { mediaType: "video", county: county || undefined, subCounty: subCounty || undefined },
+      });
+      if (data.length >= 1) {
+        nextVideos = [...data];
+        nextVideos.splice(1, 0, slot2);
+      }
+    } catch {}
+
+    setVideos(nextVideos);
     setLoading(false);
   }
 
@@ -136,6 +153,14 @@ export default function MarketVideoFeedScreen({ route, navigation }) {
       onEndReached={loadMore}
       ListEmptyComponent={<View style={styles.slide}><Text style={styles.empty}>No videos in {categoryName || "this category"} yet</Text></View>}
       renderItem={({ item, index }) => {
+        if (item.kind === "ad") {
+          return (
+            <View style={styles.slide}>
+              <Text style={styles.adLabel}>Sponsored</Text>
+              <AdMobBanner />
+            </View>
+          );
+        }
         const isLiked = !!item.reactions?.[user?.id];
         return (
           <TouchableWithoutFeedback onPress={() => handlePress(item)}>
@@ -148,6 +173,13 @@ export default function MarketVideoFeedScreen({ route, navigation }) {
                 onPressBody={() => {}}
               />
               <HeartBurst trigger={burstFor === item.id ? Date.now() : null} />
+
+              {item.isBoosted && (
+                <View style={[styles.boostedBadge, { top: insets.top + 12 }]}>
+                  <Ionicons name="rocket-outline" size={11} color="#fff" />
+                  <Text style={styles.boostedBadgeText}>Boosted</Text>
+                </View>
+              )}
 
               <View style={[styles.overlay, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
                 <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
@@ -202,4 +234,7 @@ const styles = StyleSheet.create({
   actionButton: { alignItems: "center" },
   actionCount: { color: "#fff", fontWeight: "700", fontSize: 11, marginTop: 4 },
   sellerAvatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: COLORS.accent },
+  adLabel: { color: "#999", fontSize: 12, fontWeight: "700", marginBottom: 10 },
+  boostedBadge: { position: "absolute", left: 16, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: COLORS.accent, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  boostedBadgeText: { color: COLORS.accentInk, fontSize: 10.5, fontWeight: "800" },
 });

@@ -44,6 +44,7 @@ import MarketProductDetailScreen from "./screens/MarketProductDetailScreen";
 import MarketCategoryChooserScreen from "./screens/MarketCategoryChooserScreen";
 import MarketSwipeScreen from "./screens/MarketSwipeScreen";
 import MarketVideoFeedScreen from "./screens/MarketVideoFeedScreen";
+import MarketBoostProductScreen from "./screens/MarketBoostProductScreen";
 import HashtagFeedScreen from "./screens/HashtagFeedScreen";
 import TrendingHashtagsScreen from "./screens/TrendingHashtagsScreen";
 import FeedVideoFullscreenScreen from "./screens/FeedVideoFullscreenScreen";
@@ -75,7 +76,6 @@ import SearchScreen from "./screens/SearchScreen";
 import OnboardingProfileScreen from "./screens/OnboardingProfileScreen";
 import OnboardingFollowScreen from "./screens/OnboardingFollowScreen";
 import CreatePostScreen from "./screens/CreatePostScreen";
-import CommentsScreen from "./screens/CommentsScreen";
 import ReshareComposerScreen from "./screens/ReshareComposerScreen";
 import CreateStoryScreen from "./screens/CreateStoryScreen";
 import StoryViewerScreen from "./screens/StoryViewerScreen";
@@ -308,6 +308,7 @@ function RootNavigator() {
         <RootStack.Screen name="MarketCategoryChooser" component={MarketCategoryChooserScreen} options={{ title: "Browse" }} />
         <RootStack.Screen name="MarketSwipe" component={MarketSwipeScreen} options={{ title: "Browse" }} />
         <RootStack.Screen name="MarketVideoFeed" component={MarketVideoFeedScreen} options={{ headerShown: false }} />
+        <RootStack.Screen name="MarketBoostProduct" component={MarketBoostProductScreen} options={{ title: "Boost Listing" }} />
         <RootStack.Screen name="HashtagFeed" component={HashtagFeedScreen} options={({ route }) => ({ title: `#${route.params.tag}` })} />
         <RootStack.Screen name="TrendingHashtags" component={TrendingHashtagsScreen} options={{ title: "Trending" }} />
         <RootStack.Screen name="FeedVideoFullscreen" component={FeedVideoFullscreenScreen} options={{ headerShown: false }} />
@@ -334,7 +335,6 @@ function RootNavigator() {
         <RootStack.Screen name="UserProfile" component={UserProfileScreen} options={{ title: "Profile" }} />
         <RootStack.Screen name="FollowList" component={FollowListScreen} />
         <RootStack.Screen name="Search" component={SearchScreen} options={{ title: "Search" }} />
-        <RootStack.Screen name="Comments" component={CommentsScreen} options={{ title: "Comments" }} />
         <RootStack.Screen name="ReshareComposer" component={ReshareComposerScreen} options={{ title: "Reshare" }} />
         <RootStack.Screen name="CreateStory" component={CreateStoryScreen} options={{ title: "New Story", presentation: "modal" }} />
         <RootStack.Screen name="StoryViewer" component={StoryViewerScreen} options={{ headerShown: false, presentation: "fullScreenModal" }} />

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,6 +7,7 @@ import client from "../api/client";
 import ReactionBar from "../components/ReactionBar";
 import PostOptionsMenu from "../components/PostOptionsMenu";
 import FeedVideoPlayer from "../components/FeedVideoPlayer";
+import CommentsSheet from "../components/CommentsSheet";
 import { useSingleActiveVideo } from "../hooks/useSingleActiveVideo";
 import { useAuth } from "../context/AuthContext";
 import { formatCount } from "../utils/formatCount";
@@ -25,6 +26,8 @@ export default function GroupVideoPlayerScreen({ route, navigation }) {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menuFor, setMenuFor] = useState(null);
+  const [commentsOpenId, setCommentsOpenId] = useState(null);
+  const commentsProgress = useRef(new Animated.Value(0)).current;
   const { activeIndex, viewabilityConfig, onViewableItemsChanged } = useSingleActiveVideo({ threshold: 80 });
 
   async function load() {
@@ -74,6 +77,13 @@ export default function GroupVideoPlayerScreen({ route, navigation }) {
     );
   }
 
+  const mediaAnimatedStyle = {
+    transform: [
+      { scale: commentsProgress.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.36, 0.12] }) },
+      { translateY: commentsProgress.interpolate({ inputRange: [0, 1, 2], outputRange: [0, -(height * 0.32), -(height * 0.44)] }) },
+    ],
+  };
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#fff" />;
 
   return (
@@ -90,15 +100,18 @@ export default function GroupVideoPlayerScreen({ route, navigation }) {
       viewabilityConfig={viewabilityConfig}
       renderItem={({ item, index }) => {
         const isOwn = item.userId === user?.id;
+        const commentsOpen = commentsOpenId === item.id;
         return (
           <View style={styles.slide}>
-            <FeedVideoPlayer
-              uri={item.mediaUrl}
-              poster={item.thumbnailUrl}
-              isActive={isFocused && index === activeIndex}
-              variant="fullscreen"
-              onPressBody={() => {}}
-            />
+            <Animated.View style={commentsOpen ? mediaAnimatedStyle : null}>
+              <FeedVideoPlayer
+                uri={item.mediaUrl}
+                poster={item.thumbnailUrl}
+                isActive={isFocused && index === activeIndex}
+                variant="fullscreen"
+                onPressBody={() => {}}
+              />
+            </Animated.View>
             <TouchableOpacity
               style={[styles.backButton, { top: insets.top + 10 }]}
               onPress={() => navigation.goBack()}
@@ -135,11 +148,23 @@ export default function GroupVideoPlayerScreen({ route, navigation }) {
 
             <View style={[styles.reactionColumn, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
               <ReactionBar reactions={item.reactions} myUserId={user?.id} onReact={(r) => handleReact(item.id, r)} />
-              <TouchableOpacity style={styles.commentButton} onPress={() => navigation.navigate("Comments", { postId: item.id, groupId })}>
+              <TouchableOpacity style={styles.commentButton} onPress={() => setCommentsOpenId(item.id)}>
                 <Ionicons name="chatbubble-outline" size={26} color="#fff" />
                 <Text style={styles.commentCount}>{formatCount(item.commentCount || 0)}</Text>
               </TouchableOpacity>
             </View>
+
+            {commentsOpen && (
+              <CommentsSheet
+                progress={commentsProgress}
+                basePath={`/groups/${groupId}/posts/${item.id}/comments`}
+                commentCountHint={item.commentCount || 0}
+                onClose={() => {
+                  setCommentsOpenId(null);
+                  load();
+                }}
+              />
+            )}
           </View>
         );
       }}

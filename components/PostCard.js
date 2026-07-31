@@ -7,6 +7,7 @@ import PostOptionsMenu from "./PostOptionsMenu";
 import FeedVideoPlayer from "./FeedVideoPlayer";
 import PhotoCarousel from "./PhotoCarousel";
 import FeedImage from "./FeedImage";
+import PostCommentsModal from "./PostCommentsModal";
 import LinkPreviewCard from "./LinkPreviewCard";
 import LinkifiedText from "./LinkifiedText";
 import Avatar from "./Avatar";
@@ -40,7 +41,14 @@ export default function PostCard({
   const { user } = useAuth();
   const navigation = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const isOwn = post.userId === user?.id;
+
+  const commentsBasePath = post.pageId
+    ? `/pages/${post.pageId}/feed/${post.id}/comments`
+    : post.groupId
+    ? `/groups/${post.groupId}/posts/${post.id}/comments`
+    : `/feed/${post.id}/comments`;
 
   async function handleUnfollow() {
     Alert.alert(`Unfollow ${post.author?.name}?`, "", [
@@ -169,10 +177,7 @@ export default function PostCard({
       <View style={styles.actionsRow}>
         <ReactionBar reactions={post.reactions} myUserId={user?.id} onReact={(r) => onReact(post.id, r)} />
 
-        <TouchableOpacity
-          style={styles.pill}
-          onPress={() => navigation.navigate("Comments", { postId: post.id, groupId: post.groupId || undefined, pageId: post.pageId || undefined })}
-        >
+        <TouchableOpacity style={styles.pill} onPress={() => setCommentsOpen(true)}>
           <Ionicons name="chatbubble-outline" size={14} color={COLORS.accent} />
           <Text style={styles.pillText}>{formatCount(post.commentCount || 0)}</Text>
         </TouchableOpacity>
@@ -219,6 +224,16 @@ export default function PostCard({
           <Text style={styles.boostText}>📣 Boost this post</Text>
         </TouchableOpacity>
       )}
+
+      <PostCommentsModal
+        visible={commentsOpen}
+        post={post}
+        basePath={commentsBasePath}
+        onClose={() => {
+          setCommentsOpen(false);
+          onChanged?.();
+        }}
+      />
     </View>
   );
 }

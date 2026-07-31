@@ -6,6 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import PostCard from "../components/PostCard";
+import AdCard from "../components/AdCard";
+import AdMobBanner from "../components/AdMobBanner";
 import Avatar from "../components/Avatar";
 import MentionTextInput from "../components/MentionTextInput";
 import { useSaved } from "../hooks/useSaved";
@@ -494,6 +496,7 @@ export default function PageDetailScreen({ route, navigation }) {
             />
           );
         }
+        if (item.kind === "ad") return item.network === "google" ? <AdMobBanner /> : <AdCard ad={item} />;
         return (
           <PostCard
             post={item}

@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity, ActivityIndicator, Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import ReactionBar from "../components/ReactionBar";
 import FeedVideoPlayer from "../components/FeedVideoPlayer";
+import CommentsSheet from "../components/CommentsSheet";
 import { useSingleActiveVideo } from "../hooks/useSingleActiveVideo";
 import { useAuth } from "../context/AuthContext";
 import { useSaved } from "../hooks/useSaved";
@@ -25,6 +26,12 @@ export default function ReelsScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const [reels, setReels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [commentsOpenId, setCommentsOpenId] = useState(null);
+  // Shared across every slide — only ever driven while exactly one slide has
+  // comments open, so there's no cross-talk between slides. Reset to 0 by
+  // CommentsSheet's own close animation before it unmounts, so it's always
+  // back at rest by the time a different slide opens it.
+  const commentsProgress = useRef(new Animated.Value(0)).current;
   const { isSaved, toggleSave, loadSaved } = useSaved();
   // Every row here is already a video, so the default isEligible (accept
   // everything) is exactly right — same single-active-video behavior as
@@ -58,6 +65,17 @@ export default function ReelsScreen({ route, navigation }) {
     load();
   }
 
+  // Media scale/translateY shared by whichever slide currently has comments
+  // open — the video is never paused or unmounted, just visually shrunk into
+  // the top of the screen while CommentsSheet covers the rest (see
+  // components/CommentsSheet.js's own comment on the shared `progress` value).
+  const mediaAnimatedStyle = {
+    transform: [
+      { scale: commentsProgress.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 0.36, 0.12] }) },
+      { translateY: commentsProgress.interpolate({ inputRange: [0, 1, 2], outputRange: [0, -(height * 0.32), -(height * 0.44)] }) },
+    ],
+  };
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#fff" />;
 
   return (
@@ -72,29 +90,49 @@ export default function ReelsScreen({ route, navigation }) {
       getItemLayout={(data, index) => ({ length: height, offset: height * index, index })}
       onViewableItemsChanged={onViewableItemsChanged}
       viewabilityConfig={viewabilityConfig}
-      renderItem={({ item, index }) => (
-        <View style={styles.slide}>
-          <FeedVideoPlayer
-            uri={item.videoUrl}
-            poster={item.thumbnailUrl}
-            isActive={isFocused && index === activeIndex}
-            variant="fullscreen"
-            onPressBody={() => {}}
-          />
-          <View style={[styles.overlay, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
-            <TouchableOpacity onPress={() => item.author?.id && navigation.navigate("UserProfile", { userId: item.author.id })}>
-              <Text style={styles.author}>@{item.author?.name.replace(" ", "").toLowerCase()}</Text>
-            </TouchableOpacity>
-            <Text style={styles.caption}>{item.caption}</Text>
+      renderItem={({ item, index }) => {
+        const commentsOpen = commentsOpenId === item.id;
+        return (
+          <View style={styles.slide}>
+            <Animated.View style={commentsOpen ? mediaAnimatedStyle : null}>
+              <FeedVideoPlayer
+                uri={item.videoUrl}
+                poster={item.thumbnailUrl}
+                isActive={isFocused && index === activeIndex}
+                variant="fullscreen"
+                onPressBody={() => {}}
+              />
+            </Animated.View>
+            <View style={[styles.overlay, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
+              <TouchableOpacity onPress={() => item.author?.id && navigation.navigate("UserProfile", { userId: item.author.id })}>
+                <Text style={styles.author}>@{item.author?.name.replace(" ", "").toLowerCase()}</Text>
+              </TouchableOpacity>
+              <Text style={styles.caption}>{item.caption}</Text>
+            </View>
+            <View style={[styles.reactionColumn, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
+              <ReactionBar reactions={item.reactions} myUserId={user?.id} onReact={(r) => handleReact(item.id, r)} />
+              <TouchableOpacity style={styles.commentButton} onPress={() => setCommentsOpenId(item.id)}>
+                <Ionicons name="chatbubble-outline" size={26} color="#fff" />
+                <Text style={styles.commentCount}>{item.commentCount || 0}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={() => toggleSave("reel", item.id)}>
+                <Ionicons name={isSaved("reel", item.id) ? "bookmark" : "bookmark-outline"} size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            {commentsOpen && (
+              <CommentsSheet
+                progress={commentsProgress}
+                basePath={`/reels/${item.id}/comments`}
+                commentCountHint={item.commentCount || 0}
+                onClose={() => {
+                  setCommentsOpenId(null);
+                  load();
+                }}
+              />
+            )}
           </View>
-          <View style={[styles.reactionColumn, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
-            <ReactionBar reactions={item.reactions} myUserId={user?.id} onReact={(r) => handleReact(item.id, r)} />
-            <TouchableOpacity style={styles.saveButton} onPress={() => toggleSave("reel", item.id)}>
-              <Ionicons name={isSaved("reel", item.id) ? "bookmark" : "bookmark-outline"} size={28} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+        );
+      }}
     />
   );
 }
@@ -108,5 +146,7 @@ const styles = StyleSheet.create({
   author: { color: "#fff", fontWeight: "700", fontSize: 15, marginBottom: 4 },
   caption: { color: "#fff", fontSize: 14 },
   reactionColumn: { position: "absolute", right: 16 },
+  commentButton: { marginTop: 16, alignItems: "center" },
+  commentCount: { color: "#fff", fontWeight: "700", fontSize: 11, marginTop: 4 },
   saveButton: { marginTop: 16, alignItems: "center" },
 });

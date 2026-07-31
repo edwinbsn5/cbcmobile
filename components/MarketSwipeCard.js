@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Animated, PanResponder, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import AdMobBanner from "./AdMobBanner";
 import { COLORS } from "../theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -17,7 +18,7 @@ const SWIPE_OUT_DURATION = 220;
  * renders statically underneath, so this component doesn't know about the
  * deck itself, only "am I the active (draggable) card or not".
  */
-export default function MarketSwipeCard({ product, isTop, onSwipeLeft, onSwipeRight, onDetails, onContactSeller, style }) {
+export default function MarketSwipeCard({ product, isAd, isTop, onSwipeLeft, onSwipeRight, onDetails, onContactSeller, style }) {
   const position = useRef(new Animated.ValueXY()).current;
 
   const panResponder = useRef(
@@ -53,6 +54,16 @@ export default function MarketSwipeCard({ product, isTop, onSwipeLeft, onSwipeRi
     ? { transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }] }
     : {};
 
+  if (isAd) {
+    return (
+      <Animated.View style={[styles.card, styles.adCard, style, cardStyle]} {...(isTop ? panResponder.panHandlers : {})}>
+        <Text style={styles.adLabel}>Sponsored</Text>
+        <AdMobBanner />
+        <Text style={styles.adHint}>Swipe to continue browsing</Text>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View style={[styles.card, style, cardStyle]} {...(isTop ? panResponder.panHandlers : {})}>
       <Image source={{ uri: product.photoUrls[0] }} style={styles.image} resizeMode="cover" />
@@ -71,6 +82,13 @@ export default function MarketSwipeCard({ product, isTop, onSwipeLeft, onSwipeRi
       {product.photoUrls.length > 1 && (
         <View style={styles.photoCountBadge}>
           <Text style={styles.photoCountText}>1/{product.photoUrls.length}</Text>
+        </View>
+      )}
+
+      {product.isBoosted && (
+        <View style={styles.boostedBadge}>
+          <Ionicons name="rocket-outline" size={11} color="#fff" />
+          <Text style={styles.boostedBadgeText}>Boosted</Text>
         </View>
       )}
 
@@ -109,6 +127,11 @@ const styles = StyleSheet.create({
   nopeStampText: { color: "#D32F2F", fontWeight: "900", fontSize: 24, letterSpacing: 1 },
   photoCountBadge: { position: "absolute", top: 14, right: 14, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   photoCountText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+  boostedBadge: { position: "absolute", top: 14, left: 14, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: COLORS.accent, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  boostedBadgeText: { color: COLORS.accentInk, fontSize: 10.5, fontWeight: "800" },
+  adCard: { backgroundColor: COLORS.surface, alignItems: "center", justifyContent: "center", gap: 10 },
+  adLabel: { color: COLORS.sub, fontSize: 12, fontWeight: "700" },
+  adHint: { color: COLORS.sub, fontSize: 11.5 },
   overlay: { position: "absolute", left: 0, right: 0, bottom: 0, padding: 16, backgroundColor: "rgba(0,0,0,0.45)" },
   sellerTop: { color: "#cfd6e0", fontSize: 11.5, fontWeight: "600" },
   title: { color: "#fff", fontSize: 14.5, fontWeight: "700", marginTop: 2 },

@@ -29,7 +29,24 @@ export default function MarketSwipeScreen({ route, navigation }) {
     if (county) params.county = county;
     if (subCounty) params.subCounty = subCounty;
     const { data } = await client.get("/market/products", { params });
-    setDeck(data);
+
+    // Slot 2 of the deck: a random active boosted listing, or a Google ad
+    // fallback when nothing's currently boosted (see services/marketBoosts.js).
+    // Only applied to this initial load, not any later refresh triggered by
+    // "Check again" — "2nd position" is a one-time concept, not something
+    // that re-applies every time the deck reloads.
+    let nextDeck = data;
+    try {
+      const { data: slot2 } = await client.get("/market-boosts/feed-slot2", {
+        params: { mediaType: "photo", county: county || undefined, subCounty: subCounty || undefined },
+      });
+      if (data.length >= 1) {
+        nextDeck = [...data];
+        nextDeck.splice(1, 0, slot2);
+      }
+    } catch {}
+
+    setDeck(nextDeck);
     setIndex(0);
     setLoading(false);
   }
@@ -76,18 +93,22 @@ export default function MarketSwipeScreen({ route, navigation }) {
           </View>
         ) : (
           [...remaining]
-            .map((product, i) => (
-              <MarketSwipeCard
-                key={product.id}
-                product={product}
-                isTop={i === 0}
-                style={i === 1 ? styles.behindCard : null}
-                onSwipeLeft={advance}
-                onSwipeRight={() => handleSwipeRight(product)}
-                onDetails={() => navigation.navigate("MarketProductDetail", { productId: product.id })}
-                onContactSeller={() => handleContactSeller(product)}
-              />
-            ))
+            .map((product, i) => {
+              const isAd = product.kind === "ad";
+              return (
+                <MarketSwipeCard
+                  key={product.id}
+                  product={isAd ? null : product}
+                  isAd={isAd}
+                  isTop={i === 0}
+                  style={i === 1 ? styles.behindCard : null}
+                  onSwipeLeft={advance}
+                  onSwipeRight={() => (isAd ? advance() : handleSwipeRight(product))}
+                  onDetails={() => !isAd && navigation.navigate("MarketProductDetail", { productId: product.id })}
+                  onContactSeller={() => !isAd && handleContactSeller(product)}
+                />
+              );
+            })
             .reverse()
         )}
       </View>

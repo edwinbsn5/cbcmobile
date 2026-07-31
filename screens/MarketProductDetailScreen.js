@@ -112,6 +112,12 @@ export default function MarketProductDetailScreen({ route, navigation }) {
             </TouchableOpacity>
           )}
         </View>
+
+        {isOwn && product.status === "approved" && (
+          <TouchableOpacity style={styles.boostRow} onPress={() => navigation.navigate("MarketBoostProduct", { product })}>
+            <Text style={styles.boostText}>📣 Boost my product</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -142,4 +148,6 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: COLORS.surface, borderRadius: 20, padding: 10 },
   inquireButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: COLORS.accent, borderRadius: 20, paddingVertical: 12 },
   inquireButtonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 13.5 },
+  boostRow: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: COLORS.border },
+  boostText: { color: COLORS.accent, fontWeight: "600", fontSize: 13 },
 });

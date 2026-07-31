@@ -6,6 +6,7 @@ import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import PostCard from "../components/PostCard";
 import AdCard from "../components/AdCard";
+import AdMobBanner from "../components/AdMobBanner";
 import Avatar from "../components/Avatar";
 import VerifiedBadge from "../components/VerifiedBadge";
 import StudentLeaderCard from "../components/StudentLeaderCard";
@@ -275,7 +276,7 @@ export default function ProfileScreen({ navigation }) {
       keyExtractor={(item, i) => `${item.kind}-${item.id}-${i}`}
       renderItem={({ item }) =>
         item.kind === "ad" ? (
-          <AdCard ad={item} />
+          item.network === "google" ? <AdMobBanner /> : <AdCard ad={item} />
         ) : (
           <PostCard
             post={item}
