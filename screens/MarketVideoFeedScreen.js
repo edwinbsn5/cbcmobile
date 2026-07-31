@@ -5,6 +5,7 @@ import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import FeedVideoPlayer from "../components/FeedVideoPlayer";
+import Avatar from "../components/Avatar";
 import { useSingleActiveVideo } from "../hooks/useSingleActiveVideo";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
@@ -106,9 +107,12 @@ export default function MarketVideoFeedScreen({ route, navigation }) {
     }
   }
 
-  async function handleInquire(item) {
+  async function handleContactSeller(item) {
+    if (!item.seller?.id) return;
     try {
-      const { data } = await client.post("/inbox/start", { userId: item.seller.id });
+      const { data } = await client.post("/inbox/start", {
+        userId: item.seller.id, contextType: "market_product", contextProductId: item.id,
+      });
       navigation.navigate("Chat", { conversationId: data.id, otherUser: data.otherUser });
     } catch (e) {
       Alert.alert("Couldn't start chat", e.response?.data?.error || e.message);
@@ -146,20 +150,23 @@ export default function MarketVideoFeedScreen({ route, navigation }) {
               <HeartBurst trigger={burstFor === item.id ? Date.now() : null} />
 
               <View style={[styles.overlay, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
-                <Text style={styles.title}>{item.title}</Text>
+                <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
                 <Text style={styles.price}>KES {item.priceKES.toLocaleString()}</Text>
+                {!!item.description && <Text style={styles.description} numberOfLines={2}>{item.description}</Text>}
                 <View style={styles.categoryRow}>
                   {item.categories.slice(0, 3).map((c) => (
                     <View key={c.id} style={styles.categoryPill}><Text style={styles.categoryPillText}>{c.name}</Text></View>
                   ))}
                 </View>
-                <TouchableOpacity style={styles.inquireButton} onPress={() => handleInquire(item)}>
-                  <Ionicons name="chatbubble-outline" size={14} color={COLORS.accentInk} />
-                  <Text style={styles.inquireButtonText}>Buy / Inquire</Text>
-                </TouchableOpacity>
               </View>
 
               <View style={[styles.actionColumn, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => item.seller?.id && navigation.navigate("UserProfile", { userId: item.seller.id })}
+                >
+                  <Avatar uri={item.seller?.avatar} name={item.seller?.name} style={styles.sellerAvatar} />
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton} onPress={() => handleLike(item)}>
                   <Ionicons name={isLiked ? "heart" : "heart-outline"} size={30} color={isLiked ? "#FF4D67" : "#fff"} />
                   <Text style={styles.actionCount}>{item.likeCount}</Text>
@@ -167,6 +174,9 @@ export default function MarketVideoFeedScreen({ route, navigation }) {
                 <TouchableOpacity style={styles.actionButton} onPress={() => handleSave(item)}>
                   <Ionicons name="bookmark-outline" size={28} color="#fff" />
                   <Text style={styles.actionCount}>{item.saveCount}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton} onPress={() => handleContactSeller(item)}>
+                  <Ionicons name="chatbubble-outline" size={26} color="#fff" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -182,17 +192,14 @@ const styles = StyleSheet.create({
   empty: { color: "#999", fontSize: 14 },
   heartBurst: { position: "absolute", top: "50%", left: "50%", marginLeft: -45, marginTop: -45 },
   overlay: { position: "absolute", left: 16, right: 100 },
-  title: { color: "#fff", fontWeight: "800", fontSize: 17 },
-  price: { color: "#F5A623", fontWeight: "800", fontSize: 15, marginTop: 4 },
+  title: { color: "#fff", fontWeight: "700", fontSize: 14.5 },
+  price: { color: "#F5A623", fontWeight: "800", fontSize: 13.5, marginTop: 2 },
+  description: { color: "#d7dbe2", fontSize: 11.5, lineHeight: 16, marginTop: 5 },
   categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
   categoryPill: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   categoryPillText: { color: "#fff", fontSize: 10.5, fontWeight: "600" },
-  inquireButton: {
-    flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: COLORS.accent, borderRadius: 18,
-    paddingHorizontal: 14, paddingVertical: 9, marginTop: 12, alignSelf: "flex-start",
-  },
-  inquireButtonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 13 },
   actionColumn: { position: "absolute", right: 16, alignItems: "center", gap: 20 },
   actionButton: { alignItems: "center" },
   actionCount: { color: "#fff", fontWeight: "700", fontSize: 11, marginTop: 4 },
+  sellerAvatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: COLORS.accent },
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import MarketSwipeCard from "../components/MarketSwipeCard";
@@ -47,6 +47,18 @@ export default function MarketSwipeScreen({ route, navigation }) {
     advance();
   }
 
+  async function handleContactSeller(product) {
+    if (!product.seller?.id) return;
+    try {
+      const { data } = await client.post("/inbox/start", {
+        userId: product.seller.id, contextType: "market_product", contextProductId: product.id,
+      });
+      navigation.navigate("Chat", { conversationId: data.id, otherUser: data.otherUser });
+    } catch (e) {
+      Alert.alert("Couldn't start chat", e.response?.data?.error || e.message);
+    }
+  }
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   const remaining = deck.slice(index, index + 2);
@@ -73,6 +85,7 @@ export default function MarketSwipeScreen({ route, navigation }) {
                 onSwipeLeft={advance}
                 onSwipeRight={() => handleSwipeRight(product)}
                 onDetails={() => navigation.navigate("MarketProductDetail", { productId: product.id })}
+                onContactSeller={() => handleContactSeller(product)}
               />
             ))
             .reverse()

@@ -15,11 +15,15 @@ export default function MarketProductDetailScreen({ route, navigation }) {
   const { user } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const { isSaved, toggleSave, loadSaved } = useSaved();
   const [starting, setStarting] = useState(false);
 
   const load = useCallback(() => {
-    client.get(`/market/products/${productId}`).then((r) => setProduct(r.data)).finally(() => setLoading(false));
+    client.get(`/market/products/${productId}`)
+      .then((r) => setProduct(r.data))
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
     loadSaved();
   }, [productId]);
 
@@ -34,7 +38,9 @@ export default function MarketProductDetailScreen({ route, navigation }) {
     if (!product.seller?.id) return;
     setStarting(true);
     try {
-      const { data } = await client.post("/inbox/start", { userId: product.seller.id });
+      const { data } = await client.post("/inbox/start", {
+        userId: product.seller.id, contextType: "market_product", contextProductId: product.id,
+      });
       navigation.navigate("Chat", { conversationId: data.id, otherUser: data.otherUser });
     } catch (e) {
       Alert.alert("Couldn't start chat", e.response?.data?.error || e.message);
@@ -43,7 +49,17 @@ export default function MarketProductDetailScreen({ route, navigation }) {
     }
   }
 
-  if (loading || !product) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
+  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
+
+  if (notFound || !product) {
+    return (
+      <View style={styles.notFound}>
+        <Ionicons name="alert-circle-outline" size={40} color={COLORS.sub} />
+        <Text style={styles.notFoundText}>This item is no longer available</Text>
+        <Text style={styles.notFoundHint}>The seller may have removed it or marked it as sold out.</Text>
+      </View>
+    );
+  }
 
   const myLiked = !!product.reactions?.[user?.id];
   const isOwn = product.seller?.id === user?.id;
@@ -103,6 +119,9 @@ export default function MarketProductDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  notFound: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 8 },
+  notFoundText: { fontSize: 16, fontWeight: "700", color: COLORS.ink, marginTop: 6 },
+  notFoundHint: { fontSize: 13, color: COLORS.sub, textAlign: "center" },
   media: { width: "100%", height: 320, backgroundColor: "#000" },
   body: { padding: 16 },
   soldBanner: { backgroundColor: "#FDEDED", borderRadius: 8, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: "#F3C6C6" },

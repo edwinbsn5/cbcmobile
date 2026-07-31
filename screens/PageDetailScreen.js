@@ -216,6 +216,8 @@ export default function PageDetailScreen({ route, navigation }) {
   const [reviews, setReviews] = useState({ items: [], avgRating: 0, totalCount: 0, recommendPct: 0, breakdown: {} });
   const [loading, setLoading] = useState(true);
   const [changingCover, setChangingCover] = useState(false);
+  const [followSubmitting, setFollowSubmitting] = useState(false);
+  const [messaging, setMessaging] = useState(false);
 
   const [composerText, setComposerText] = useState("");
   const [postAs, setPostAs] = useState("page");
@@ -381,6 +383,33 @@ export default function PageDetailScreen({ route, navigation }) {
     }
   }
 
+  async function handleToggleFollow() {
+    setFollowSubmitting(true);
+    try {
+      const path = page.amIFollowing ? "unfollow" : "follow";
+      const { data } = await client.post(`/pages/${pageId}/${path}`);
+      setPage((prev) => ({ ...prev, ...data }));
+    } catch (e) {
+      Alert.alert("Couldn't update follow status", e.response?.data?.error || e.message);
+    } finally {
+      setFollowSubmitting(false);
+    }
+  }
+
+  async function handleMessagePage() {
+    setMessaging(true);
+    try {
+      const { data } = await client.post("/inbox/start", {
+        userId: page.ownerId, contextType: "page", contextPageId: page.id,
+      });
+      navigation.navigate("Chat", { conversationId: data.id, otherUser: data.otherUser });
+    } catch (e) {
+      Alert.alert("Couldn't start chat", e.response?.data?.error || e.message);
+    } finally {
+      setMessaging(false);
+    }
+  }
+
   async function handleChangeCover() {
     const localMedia = await pickMedia();
     if (!localMedia) return;
@@ -516,7 +545,26 @@ export default function PageDetailScreen({ route, navigation }) {
                   : "No reviews yet"}
               </Text>
             </View>
-            <Text style={styles.memberCount}>{page.memberCount} team member{page.memberCount === 1 ? "" : "s"}</Text>
+            <Text style={styles.memberCount}>
+              {page.memberCount} team member{page.memberCount === 1 ? "" : "s"} · {page.followerCount} follower{page.followerCount === 1 ? "" : "s"}
+            </Text>
+
+            {!isTeamMember && (
+              <View style={styles.followRow}>
+                <TouchableOpacity
+                  style={[styles.followButton, page.amIFollowing && styles.followingButton]}
+                  onPress={handleToggleFollow}
+                  disabled={followSubmitting}
+                >
+                  <Text style={[styles.followButtonText, page.amIFollowing && styles.followingButtonText]}>
+                    {followSubmitting ? "..." : page.amIFollowing ? "Following" : "Follow"}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.followButton, styles.messageButton]} onPress={handleMessagePage} disabled={messaging}>
+                  <Text style={[styles.followButtonText, styles.messageButtonText]}>{messaging ? "..." : "Message"}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {page.status === "suspended" && (
               <View style={styles.suspendedBanner}>
@@ -698,6 +746,13 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
   ratingText: { color: COLORS.sub, fontSize: 12, fontWeight: "600" },
   memberCount: { color: COLORS.sub, fontSize: 12, marginTop: 4 },
+  followRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  followButton: { flex: 1, backgroundColor: COLORS.accent, borderRadius: 8, paddingVertical: 11, alignItems: "center" },
+  followButtonText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 13.5 },
+  followingButton: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
+  followingButtonText: { color: COLORS.ink },
+  messageButton: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
+  messageButtonText: { color: COLORS.ink },
   suspendedBanner: { backgroundColor: "#FFF3CD", padding: 10, borderRadius: 8, marginTop: 12 },
   suspendedBannerText: { color: "#856404", fontWeight: "600" },
   inviteBanner: { backgroundColor: "#E9F8EE", padding: 12, borderRadius: 8, marginTop: 12 },

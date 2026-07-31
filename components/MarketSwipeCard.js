@@ -17,7 +17,7 @@ const SWIPE_OUT_DURATION = 220;
  * renders statically underneath, so this component doesn't know about the
  * deck itself, only "am I the active (draggable) card or not".
  */
-export default function MarketSwipeCard({ product, isTop, onSwipeLeft, onSwipeRight, onDetails, style }) {
+export default function MarketSwipeCard({ product, isTop, onSwipeLeft, onSwipeRight, onDetails, onContactSeller, style }) {
   const position = useRef(new Animated.ValueXY()).current;
 
   const panResponder = useRef(
@@ -75,20 +75,17 @@ export default function MarketSwipeCard({ product, isTop, onSwipeLeft, onSwipeRi
       )}
 
       <View style={styles.overlay}>
-        <View style={styles.overlayTop}>
-          <Text style={styles.title} numberOfLines={1}>{product.title}</Text>
-          <Text style={styles.price}>KES {product.priceKES.toLocaleString()}</Text>
-        </View>
-        <View style={styles.categoryRow}>
-          {product.categories.slice(0, 3).map((c) => (
-            <View key={c.id} style={styles.categoryPill}><Text style={styles.categoryPillText}>{c.name}</Text></View>
-          ))}
-        </View>
-        <View style={styles.bottomRow}>
-          <Text style={styles.sellerText}>{product.seller?.name}</Text>
-          <TouchableOpacity style={styles.detailsButton} onPress={onDetails}>
-            <Text style={styles.detailsButtonText}>Details</Text>
-            <Ionicons name="chevron-forward" size={14} color={COLORS.accentInk} />
+        <Text style={styles.sellerTop}>{product.seller?.name}</Text>
+        <Text style={styles.title} numberOfLines={1}>{product.title}</Text>
+        <Text style={styles.price}>KES {product.priceKES.toLocaleString()}</Text>
+        {!!product.description && <Text style={styles.description} numberOfLines={2}>{product.description}</Text>}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={[styles.actionChip, styles.actionChipPrimary]} onPress={onDetails}>
+            <Text style={styles.actionChipTextPrimary}>More Details</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionChip} onPress={onContactSeller}>
+            <Ionicons name="chatbubble-outline" size={11} color="#fff" />
+            <Text style={styles.actionChipText}>Contact Seller</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -113,14 +110,16 @@ const styles = StyleSheet.create({
   photoCountBadge: { position: "absolute", top: 14, right: 14, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   photoCountText: { color: "#fff", fontSize: 11, fontWeight: "700" },
   overlay: { position: "absolute", left: 0, right: 0, bottom: 0, padding: 16, backgroundColor: "rgba(0,0,0,0.45)" },
-  overlayTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
-  title: { flex: 1, color: "#fff", fontSize: 18, fontWeight: "800" },
-  price: { color: "#F5A623", fontSize: 16, fontWeight: "800", marginLeft: 8 },
-  categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
-  categoryPill: { backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
-  categoryPillText: { color: "#fff", fontSize: 10.5, fontWeight: "600" },
-  bottomRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 },
-  sellerText: { color: "#e0e0e0", fontSize: 12 },
-  detailsButton: { flexDirection: "row", alignItems: "center", gap: 2, backgroundColor: COLORS.accent, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 },
-  detailsButtonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 12 },
+  sellerTop: { color: "#cfd6e0", fontSize: 11.5, fontWeight: "600" },
+  title: { color: "#fff", fontSize: 14.5, fontWeight: "700", marginTop: 2 },
+  price: { color: "#F5A623", fontSize: 13.5, fontWeight: "800", marginTop: 1 },
+  description: { color: "#d7dbe2", fontSize: 11.5, lineHeight: 16, marginTop: 5 },
+  actionsRow: { flexDirection: "row", justifyContent: "flex-start", gap: 6, marginTop: 9 },
+  actionChip: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 11, paddingHorizontal: 9, paddingVertical: 5,
+  },
+  actionChipPrimary: { backgroundColor: COLORS.accent },
+  actionChipText: { color: "#fff", fontSize: 10.5, fontWeight: "600" },
+  actionChipTextPrimary: { color: COLORS.accentInk, fontSize: 10.5, fontWeight: "700" },
 });

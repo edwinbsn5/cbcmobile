@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Image, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -63,6 +63,7 @@ export default function ProfileScreen({ navigation }) {
   const [counts, setCounts] = useState({ followerCount: 0, followingCount: 0, avgRating: 0, reviewCount: 0 });
   const [posts, setPosts] = useState([]);
   const [reels, setReels] = useState([]);
+  const [products, setProducts] = useState([]);
   const [reviews, setReviews] = useState({ items: [], avgRating: 0, reviewCount: 0, breakdown: {} });
   const [activeTab, setActiveTab] = useState("Posts");
   const [loading, setLoading] = useState(true);
@@ -71,15 +72,17 @@ export default function ProfileScreen({ navigation }) {
 
   const load = useCallback(async () => {
     if (!user?.id) return;
-    const [profileRes, postsRes, reelsRes, reviewsRes] = await Promise.all([
+    const [profileRes, postsRes, reelsRes, productsRes, reviewsRes] = await Promise.all([
       client.get(`/users/${user.id}`),
       client.get(`/users/${user.id}/posts`),
       client.get(`/users/${user.id}/reels`),
+      client.get(`/market/products/by-user/${user.id}`),
       client.get(`/users/${user.id}/reviews`),
     ]);
     setCounts(profileRes.data);
     setPosts(postsRes.data);
     setReels(reelsRes.data);
+    setProducts(productsRes.data);
     setReviews(reviewsRes.data);
     loadSaved();
     loadReshared();
@@ -165,6 +168,9 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity style={[styles.segmentItem, activeTab === "Reels" && styles.segmentItemActive]} onPress={() => setActiveTab("Reels")}>
           <Text style={[styles.segmentText, activeTab === "Reels" && styles.segmentTextActive]}>Reels</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={[styles.segmentItem, activeTab === "My Products" && styles.segmentItemActive]} onPress={() => setActiveTab("My Products")}>
+          <Text style={[styles.segmentText, activeTab === "My Products" && styles.segmentTextActive]}>My Products</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={[styles.segmentItem, activeTab === "Reviews" && styles.segmentItemActive]} onPress={() => setActiveTab("Reviews")}>
           <Text style={[styles.segmentText, activeTab === "Reviews" && styles.segmentTextActive]}>Reviews</Text>
         </TouchableOpacity>
@@ -194,6 +200,43 @@ export default function ProfileScreen({ navigation }) {
         ListEmptyComponent={<Text style={styles.empty}>No reviews yet</Text>}
         renderItem={({ item }) => <ReviewCard review={item} />}
       />
+    );
+  }
+
+  if (activeTab === "My Products") {
+    const photos = products.filter((p) => p.mediaType === "photo");
+    const videos = products.filter((p) => p.mediaType === "video");
+    return (
+      <ScrollView style={styles.container}>
+        {header}
+        <Text style={styles.productSectionLabel}>Photos</Text>
+        {photos.length ? (
+          <View style={styles.productGrid}>
+            {photos.map((p) => (
+              <TouchableOpacity key={p.id} style={styles.productTile} onPress={() => navigation.navigate("MarketProductDetail", { productId: p.id })}>
+                <Image source={{ uri: p.photoUrls?.[0] }} style={styles.productTileMedia} resizeMode="cover" />
+                {p.status === "sold" && <View style={styles.soldBadge}><Text style={styles.soldBadgeText}>SOLD</Text></View>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.empty}>No photo listings yet</Text>
+        )}
+        <Text style={styles.productSectionLabel}>Videos</Text>
+        {videos.length ? (
+          <View style={styles.productGrid}>
+            {videos.map((p) => (
+              <TouchableOpacity key={p.id} style={styles.productTile} onPress={() => navigation.navigate("MarketProductDetail", { productId: p.id })}>
+                <Image source={{ uri: p.thumbnailUrl }} style={styles.productTileMedia} resizeMode="cover" />
+                <Ionicons name="play" size={16} color="#fff" style={styles.reelTilePlayIcon} />
+                {p.status === "sold" && <View style={styles.soldBadge}><Text style={styles.soldBadgeText}>SOLD</Text></View>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.empty}>No video listings yet</Text>
+        )}
+      </ScrollView>
     );
   }
 
@@ -294,4 +337,10 @@ const styles = StyleSheet.create({
   reviewAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: COLORS.wash },
   reviewName: { fontSize: 13, fontWeight: "700", color: COLORS.ink, marginBottom: 2 },
   reviewContent: { fontSize: 13, color: COLORS.ink, lineHeight: 18 },
+  productSectionLabel: { fontSize: 13, fontWeight: "700", color: COLORS.ink, marginHorizontal: 16, marginTop: 16, marginBottom: 8 },
+  productGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 9 },
+  productTile: { width: "33.33%", aspectRatio: 0.8, padding: 1 },
+  productTileMedia: { width: "100%", height: "100%", backgroundColor: "#000" },
+  soldBadge: { position: "absolute", top: 6, left: 6, backgroundColor: "rgba(0,0,0,0.65)", borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 },
+  soldBadgeText: { color: "#fff", fontSize: 8, fontWeight: "800" },
 });

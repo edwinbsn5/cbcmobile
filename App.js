@@ -11,6 +11,7 @@ import { COLORS } from "./theme";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { NotificationProvider, useNotifications } from "./context/NotificationContext";
+import { InboxProvider, useInbox } from "./context/InboxContext";
 import { VideoSoundProvider } from "./context/VideoSoundContext";
 import { registerForPushNotificationsAsync, registerNotificationResponseHandler } from "./services/pushNotifications";
 import { registerLocationAsync } from "./services/location";
@@ -132,14 +133,26 @@ function NotificationBell({ navigation }) {
   );
 }
 
+function InboxBell({ navigation }) {
+  const { counts } = useInbox();
+  return (
+    <TouchableOpacity onPress={() => navigation.navigate("Inbox")} style={{ marginRight: 16 }}>
+      <Ionicons name="chatbubble-outline" size={24} color={COLORS.accent} />
+      {counts.total > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{counts.total > 9 ? "9+" : counts.total}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
 // Order matches the app's header spec: notifications, inbox, search.
 function HeaderIcons({ navigation }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", marginRight: 12 }}>
       <NotificationBell navigation={navigation} />
-      <TouchableOpacity onPress={() => navigation.navigate("Inbox")} style={{ marginRight: 16 }}>
-        <Ionicons name="chatbubble-outline" size={24} color={COLORS.accent} />
-      </TouchableOpacity>
+      <InboxBell navigation={navigation} />
       <TouchableOpacity onPress={() => navigation.navigate("Search")}>
         <Ionicons name="search-outline" size={24} color={COLORS.accent} />
       </TouchableOpacity>
@@ -260,6 +273,7 @@ function RootNavigator() {
 
   return (
     <NotificationProvider>
+      <InboxProvider>
       <VideoSoundProvider>
       <StatusBar style="light" />
       <RootStack.Navigator
@@ -335,6 +349,7 @@ function RootNavigator() {
         <RootStack.Screen name="ChildSafety" component={ChildSafetyScreen} options={{ title: "Child Safety" }} />
       </RootStack.Navigator>
       </VideoSoundProvider>
+      </InboxProvider>
     </NotificationProvider>
   );
 }

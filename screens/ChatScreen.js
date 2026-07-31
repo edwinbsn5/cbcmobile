@@ -11,16 +11,67 @@ import { connectSocket } from "../api/socket";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
+// Header title with an optional second line — used for the Mtu Wako
+// context ("Grace Muthoni" / "Messaging Faith's Hair Studio").
+function ChatHeaderTitle({ name, subtitle }) {
+  return (
+    <View>
+      <Text style={styles.headerName} numberOfLines={1}>{name}</Text>
+      {!!subtitle && <Text style={styles.headerSubtitle} numberOfLines={1}>{subtitle}</Text>}
+    </View>
+  );
+}
+
+function ProductPin({ product, isSeller, onMarkSold, marking, onView }) {
+  if (!product) {
+    return (
+      <View style={styles.pinUnavailable}>
+        <Ionicons name="alert-circle-outline" size={14} color={COLORS.sub} />
+        <Text style={styles.pinUnavailableText}>This item is no longer available</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.pin}>
+      {product.thumbnailUrl ? (
+        <Image source={{ uri: product.thumbnailUrl }} style={styles.pinThumb} />
+      ) : (
+        <View style={[styles.pinThumb, styles.pinThumbPlaceholder]} />
+      )}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.pinTitle} numberOfLines={1}>{product.title}</Text>
+        <Text style={styles.pinPrice}>
+          {product.status === "sold" ? "SOLD · " : ""}KES {product.priceKES.toLocaleString()}
+        </Text>
+      </View>
+      <View style={{ gap: 5, alignItems: "flex-end" }}>
+        {isSeller && product.status !== "sold" && (
+          <TouchableOpacity style={styles.pinButton} onPress={onMarkSold} disabled={marking}>
+            <Text style={styles.pinButtonText}>{marking ? "..." : "Mark Sold"}</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={[styles.pinButton, styles.pinButtonGhost]} onPress={onView}>
+          <Text style={styles.pinButtonGhostText}>View</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 export default function ChatScreen({ route, navigation }) {
-  const { conversationId, otherUser } = route.params;
+  const { conversationId, otherUser: routeOtherUser } = route.params;
   const { user } = useAuth();
+  const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [markingSold, setMarkingSold] = useState(false);
   const socketRef = useRef(null);
   const listRef = useRef(null);
+
+  const otherUser = conversation?.otherUser || routeOtherUser;
 
   // Anti-spam: at most one unanswered message per side, enforced for real on
   // the server (POST /inbox/:id/messages 429s) — this is just the mirror of
@@ -54,7 +105,8 @@ export default function ChatScreen({ route, navigation }) {
 
   useEffect(() => {
     navigation.setOptions({
-      title: otherUser?.name || "Chat",
+      title: conversation?.displayName || otherUser?.name || "Chat",
+      headerTitle: () => <ChatHeaderTitle name={conversation?.displayName || otherUser?.name || "Chat"} subtitle={conversation?.displaySubtitle} />,
       headerRight: () => (
         <TouchableOpacity onPress={handleBlock} style={{ marginRight: 14 }}>
           <Ionicons name="ban-outline" size={22} color="#D32F2F" />
@@ -62,14 +114,19 @@ export default function ChatScreen({ route, navigation }) {
       ),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigation, otherUser]);
+  }, [navigation, conversation, otherUser]);
+
+  function load() {
+    return client.get(`/inbox/${conversationId}/messages`).then((r) => {
+      setConversation(r.data.conversation);
+      setMessages(r.data.messages);
+    });
+  }
 
   useEffect(() => {
     let closed = false;
 
-    client.get(`/inbox/${conversationId}/messages`).then((r) => {
-      if (!closed) setMessages(r.data);
-    }).finally(() => setLoading(false));
+    load().finally(() => setLoading(false));
 
     connectSocket().then((socket) => {
       if (closed) {
@@ -90,6 +147,7 @@ export default function ChatScreen({ route, navigation }) {
       closed = true;
       socketRef.current?.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
   function scrollToEnd() {
@@ -149,10 +207,44 @@ export default function ChatScreen({ route, navigation }) {
     }
   }
 
+  async function handleMarkSold() {
+    if (!conversation?.contextProduct) return;
+    setMarkingSold(true);
+    try {
+      await client.post(`/market/products/${conversation.contextProduct.id}/mark-sold`);
+      await load();
+    } catch (e) {
+      Alert.alert("Couldn't mark as sold", e.response?.data?.error || e.message);
+    } finally {
+      setMarkingSold(false);
+    }
+  }
+
+  function handleViewProduct() {
+    if (!conversation?.contextProduct) return;
+    navigation.navigate("MarketProductDetail", { productId: conversation.contextProduct.id });
+  }
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
+      {conversation?.contextType === "market_product" && (
+        <ProductPin
+          product={conversation.contextProduct}
+          isSeller={conversation.contextProduct?.sellerId === user?.id}
+          onMarkSold={handleMarkSold}
+          marking={markingSold}
+          onView={handleViewProduct}
+        />
+      )}
+      {conversation?.contextType === "page" && !conversation.contextPage && (
+        <View style={styles.pinUnavailable}>
+          <Ionicons name="alert-circle-outline" size={14} color={COLORS.sub} />
+          <Text style={styles.pinUnavailableText}>This Page is no longer available</Text>
+        </View>
+      )}
+
       <FlatList
         ref={listRef}
         data={messages}
@@ -218,6 +310,7 @@ export default function ChatScreen({ route, navigation }) {
           value={text}
           onChangeText={setText}
           placeholder={waitingForReply ? "Waiting for a reply..." : "Message..."}
+          placeholderTextColor={COLORS.sub}
           multiline
           editable={!waitingForReply}
         />
@@ -231,6 +324,19 @@ export default function ChatScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  headerName: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  headerSubtitle: { color: "#B9C6DC", fontSize: 11, marginTop: 1 },
+  pin: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border, padding: 10 },
+  pinThumb: { width: 44, height: 44, borderRadius: 8, backgroundColor: COLORS.wash },
+  pinThumbPlaceholder: { backgroundColor: COLORS.wash },
+  pinTitle: { fontSize: 13.5, fontWeight: "700", color: COLORS.ink },
+  pinPrice: { fontSize: 12, color: COLORS.accent, fontWeight: "700", marginTop: 2 },
+  pinButton: { backgroundColor: COLORS.accent, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
+  pinButtonText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 11 },
+  pinButtonGhost: { backgroundColor: "transparent", borderWidth: 1, borderColor: COLORS.border },
+  pinButtonGhostText: { color: COLORS.sub, fontWeight: "700", fontSize: 11 },
+  pinUnavailable: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: COLORS.wash, padding: 10 },
+  pinUnavailableText: { color: COLORS.sub, fontSize: 12.5, fontStyle: "italic" },
   bubbleRow: { flexDirection: "row", marginBottom: 8 },
   bubbleRowMine: { justifyContent: "flex-end" },
   bubbleRowTheirs: { justifyContent: "flex-start" },
