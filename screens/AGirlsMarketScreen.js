@@ -1,24 +1,33 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import CountyPicker from "../components/CountyPicker";
-import SubCountyPicker from "../components/SubCountyPicker";
 import { COLORS } from "../theme";
 
-export default function AGirlsMarketScreen({ navigation }) {
-  const [pendingMediaType, setPendingMediaType] = useState(null);
-  const [county, setCounty] = useState("");
-  const [subCounty, setSubCounty] = useState("");
+const COUNTY_STORAGE_KEY = "marketBrowseCounty";
 
-  function browse(mediaType) {
-    setCounty("");
-    setSubCounty("");
-    setPendingMediaType(mediaType);
+export default function AGirlsMarketScreen({ navigation }) {
+  const [county, setCounty] = useState("");
+  const [loadedCounty, setLoadedCounty] = useState(false);
+
+  // The chosen county is saved and pre-selected on every future visit — no
+  // need to pick it again unless the user wants to browse a different one.
+  useEffect(() => {
+    AsyncStorage.getItem(COUNTY_STORAGE_KEY).then((saved) => {
+      if (saved) setCounty(saved);
+      setLoadedCounty(true);
+    });
+  }, []);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    AsyncStorage.setItem(COUNTY_STORAGE_KEY, c).catch(() => {});
   }
 
-  function confirmLocation() {
-    navigation.navigate("MarketCategoryChooser", { mediaType: pendingMediaType, county, subCounty });
-    setPendingMediaType(null);
+  function browse(mediaType) {
+    if (!county) return;
+    navigation.navigate("MarketCategoryChooser", { mediaType, county });
   }
 
   return (
@@ -45,37 +54,28 @@ export default function AGirlsMarketScreen({ navigation }) {
       </View>
 
       <View style={styles.browseRow}>
-        <TouchableOpacity style={styles.browseCard} onPress={() => browse("photo")}>
+        <TouchableOpacity style={[styles.browseCard, !county && styles.browseCardDisabled]} onPress={() => browse("photo")}>
           <Ionicons name="images-outline" size={30} color={COLORS.accent} />
           <Text style={styles.browseLabel}>Browse by Photos</Text>
           <Text style={styles.browseHint}>Swipe through listings</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.browseCard} onPress={() => browse("video")}>
+        <TouchableOpacity style={[styles.browseCard, !county && styles.browseCardDisabled]} onPress={() => browse("video")}>
           <Ionicons name="play-circle-outline" size={30} color={COLORS.accent} />
           <Text style={styles.browseLabel}>Browse by Videos</Text>
           <Text style={styles.browseHint}>Scroll a video feed</Text>
         </TouchableOpacity>
       </View>
 
-      <Modal visible={!!pendingMediaType} transparent animationType="fade" onRequestClose={() => setPendingMediaType(null)}>
-        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setPendingMediaType(null)}>
-          <View style={styles.modalCard} onStartShouldSetResponder={() => true}>
-            <Text style={styles.modalTitle}>Where do you want to shop?</Text>
-            <Text style={styles.locationHint}>Pick a county and sub-county to see listings from sellers there</Text>
-            <Text style={styles.locationLabel}>County</Text>
-            <CountyPicker value={county} onChange={(c) => { setCounty(c); setSubCounty(""); }} />
-            <Text style={styles.locationLabel}>Sub-county</Text>
-            <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
-            <TouchableOpacity
-              style={[styles.locationButton, (!county || !subCounty) && styles.locationButtonDisabled]}
-              onPress={confirmLocation}
-              disabled={!county || !subCounty}
-            >
-              <Text style={styles.locationButtonText}>Browse</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <View style={styles.countyBox}>
+        <Text style={styles.countyHint}>
+          Results will be displayed based on the county you select below (don't add sub-county)
+        </Text>
+        <Text style={styles.countyLabel}>County</Text>
+        <CountyPicker value={county} onChange={handleCountyChange} placeholder="Select your county" />
+        {!county && loadedCounty && (
+          <Text style={styles.countyWarning}>Select a county above before browsing</Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -89,16 +89,13 @@ const styles = StyleSheet.create({
   badge: { color: "#F5A623", fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
   title: { color: "#fff", fontSize: 24, fontWeight: "800", fontStyle: "italic", marginTop: 8 },
   subtitle: { color: "#bcd9d2", fontSize: 12.5, marginTop: 6, textAlign: "center", lineHeight: 18 },
-  browseRow: { flexDirection: "row", gap: 12, padding: 16 },
+  browseRow: { flexDirection: "row", gap: 12, padding: 16, paddingBottom: 6 },
   browseCard: { flex: 1, backgroundColor: COLORS.surface, borderRadius: 14, padding: 20, alignItems: "center", gap: 6 },
+  browseCardDisabled: { opacity: 0.5 },
   browseLabel: { fontSize: 13.5, fontWeight: "800", color: COLORS.ink, textAlign: "center", marginTop: 4 },
   browseHint: { fontSize: 11, color: COLORS.sub, textAlign: "center" },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 24 },
-  modalCard: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16 },
-  modalTitle: { fontSize: 16, fontWeight: "800", marginBottom: 6, color: COLORS.ink },
-  locationHint: { fontSize: 12, color: COLORS.sub, marginBottom: 14 },
-  locationLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub, marginBottom: 6, marginTop: 10 },
-  locationButton: { backgroundColor: COLORS.accent, borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 18 },
-  locationButtonDisabled: { opacity: 0.5 },
-  locationButtonText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 14 },
+  countyBox: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, marginHorizontal: 16, marginBottom: 16 },
+  countyHint: { fontSize: 12, color: COLORS.sub, lineHeight: 17, marginBottom: 12 },
+  countyLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub, marginBottom: 6 },
+  countyWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 8 },
 });

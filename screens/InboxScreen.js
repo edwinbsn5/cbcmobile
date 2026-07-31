@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import Avatar from "../components/Avatar";
 import { useInbox } from "../context/InboxContext";
@@ -22,6 +23,7 @@ function timeAgo(ts) {
 }
 
 export default function InboxScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("inbox");
@@ -95,6 +97,7 @@ export default function InboxScreen({ navigation }) {
 
       <FlatList
         style={styles.list}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 12 }}
         data={rows}
         keyExtractor={(c) => c.id}
         ListEmptyComponent={

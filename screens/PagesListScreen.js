@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import client from "../api/client";
 import CountyPicker from "../components/CountyPicker";
-import SubCountyPicker from "../components/SubCountyPicker";
 import { COLORS } from "../theme";
+
+const COUNTY_STORAGE_KEY = "pagesBrowseCounty";
 
 const FILTERS = [
   { key: null, label: "All Pages", icon: "flag-outline", desc: "Active Pages across the app" },
@@ -13,49 +15,55 @@ const FILTERS = [
   { key: "managed", label: "Pages I Manage", icon: "shield-checkmark-outline", desc: "Pages where you're Owner, Admin, or Editor" },
 ];
 
-export default function PagesListScreen({ navigation, route }) {
-  const { categoryId, categoryName, county, subCounty } = route.params || {};
+export default function PagesListScreen({ navigation }) {
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [directory, setDirectory] = useState([]);
-  const [pendingCategory, setPendingCategory] = useState(null);
-  const [pickedCounty, setPickedCounty] = useState("");
-  const [pickedSubCounty, setPickedSubCounty] = useState("");
+  const [county, setCounty] = useState("");
+  const [loadedCounty, setLoadedCounty] = useState(false);
+  const [categoryId, setCategoryId] = useState(null);
+  const [categoryName, setCategoryName] = useState(null);
 
   useEffect(() => {
     client.get("/categories/pages").then((r) => setDirectory(r.data)).catch(() => {});
   }, []);
 
-  // Tapping a category/subcategory doesn't browse immediately — it opens
-  // the location popup first, so results are always scoped to a real
-  // county + sub-county rather than every Page nationwide.
-  function browseCategory(id, name) {
-    setPendingCategory({ id, name });
-    setPickedCounty("");
-    setPickedSubCounty("");
+  // The chosen county is saved and pre-selected on every future visit — no
+  // need to pick it again unless the user wants to browse a different one.
+  useEffect(() => {
+    AsyncStorage.getItem(COUNTY_STORAGE_KEY).then((saved) => {
+      if (saved) setCounty(saved);
+      setLoadedCounty(true);
+    });
+  }, []);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    AsyncStorage.setItem(COUNTY_STORAGE_KEY, c).catch(() => {});
   }
 
-  function confirmLocation() {
-    navigation.setParams({
-      categoryId: pendingCategory.id, categoryName: pendingCategory.name,
-      county: pickedCounty, subCounty: pickedSubCounty,
-    });
-    setPendingCategory(null);
+  function browseCategory(id, name) {
+    if (!county) return;
+    setCategoryId(id);
+    setCategoryName(name);
   }
 
   const load = useCallback(() => {
-    const params = {};
+    if (!county) {
+      setPages([]);
+      setLoading(false);
+      return;
+    }
+    const params = { county };
     if (filter) params.filter = filter;
     if (categoryId) params.categoryId = categoryId;
-    if (county) params.county = county;
-    if (subCounty) params.subCounty = subCounty;
     client
-      .get("/pages", Object.keys(params).length ? { params } : undefined)
+      .get("/pages", { params })
       .then((r) => setPages(r.data))
       .finally(() => setLoading(false));
-  }, [filter, categoryId, county, subCounty]);
+  }, [filter, categoryId, county]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -66,7 +74,8 @@ export default function PagesListScreen({ navigation, route }) {
   }
 
   function clearCategory() {
-    navigation.setParams({ categoryId: undefined, categoryName: undefined, county: undefined, subCounty: undefined });
+    setCategoryId(null);
+    setCategoryName(null);
   }
 
   const activeFilter = FILTERS.find((f) => f.key === filter);
@@ -100,11 +109,20 @@ export default function PagesListScreen({ navigation, route }) {
               </Text>
             </View>
 
+            <View style={styles.countyBox}>
+              <Text style={styles.countyHint}>
+                Results will be displayed based on the county you select below (don't add sub-county)
+              </Text>
+              <Text style={styles.countyLabel}>County</Text>
+              <CountyPicker value={county} onChange={handleCountyChange} placeholder="Select your county" />
+              {!county && loadedCounty && (
+                <Text style={styles.countyWarning}>Select a county above before browsing</Text>
+              )}
+            </View>
+
             {categoryId ? (
               <View style={styles.browsingBanner}>
-                <Text style={styles.browsingBannerText}>
-                  Browsing: {categoryName}{county ? ` · ${county}${subCounty ? ` - ${subCounty}` : ""}` : ""}
-                </Text>
+                <Text style={styles.browsingBannerText}>Browsing: {categoryName}{county ? ` · ${county}` : ""}</Text>
                 <TouchableOpacity onPress={clearCategory}>
                   <Ionicons name="close-circle" size={18} color={COLORS.sub} />
                 </TouchableOpacity>
@@ -134,7 +152,15 @@ export default function PagesListScreen({ navigation, route }) {
         }
         ListEmptyComponent={
           <Text style={styles.empty}>
-            {categoryId ? "No Pages in this category yet" : filter === "mine" ? "You're not on any Page's team yet" : filter === "managed" ? "You don't manage any Pages yet" : "No Pages yet — be the first to create one"}
+            {!county
+              ? "Select a county above to see Pages"
+              : categoryId
+              ? "No Pages in this category yet"
+              : filter === "mine"
+              ? "You're not on any Page's team yet"
+              : filter === "managed"
+              ? "You don't manage any Pages yet"
+              : "No Pages yet — be the first to create one"}
           </Text>
         }
         renderItem={({ item }) => (
@@ -187,26 +213,6 @@ export default function PagesListScreen({ navigation, route }) {
           </View>
         </TouchableOpacity>
       </Modal>
-
-      <Modal visible={!!pendingCategory} transparent animationType="fade" onRequestClose={() => setPendingCategory(null)}>
-        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setPendingCategory(null)}>
-          <View style={styles.modalCard} onStartShouldSetResponder={() => true}>
-            <Text style={styles.modalTitle}>Where do you need "{pendingCategory?.name}"?</Text>
-            <Text style={styles.locationHint}>Pick a county and sub-county to see Pages serving that area</Text>
-            <Text style={styles.locationLabel}>County</Text>
-            <CountyPicker value={pickedCounty} onChange={(c) => { setPickedCounty(c); setPickedSubCounty(""); }} />
-            <Text style={styles.locationLabel}>Sub-county</Text>
-            <SubCountyPicker county={pickedCounty} value={pickedSubCounty} onChange={setPickedSubCounty} />
-            <TouchableOpacity
-              style={[styles.locationButton, (!pickedCounty || !pickedSubCounty) && styles.locationButtonDisabled]}
-              onPress={confirmLocation}
-              disabled={!pickedCounty || !pickedSubCounty}
-            >
-              <Text style={styles.locationButtonText}>View Pages</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </>
   );
 }
@@ -220,6 +226,10 @@ const styles = StyleSheet.create({
   heroBadge: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
   heroTitle: { color: "#fff", fontSize: 19, fontWeight: "800", textAlign: "center", marginTop: 10, lineHeight: 25 },
   heroSubtitle: { color: "#B9C6DC", fontSize: 12, marginTop: 8, textAlign: "center", lineHeight: 18 },
+  countyBox: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, marginHorizontal: 12, marginTop: 12 },
+  countyHint: { fontSize: 12, color: COLORS.sub, lineHeight: 17, marginBottom: 12 },
+  countyLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub, marginBottom: 6 },
+  countyWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 8 },
   browsingBanner: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     backgroundColor: COLORS.wash, marginHorizontal: 12, marginTop: 12, borderRadius: 8, padding: 11,
@@ -253,9 +263,4 @@ const styles = StyleSheet.create({
   filterOptionIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
   filterOptionLabel: { fontSize: 14, fontWeight: "700", color: COLORS.ink },
   filterOptionDesc: { fontSize: 11.5, color: COLORS.sub, marginTop: 1 },
-  locationHint: { fontSize: 12, color: COLORS.sub, marginBottom: 14 },
-  locationLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub, marginBottom: 6, marginTop: 10 },
-  locationButton: { backgroundColor: COLORS.accent, borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 18 },
-  locationButtonDisabled: { opacity: 0.5 },
-  locationButtonText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 14 },
 });

@@ -7,24 +7,22 @@ import { COLORS } from "../theme";
 
 const PANEL_WIDTH = Math.round(Dimensions.get("window").width * 0.78);
 
-// Home stays one-tap-only in the bottom bar. The bottom bar's other slots
-// now point at Hustle Hub (Pages) and A Girls Market instead of Tap & Win /
-// Be the STAR — both of those still exist as full features, just reachable
-// from here instead of a dedicated tab.
+// Home stays one-tap-only in the bottom bar. Order/labels below match the
+// requested menu exactly — Reels dropped (reachable from the profile's own
+// Reels tab / feed rail instead of a dedicated entry here).
 const FEATURE_ITEMS = [
   { icon: "person-circle-outline", label: "My Profile", screen: "Profile" },
-  { icon: "add-circle-outline", label: "Add to Story", screen: "CreateStory" },
-  { icon: "film-outline", label: "Reels", screen: "Reels" },
-  { icon: "stats-chart-outline", label: "My Ads Board", screen: "MyAdsBoard" },
-  { icon: "people-outline", label: "Groups", screen: "Groups" },
+  { icon: "school-outline", label: "Influencer Quest", screen: "InfluencerQuest" },
+  { icon: "people-outline", label: "Plug Wako", screen: "Groups" },
   { icon: "flag-outline", label: "Mtu Wako", screen: "Pages" },
   { icon: "female-outline", label: "A Girls Market", screen: "AGirlsMarket" },
-  { icon: "flame-outline", label: "Trending Hashtags", screen: "TrendingHashtags" },
   { icon: "calendar-outline", label: "Events", screen: "Events" },
-  { icon: "chatbubble-outline", label: "Inbox", screen: "Inbox" },
-  { icon: "wallet-outline", label: "Wallet", screen: "Wallet" },
+  { icon: "stats-chart-outline", label: "My Ads Board", screen: "MyAdsBoard" },
+  { icon: "wallet-outline", label: "My Wallet", screen: "Wallet" },
+  { icon: "flame-outline", label: "Hashtags", screen: "TrendingHashtags" },
   { icon: "bookmark-outline", label: "Saved", screen: "Saved" },
-  { icon: "school-outline", label: "Influencer Quest", screen: "InfluencerQuest" },
+  { icon: "chatbubble-outline", label: "Inbox", screen: "Inbox" },
+  { icon: "add-circle-outline", label: "Add a Story", screen: "CreateStory" },
 ];
 
 const SETTINGS_ITEMS = [
