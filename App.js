@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
+import mobileAds from "react-native-google-mobile-ads";
 import { COLORS } from "./theme";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -242,6 +243,11 @@ function RootNavigator() {
   useEffect(() => {
     registerForPushNotificationsAsync();
     registerLocationAsync();
+    // Explicit init (rather than letting the SDK lazily self-init on the
+    // first ad request) so the mobile ads SDK is already warm by the time
+    // FeedScreen's first AdMobBanner/ReelsScreen's interstitial actually
+    // asks for an ad.
+    mobileAds().initialize();
     const subscription = registerNotificationResponseHandler(navigationRef);
     return () => subscription.remove();
   }, []);
