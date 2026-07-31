@@ -3,7 +3,7 @@ import { ActivityIndicator, View, TouchableOpacity, Text, StyleSheet } from "rea
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import mobileAds from "react-native-google-mobile-ads";
@@ -153,6 +153,7 @@ function Wordmark() {
 
 function MainTabs({ navigation }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const insets = useSafeAreaInsets();
 
   return (
     <>
@@ -162,7 +163,12 @@ function MainTabs({ navigation }) {
           headerTitle: () => <Wordmark />,
           headerRight: () => <HeaderIcons navigation={navigation} />,
           headerStyle: { backgroundColor: COLORS.accentInk },
-          tabBarStyle: { backgroundColor: COLORS.accentInk, height: 64, paddingTop: 6, paddingBottom: 8 },
+          // Explicit height overrides react-navigation's own safe-area-aware
+          // default, so the device's gesture/button nav bar inset has to be
+          // added back in by hand here — otherwise it overlaps the system
+          // nav bar on any phone with an inset (this regressed once before
+          // when height was first hardcoded without it).
+          tabBarStyle: { backgroundColor: COLORS.accentInk, height: 64 + insets.bottom, paddingTop: 6, paddingBottom: 8 + insets.bottom },
           tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
           tabBarActiveTintColor: COLORS.accent,
           tabBarInactiveTintColor: COLORS.wash,
