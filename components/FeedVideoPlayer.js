@@ -39,26 +39,58 @@ function formatTime(ms) {
  * always-mounted, tap-to-play-manually, starting paused — the same
  * "nothing plays until you tap it" behavior those screens had before this
  * component existed, just with the new overlay instead of native controls.
+ *
+ * `autoplay` (default true) additionally gates whether viewport-tracked
+ * mode is allowed to actually start playback on its own — PostCard's
+ * inline feed cards pass `autoplay={false}` so a video never starts
+ * playing just because it scrolled into view (still shows the center play
+ * button), while still mounting/buffering in the background via
+ * `effectiveShouldMount`, so tapping play doesn't have to wait for the
+ * buffer to fill. Reels/fullscreen "Watch"-style contexts keep the
+ * TikTok-style autoplay-as-you-scroll default.
  */
-export default function FeedVideoPlayer({ uri, poster, isActive, shouldMount, onPressBody, variant = "card" }) {
+export default function FeedVideoPlayer({ uri, poster, isActive, shouldMount, onPressBody, variant = "card", autoplay = true }) {
   const { soundEnabled, toggleSound } = useVideoSound();
   const appIsActive = useAppIsActive();
   const insets = useSafeAreaInsets();
   const tracksViewport = isActive !== undefined;
-  const [userPaused, setUserPaused] = useState(!tracksViewport);
+  const [userPaused, setUserPaused] = useState(!tracksViewport || !autoplay);
   const [naturalRatio, setNaturalRatio] = useState(null);
   const [status, setStatus] = useState({ positionMillis: 0, durationMillis: 0 });
   const [isReady, setIsReady] = useState(false);
   const wasActiveRef = useRef(isActive);
 
   useEffect(() => {
-    // Scrolling a video back into view always resumes autoplay rather than
-    // leaving it stuck on a previous manual pause. Only applies in
-    // viewport-tracked mode — manual mode's pause state is entirely
-    // user-driven.
-    if (tracksViewport && isActive && !wasActiveRef.current) setUserPaused(false);
+    // Scrolling a video back into view resumes autoplay rather than leaving
+    // it stuck on a previous manual pause — but only when this instance
+    // autoplays at all. A non-autoplaying card (see `autoplay` prop) always
+    // needs an explicit tap, scroll position notwithstanding.
+    if (autoplay && tracksViewport && isActive && !wasActiveRef.current) setUserPaused(false);
     wasActiveRef.current = isActive;
-  }, [isActive, tracksViewport]);
+  }, [isActive, tracksViewport, autoplay]);
+
+  // Measures the POSTER image's dimensions (a small static JPG, resolves in
+  // a fraction of a second) so the container renders at roughly the right
+  // aspect ratio well before the video itself buffers enough to fire
+  // onReadyForDisplay below — that gap (2-3s on a slow connection) is
+  // exactly what used to show as a wrong-shaped box that "pops" to the
+  // correct size once the video catches up. onReadyForDisplay still
+  // overwrites this with the video's own exact ratio once available, but
+  // by then they should already match, so there's nothing left to pop.
+  useEffect(() => {
+    if (!poster) return;
+    let cancelled = false;
+    Image.getSize(
+      poster,
+      (w, h) => {
+        if (!cancelled && w && h) setNaturalRatio(w / h);
+      },
+      () => {}
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [poster]);
 
   const { displayRatio, needsBlur } = clampAspectRatio(naturalRatio);
   const effectiveShouldMount = shouldMount !== undefined ? shouldMount : tracksViewport ? isActive : true;
@@ -68,6 +100,7 @@ export default function FeedVideoPlayer({ uri, poster, isActive, shouldMount, on
 
   useEffect(() => {
     setIsReady(false);
+    setNaturalRatio(null);
   }, [uri]);
 
   useEffect(() => {

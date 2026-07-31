@@ -159,6 +159,7 @@ export default function PostCard({
             poster={post.thumbnailUrl}
             isActive={isActive}
             shouldMount={shouldMount}
+            autoplay={false}
             onPressBody={() => onOpenVideoFullscreen?.(post.id)}
           />
         </View>
