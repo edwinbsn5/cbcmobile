@@ -110,7 +110,7 @@ export default function PagesListScreen({ navigation }) {
             </View>
 
             <View style={styles.countyBox}>
-              <Text style={styles.countyLabel}>County: Pick your County to get Services/Products near You</Text>
+              <Text style={styles.countyLabel}>County:Get Services/Products Near You</Text>
               <CountyPicker value={county} onChange={handleCountyChange} placeholder="Select your county" />
               {!county && loadedCounty && (
                 <Text style={styles.countyWarning}>Select a county above before browsing</Text>

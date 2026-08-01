@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Keyboard,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -70,8 +70,24 @@ export default function ChatScreen({ route, navigation }) {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [markingSold, setMarkingSold] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const socketRef = useRef(null);
   const listRef = useRef(null);
+
+  // KeyboardAvoidingView already shifts the whole composer above the
+  // keyboard by the keyboard's own height — the static insets.bottom padding
+  // below is only there to clear the gesture nav bar while the keyboard is
+  // CLOSED. Applying both at once double-counts, pushing the composer
+  // partway back down behind the keyboard (reported as the send button/
+  // input being clipped by the keyboard's suggestion bar).
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const otherUser = conversation?.otherUser || routeOtherUser;
 
@@ -308,7 +324,7 @@ export default function ChatScreen({ route, navigation }) {
           <Text style={styles.waitingBannerText}>Waiting for {otherUser?.name} to reply before you can send another message</Text>
         </View>
       )}
-      <View style={[styles.composer, { paddingBottom: 8 + insets.bottom }]}>
+      <View style={[styles.composer, { paddingBottom: 8 + (keyboardVisible ? 0 : insets.bottom) }]}>
         <TouchableOpacity style={styles.attachButton} onPress={handleAttach} disabled={uploading || waitingForReply}>
           {uploading ? <ActivityIndicator size="small" color={COLORS.accent} /> : <Text style={styles.attachButtonText}>📎</Text>}
         </TouchableOpacity>
