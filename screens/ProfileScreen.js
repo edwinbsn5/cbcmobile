@@ -135,6 +135,8 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.metaLine}>{counts.subCounty ? `${counts.county} - ${counts.subCounty}` : counts.county}</Text>
       )}
 
+      <InfluencerQuestCard progress={counts.influencerQuest} />
+
       <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("AccountSettings")}>
         <Text style={styles.actionButtonText}>Edit Profile</Text>
       </TouchableOpacity>
@@ -159,8 +161,6 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.statLabel}>Reviews</Text>
         </TouchableOpacity>
       </View>
-
-      <InfluencerQuestCard progress={counts.influencerQuest} />
 
       <View style={styles.segment}>
         <TouchableOpacity style={[styles.segmentItem, activeTab === "Posts" && styles.segmentItemActive]} onPress={() => setActiveTab("Posts")}>

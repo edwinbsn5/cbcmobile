@@ -107,6 +107,12 @@ export default function InfluencerQuestScreen({ navigation }) {
         </View>
       )}
 
+      <View style={styles.targetsCard}>
+        <Text style={styles.targetsTitle}>Tiers</Text>
+        <Text style={styles.targetsText}>3,000 pts in 30 days → Blue tick. 7,000 pts in the next 30 days locks Blue in for good.</Text>
+        <Text style={styles.targetsText}>From Blue: 10,000 pts in 30 days → Gold tick. 20,000 pts in the next 30 days locks Gold in for good.</Text>
+      </View>
+
       <Text style={styles.sectionTitle}>How points work</Text>
       {POINT_SOURCES.map((s) => (
         <View key={s.label} style={styles.pointRow}>
@@ -117,12 +123,6 @@ export default function InfluencerQuestScreen({ navigation }) {
           <Text style={styles.pointValue}>{s.points}</Text>
         </View>
       ))}
-
-      <View style={styles.targetsCard}>
-        <Text style={styles.targetsTitle}>Tiers</Text>
-        <Text style={styles.targetsText}>31,000 pts in 30 days → Blue tick. 7,000 pts in the next 30 days locks Blue in for good.</Text>
-        <Text style={styles.targetsText}>From Blue: 10,000 pts in 30 days → Gold tick. 20,000 pts in the next 30 days locks Gold in for good.</Text>
-      </View>
 
       <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate("ReportImposter")}>
         <View style={styles.actionIcon}>

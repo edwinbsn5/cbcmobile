@@ -1,4 +1,4 @@
-import { RewardedAd, RewardedAdEventType } from "react-native-google-mobile-ads";
+import { RewardedAd, RewardedAdEventType, AdEventType } from "react-native-google-mobile-ads";
 import { fetchAdmobConfig } from "./admobConfig";
 
 let rewarded = null;
@@ -18,7 +18,11 @@ async function loadRewardedAd() {
       unsubscribeLoaded();
       resolve(true);
     });
-    const unsubscribeError = rewarded.addAdEventListener(RewardedAdEventType.ERROR, () => {
+    // Error events fire under the generic AdEventType, not RewardedAdEventType
+    // (which only has LOADED/EARNED_REWARD) — using the wrong enum here meant
+    // this listener never matched anything, so a failed load never resolved
+    // this promise and the "Watch an ad" button just hung forever.
+    const unsubscribeError = rewarded.addAdEventListener(AdEventType.ERROR, () => {
       unsubscribeError();
       resolve(false);
     });
