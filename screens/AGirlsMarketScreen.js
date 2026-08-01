@@ -67,10 +67,7 @@ export default function AGirlsMarketScreen({ navigation }) {
       </View>
 
       <View style={styles.countyBox}>
-        <Text style={styles.countyHint}>
-          Results will be displayed based on the county you select below (don't add sub-county)
-        </Text>
-        <Text style={styles.countyLabel}>County</Text>
+        <Text style={styles.countyLabel}>County: Pick your County to get Services/Products near You</Text>
         <CountyPicker value={county} onChange={handleCountyChange} placeholder="Select your county" />
         {!county && loadedCounty && (
           <Text style={styles.countyWarning}>Select a county above before browsing</Text>
@@ -95,7 +92,6 @@ const styles = StyleSheet.create({
   browseLabel: { fontSize: 13.5, fontWeight: "800", color: COLORS.ink, textAlign: "center", marginTop: 4 },
   browseHint: { fontSize: 11, color: COLORS.sub, textAlign: "center" },
   countyBox: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, marginHorizontal: 16, marginBottom: 16 },
-  countyHint: { fontSize: 12, color: COLORS.sub, lineHeight: 17, marginBottom: 12 },
   countyLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub, marginBottom: 6 },
   countyWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 8 },
 });
