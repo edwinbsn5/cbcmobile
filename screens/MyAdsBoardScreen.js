@@ -9,6 +9,7 @@ const ITEMS = [
   { icon: "megaphone-outline", label: "My Sponsored Posts", hint: "Posts you've boosted in the home feed", screen: "MySponsoredPosts" },
   { icon: "trending-up-outline", label: "My Boosted Groups", hint: "Groups featured via Featured Groups", screen: "MyBoostedGroups" },
   { icon: "flag-outline", label: "My Boosted Pages", hint: "Pages featured via Featured Pages", screen: "MyBoostedPages" },
+  { icon: "pricetags-outline", label: "My Boosted Products", hint: "Market listings boosted via feed browsing", screen: "MyBoostedMarketProducts" },
 ];
 
 export default function MyAdsBoardScreen({ navigation }) {

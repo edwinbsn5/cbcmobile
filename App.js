@@ -53,6 +53,7 @@ import BoostPostScreen from "./screens/BoostPostScreen";
 import MySponsoredPostsScreen from "./screens/MySponsoredPostsScreen";
 import BoostGroupScreen from "./screens/BoostGroupScreen";
 import MyBoostedGroupsScreen from "./screens/MyBoostedGroupsScreen";
+import MyBoostedMarketProductsScreen from "./screens/MyBoostedMarketProductsScreen";
 import SavedScreen from "./screens/SavedScreen";
 import InfluencerQuestScreen from "./screens/InfluencerQuestScreen";
 import ReportImposterScreen from "./screens/ReportImposterScreen";
@@ -307,6 +308,7 @@ function RootNavigator() {
         <RootStack.Screen name="MarketSwipe" component={MarketSwipeScreen} options={{ title: "Browse" }} />
         <RootStack.Screen name="MarketVideoFeed" component={MarketVideoFeedScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="MarketBoostProduct" component={MarketBoostProductScreen} options={{ title: "Boost Listing" }} />
+        <RootStack.Screen name="MyBoostedMarketProducts" component={MyBoostedMarketProductsScreen} options={{ title: "My Boosted Products" }} />
         <RootStack.Screen name="HashtagFeed" component={HashtagFeedScreen} options={({ route }) => ({ title: `#${route.params.tag}` })} />
         <RootStack.Screen name="TrendingHashtags" component={TrendingHashtagsScreen} options={{ title: "Trending" }} />
         <RootStack.Screen name="FeedVideoFullscreen" component={FeedVideoFullscreenScreen} options={{ headerShown: false }} />
