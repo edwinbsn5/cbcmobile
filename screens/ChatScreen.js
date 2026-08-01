@@ -6,6 +6,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { connectSocket } from "../api/socket";
 import { useAuth } from "../context/AuthContext";
@@ -60,6 +61,7 @@ function ProductPin({ product, isSeller, onMarkSold, marking, onView }) {
 
 export default function ChatScreen({ route, navigation }) {
   const { conversationId, otherUser: routeOtherUser } = route.params;
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -228,7 +230,11 @@ export default function ChatScreen({ route, navigation }) {
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
       {conversation?.contextType === "market_product" && (
         <ProductPin
           product={conversation.contextProduct}
@@ -247,6 +253,7 @@ export default function ChatScreen({ route, navigation }) {
 
       <FlatList
         ref={listRef}
+        style={styles.list}
         data={messages}
         keyExtractor={(m) => m.id}
         contentContainerStyle={{ padding: 10 }}
@@ -301,7 +308,7 @@ export default function ChatScreen({ route, navigation }) {
           <Text style={styles.waitingBannerText}>Waiting for {otherUser?.name} to reply before you can send another message</Text>
         </View>
       )}
-      <View style={styles.composer}>
+      <View style={[styles.composer, { paddingBottom: 8 + insets.bottom }]}>
         <TouchableOpacity style={styles.attachButton} onPress={handleAttach} disabled={uploading || waitingForReply}>
           {uploading ? <ActivityIndicator size="small" color={COLORS.accent} /> : <Text style={styles.attachButtonText}>📎</Text>}
         </TouchableOpacity>
@@ -324,6 +331,7 @@ export default function ChatScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  list: { flex: 1 },
   headerName: { color: "#fff", fontWeight: "800", fontSize: 16 },
   headerSubtitle: { color: "#B9C6DC", fontSize: 11, marginTop: 1 },
   pin: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border, padding: 10 },
