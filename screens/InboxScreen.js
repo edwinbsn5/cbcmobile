@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import Avatar from "../components/Avatar";
 import { useInbox } from "../context/InboxContext";
@@ -27,7 +28,10 @@ export default function InboxScreen({ navigation }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("inbox");
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [deleting, setDeleting] = useState(false);
   const { refresh: refreshInboxBadge } = useInbox();
+  const selectionMode = selectedIds.size > 0;
 
   const load = useCallback(async () => {
     const { data } = await client.get("/inbox");
@@ -41,15 +45,75 @@ export default function InboxScreen({ navigation }) {
     }, [load])
   );
 
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity onPress={() => navigation.navigate("NewMessage")} style={{ marginRight: 16 }}>
-          <Text style={styles.newButtonText}>New</Text>
-        </TouchableOpacity>
-      ),
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelect(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
-  }, [navigation]);
+  }
+
+  function confirmDeleteSelected() {
+    const count = selectedIds.size;
+    Alert.alert(
+      count > 1 ? `Delete ${count} chats?` : "Delete chat?",
+      "This only removes it from your Inbox — the other person will still see the conversation.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const ids = Array.from(selectedIds);
+            setDeleting(true);
+            try {
+              await client.post("/inbox/delete-many", { conversationIds: ids });
+              setConversations((prev) => prev.filter((c) => !ids.includes(c.id)));
+              clearSelection();
+              refreshInboxBadge();
+            } catch (e) {
+              Alert.alert("Couldn't delete", e.response?.data?.error || e.message);
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  React.useLayoutEffect(() => {
+    if (selectionMode) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity onPress={clearSelection} style={{ marginLeft: 16 }}>
+            <Text style={styles.newButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        ),
+        headerTitle: `${selectedIds.size} selected`,
+        headerRight: () => (
+          <TouchableOpacity onPress={confirmDeleteSelected} disabled={deleting} style={{ marginRight: 16 }}>
+            <Ionicons name="trash-outline" size={22} color={deleting ? COLORS.sub : "#D32F2F"} />
+          </TouchableOpacity>
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        headerLeft: undefined,
+        headerTitle: "Inbox",
+        headerRight: () => (
+          <TouchableOpacity onPress={() => navigation.navigate("NewMessage")} style={{ marginRight: 16 }}>
+            <Text style={styles.newButtonText}>New</Text>
+          </TouchableOpacity>
+        ),
+      });
+    }
+  }, [navigation, selectionMode, selectedIds, deleting]);
 
   const tabCounts = useMemo(() => {
     const counts = { inbox: 0, mtu_wako: 0, market: 0 };
@@ -60,6 +124,10 @@ export default function InboxScreen({ navigation }) {
   const rows = useMemo(() => conversations.filter((c) => c.tab === activeTab), [conversations, activeTab]);
 
   function openConversation(item) {
+    if (selectionMode) {
+      toggleSelect(item.id);
+      return;
+    }
     navigation.navigate("Chat", {
       conversationId: item.id,
       otherUser: item.otherUser,
@@ -81,7 +149,7 @@ export default function InboxScreen({ navigation }) {
           <TouchableOpacity
             key={t.key}
             style={[styles.seg, activeTab === t.key && styles.segActive]}
-            onPress={() => setActiveTab(t.key)}
+            onPress={() => { clearSelection(); setActiveTab(t.key); }}
           >
             <Text style={[styles.segLabel, activeTab === t.key && styles.segLabelActive]}>{t.label}</Text>
             {tabCounts[t.key] > 0 && (
@@ -109,8 +177,22 @@ export default function InboxScreen({ navigation }) {
               : "No A Girls Market conversations yet"}
           </Text>
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.row} onPress={() => openConversation(item)}>
+        renderItem={({ item }) => {
+          const isSelected = selectedIds.has(item.id);
+          return (
+          <TouchableOpacity
+            style={[styles.row, isSelected && styles.rowSelected]}
+            onPress={() => openConversation(item)}
+            onLongPress={() => toggleSelect(item.id)}
+          >
+            {selectionMode && (
+              <Ionicons
+                name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                size={22}
+                color={isSelected ? COLORS.accent : COLORS.sub}
+                style={styles.checkbox}
+              />
+            )}
             {item.contextType === "market_product" ? (
               item.displayAvatar ? (
                 <Image source={{ uri: item.displayAvatar }} style={styles.thumb} />
@@ -136,7 +218,8 @@ export default function InboxScreen({ navigation }) {
               )}
             </View>
           </TouchableOpacity>
-        )}
+          );
+        }}
       />
     </View>
   );
@@ -156,6 +239,8 @@ const styles = StyleSheet.create({
   segCountTextActive: { color: COLORS.accentInk },
   list: { flex: 1 },
   row: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, padding: 12, marginHorizontal: 10, marginTop: 8, borderRadius: 10 },
+  rowSelected: { backgroundColor: COLORS.wash, borderWidth: 1, borderColor: COLORS.accent },
+  checkbox: { marginRight: 10 },
   avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
   thumb: { width: 48, height: 48, borderRadius: 8, marginRight: 12, backgroundColor: COLORS.wash },
   thumbPlaceholder: { backgroundColor: COLORS.wash },
