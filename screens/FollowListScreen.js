@@ -14,7 +14,9 @@ export default function FollowListScreen({ route, navigation }) {
 
   useEffect(() => {
     navigation.setOptions({ title: mode === "followers" ? "Followers" : "Following" });
-    client.get(`/users/${userId}/${mode}`).then((r) => setList(r.data)).finally(() => setLoading(false));
+    client.get(`/users/${userId}/${mode}`).then((r) => setList(r.data))
+      .catch((e) => Alert.alert("Couldn't load list", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [userId, mode, navigation]);
 
   async function handleToggleFollow(item) {

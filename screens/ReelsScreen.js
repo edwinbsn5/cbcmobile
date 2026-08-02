@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity, ActivityIndicator, Animated } from "react-native";
+import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,13 +20,15 @@ const { height, width } = Dimensions.get("window");
 let interstitialShownThisSession = false;
 
 export default function ReelsScreen({ route, navigation }) {
-  const { authorId, startIndex = 0 } = route.params || {};
+  const { authorId, startIndex = 0, focusReelId, focusCommentId } = route.params || {};
   const { user } = useAuth();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const [reels, setReels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [commentsOpenId, setCommentsOpenId] = useState(null);
+  const listRef = useRef(null);
+  const focusHandledRef = useRef(false);
   // Shared across every slide — only ever driven while exactly one slide has
   // comments open, so there's no cross-talk between slides. Reset to 0 by
   // CommentsSheet's own close animation before it unmounts, so it's always
@@ -46,8 +48,23 @@ export default function ReelsScreen({ route, navigation }) {
   }
 
   useEffect(() => {
-    load().finally(() => setLoading(false));
+    load()
+      .catch((e) => Alert.alert("Couldn't load reels", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [authorId]);
+
+  // Arriving via a "commented on your reel" notification tap — jump to that
+  // reel (it may not be at startIndex/0 in this ranked list) and pop its
+  // comments open. Only attempted once per mount, even if reels re-fetches.
+  useEffect(() => {
+    if (!focusReelId || focusHandledRef.current || !reels.length) return;
+    const index = reels.findIndex((r) => r.id === focusReelId);
+    if (index >= 0) {
+      listRef.current?.scrollToIndex({ index, animated: false });
+      if (focusCommentId) setCommentsOpenId(focusReelId);
+      focusHandledRef.current = true;
+    }
+  }, [reels, focusReelId, focusCommentId]);
 
   // Once per session, the first time Reels is opened: load + show one
   // interstitial ad. Deliberately the only ad-frequency behavior this adds —
@@ -61,8 +78,12 @@ export default function ReelsScreen({ route, navigation }) {
   }, []);
 
   async function handleReact(reelId, reaction) {
-    await client.post(`/reels/${reelId}/react`, { reaction });
-    load();
+    try {
+      await client.post(`/reels/${reelId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
   }
 
   // Media scale/translateY shared by whichever slide currently has comments
@@ -80,6 +101,7 @@ export default function ReelsScreen({ route, navigation }) {
 
   return (
     <FlatList
+      ref={listRef}
       data={reels}
       keyExtractor={(r) => r.id}
       pagingEnabled
@@ -88,6 +110,9 @@ export default function ReelsScreen({ route, navigation }) {
       decelerationRate="fast"
       initialScrollIndex={startIndex}
       getItemLayout={(data, index) => ({ length: height, offset: height * index, index })}
+      onScrollToIndexFailed={(info) => {
+        setTimeout(() => listRef.current?.scrollToIndex({ index: info.index, animated: false }), 300);
+      }}
       onViewableItemsChanged={onViewableItemsChanged}
       viewabilityConfig={viewabilityConfig}
       renderItem={({ item, index }) => {

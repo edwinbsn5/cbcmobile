@@ -8,9 +8,12 @@ export default function NewMessageScreen({ navigation }) {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    client.get("/inbox/contacts").then((r) => setContacts(r.data)).finally(() => setLoading(false));
+    client.get("/inbox/contacts").then((r) => setContacts(r.data))
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleStart(user) {
@@ -32,7 +35,11 @@ export default function NewMessageScreen({ navigation }) {
       style={styles.container}
       data={contacts}
       keyExtractor={(u) => u.id}
-      ListEmptyComponent={<Text style={styles.empty}>No other users to message yet</Text>}
+      ListEmptyComponent={
+        <Text style={styles.empty}>
+          {loadError ? "Couldn't load contacts. Pull down to retry." : "No other users to message yet"}
+        </Text>
+      }
       renderItem={({ item }) => (
         <TouchableOpacity style={styles.row} onPress={() => handleStart(item)} disabled={starting === item.id}>
           <Avatar uri={item.avatar} name={item.name} style={styles.avatar} />

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
 import { useNotifications } from "../context/NotificationContext";
@@ -27,7 +27,9 @@ export default function NotificationsScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      load().finally(() => setLoading(false));
+      load()
+        .catch((e) => Alert.alert("Couldn't load notifications", e.response?.data?.error || e.message))
+        .finally(() => setLoading(false));
     }, [load])
   );
 
@@ -43,16 +45,25 @@ export default function NotificationsScreen({ navigation }) {
   }, [navigation]);
 
   async function handleMarkAllRead() {
-    await client.post("/notifications/read-all");
-    await load();
-    await refresh();
+    try {
+      await client.post("/notifications/read-all");
+      await load();
+      await refresh();
+    } catch (e) {
+      Alert.alert("Couldn't mark all as read", e.response?.data?.error || e.message);
+    }
   }
 
   async function handlePress(notification) {
     if (!notification.readAt) {
-      await client.post(`/notifications/${notification.id}/read`);
-      setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, readAt: Date.now() } : n)));
-      refresh();
+      try {
+        await client.post(`/notifications/${notification.id}/read`);
+        setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, readAt: Date.now() } : n)));
+        refresh();
+      } catch (e) {
+        // Marking-as-read failing (flaky network) shouldn't block navigating
+        // to whatever triggered this notification — it'll just retry next time.
+      }
     }
     navigateForData(navigation, notification.data);
   }

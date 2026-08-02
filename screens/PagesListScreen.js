@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from "react-native";
+import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -62,6 +62,7 @@ export default function PagesListScreen({ navigation }) {
     client
       .get("/pages", { params })
       .then((r) => setPages(r.data))
+      .catch((e) => Alert.alert("Couldn't load pages", e.response?.data?.error || e.message))
       .finally(() => setLoading(false));
   }, [filter, categoryId, county]);
 

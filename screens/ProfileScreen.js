@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Image, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -91,18 +91,28 @@ export default function ProfileScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      load().finally(() => setLoading(false));
+      load()
+        .catch((e) => Alert.alert("Couldn't load profile", e.response?.data?.error || e.message))
+        .finally(() => setLoading(false));
     }, [load])
   );
 
   async function handleReact(postId, reaction) {
-    await client.post(`/feed/${postId}/react`, { reaction });
-    load();
+    try {
+      await client.post(`/feed/${postId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleDeletePost(postId) {
-    await client.delete(`/feed/${postId}`);
-    load();
+    try {
+      await client.delete(`/feed/${postId}`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
+    }
   }
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;

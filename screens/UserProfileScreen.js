@@ -108,7 +108,9 @@ export default function UserProfileScreen({ route, navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      load().finally(() => setLoading(false));
+      load()
+        .catch((e) => Alert.alert("Couldn't load profile", e.response?.data?.error || e.message))
+        .finally(() => setLoading(false));
     }, [load])
   );
 
@@ -138,13 +140,21 @@ export default function UserProfileScreen({ route, navigation }) {
   }
 
   async function handleReact(postId, reaction) {
-    await client.post(`/feed/${postId}/react`, { reaction });
-    load();
+    try {
+      await client.post(`/feed/${postId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleDeletePost(postId) {
-    await client.delete(`/feed/${postId}`);
-    load();
+    try {
+      await client.delete(`/feed/${postId}`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleSubmitReview() {

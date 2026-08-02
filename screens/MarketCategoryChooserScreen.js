@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import client from "../api/client";
 import { COLORS } from "../theme";
 
@@ -16,7 +16,9 @@ export default function MarketCategoryChooserScreen({ route, navigation }) {
   const destination = mediaType === "video" ? "MarketVideoFeed" : "MarketSwipe";
 
   useEffect(() => {
-    client.get("/market/categories/tree").then((r) => setCategories(r.data)).finally(() => setLoading(false));
+    client.get("/market/categories/tree").then((r) => setCategories(r.data))
+      .catch((e) => Alert.alert("Couldn't load categories", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   function choose(categoryId, categoryName) {

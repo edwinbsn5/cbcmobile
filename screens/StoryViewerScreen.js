@@ -257,7 +257,7 @@ export default function StoryViewerScreen({ route, navigation }) {
       />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
         style={[styles.bottomArea, { paddingBottom: insets.bottom + 16 }]}
       >
         {isOwn ? (

@@ -36,12 +36,18 @@ export default function GroupVideoPlayerScreen({ route, navigation }) {
   }
 
   useEffect(() => {
-    load().finally(() => setLoading(false));
+    load()
+      .catch((e) => Alert.alert("Couldn't load videos", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [groupId]);
 
   async function handleReact(videoId, reaction) {
-    await client.post(`/groups/${groupId}/posts/${videoId}/react`, { reaction });
-    load();
+    try {
+      await client.post(`/groups/${groupId}/posts/${videoId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
   }
 
   function handleDelete(video) {
@@ -51,9 +57,13 @@ export default function GroupVideoPlayerScreen({ route, navigation }) {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          await client.delete(`/groups/${groupId}/posts/${video.id}`);
-          if (videos.length <= 1) navigation.goBack();
-          else load();
+          try {
+            await client.delete(`/groups/${groupId}/posts/${video.id}`);
+            if (videos.length <= 1) navigation.goBack();
+            else load();
+          } catch (e) {
+            Alert.alert("Couldn't delete video", e.response?.data?.error || e.message);
+          }
         },
       },
     ]);
@@ -62,7 +72,13 @@ export default function GroupVideoPlayerScreen({ route, navigation }) {
   function handleUnfollow(video) {
     Alert.alert(`Unfollow ${video.author?.name}?`, "", [
       { text: "Cancel", style: "cancel" },
-      { text: "Unfollow", style: "destructive", onPress: async () => { await client.post(`/users/${video.author.id}/unfollow`); } },
+      { text: "Unfollow", style: "destructive", onPress: async () => {
+          try {
+            await client.post(`/users/${video.author.id}/unfollow`);
+          } catch (e) {
+            Alert.alert("Couldn't unfollow", e.response?.data?.error || e.message);
+          }
+        } },
     ]);
   }
 
@@ -72,7 +88,14 @@ export default function GroupVideoPlayerScreen({ route, navigation }) {
       "They won't be able to follow or message you, and neither of you will see each other's content.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Block", style: "destructive", onPress: async () => { await client.post(`/users/${video.author.id}/block`); navigation.goBack(); } },
+        { text: "Block", style: "destructive", onPress: async () => {
+            try {
+              await client.post(`/users/${video.author.id}/block`);
+              navigation.goBack();
+            } catch (e) {
+              Alert.alert("Couldn't block", e.response?.data?.error || e.message);
+            }
+          } },
       ]
     );
   }

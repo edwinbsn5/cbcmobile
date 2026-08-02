@@ -11,7 +11,7 @@ export default function WelcomeScreen({ navigation }) {
       <StatusBar style="light" />
       <View style={styles.hero}>
         <Image source={require("../assets/icon.png")} style={styles.logo} />
-        <Text style={styles.word}>The CBC</Text>
+        <Text style={styles.word}>Tujijenge</Text>
         <Text style={styles.tagline}>Build Skills. Build Wealth. Build Your Circle.</Text>
       </View>
 

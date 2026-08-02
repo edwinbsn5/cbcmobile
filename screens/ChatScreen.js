@@ -91,13 +91,14 @@ export default function ChatScreen({ route, navigation }) {
 
   const otherUser = conversation?.otherUser || routeOtherUser;
 
-  // Anti-spam: at most one unanswered message per side, enforced for real on
-  // the server (POST /inbox/:id/messages 429s) — this is just the mirror of
-  // that same rule so the composer reflects it instead of letting the user
-  // hit the error. Recomputed from whatever's already loaded, so it flips
-  // back the instant the other person's reply arrives over the socket.
-  const lastMessage = messages[messages.length - 1];
-  const waitingForReply = !!lastMessage && lastMessage.senderId === user?.id;
+  // Anti-spam gate: only blocks a *first* unanswered message to someone who
+  // has never replied — enforced for real on the server (POST
+  // /inbox/:id/messages 429s), this is just the mirror of that same rule so
+  // the composer reflects it instead of letting the user hit the error.
+  // Once the other person has sent even one message ever in this
+  // conversation, this stays false permanently (not just until your next
+  // send) — normal back-and-forth after that first reply is never gated.
+  const waitingForReply = messages.length > 0 && !messages.some((m) => m.senderId !== user?.id);
 
   function handleBlock() {
     Alert.alert(
@@ -144,7 +145,9 @@ export default function ChatScreen({ route, navigation }) {
   useEffect(() => {
     let closed = false;
 
-    load().finally(() => setLoading(false));
+    load()
+      .catch((e) => Alert.alert("Couldn't load conversation", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
 
     connectSocket().then((socket) => {
       if (closed) {
@@ -157,7 +160,12 @@ export default function ChatScreen({ route, navigation }) {
       });
       socket.on("message:new", (message) => {
         if (message.conversationId !== conversationId) return;
-        setMessages((prev) => [...prev, message]);
+        // The sender's own POST /messages response already appended this
+        // exact message locally (see handleSendText/handleAttach) — the
+        // server broadcasts to both participants' sockets unconditionally,
+        // so without this guard the sender sees their own message twice
+        // until the next reload re-fetches the true single copy.
+        setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       });
     });
 
@@ -248,7 +256,7 @@ export default function ChatScreen({ route, navigation }) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior="padding"
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       {conversation?.contextType === "market_product" && (

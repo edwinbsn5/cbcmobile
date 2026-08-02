@@ -33,7 +33,9 @@ export default function EventDetailScreen({ route }) {
   }
 
   useEffect(() => {
-    load().finally(() => setLoading(false));
+    load()
+      .catch((e) => Alert.alert("Couldn't load event", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [eventId]);
 
   async function handleRsvp(status) {

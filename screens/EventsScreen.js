@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from "react-native";
+import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -29,6 +29,7 @@ export default function EventsScreen({ navigation }) {
     client
       .get("/events", filter ? { params: { filter } } : undefined)
       .then((r) => setEvents(r.data))
+      .catch((e) => Alert.alert("Couldn't load events", e.response?.data?.error || e.message))
       .finally(() => setLoading(false));
     loadSaved();
   }, [filter, loadSaved]);

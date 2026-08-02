@@ -26,7 +26,7 @@ export default function ReshareComposerScreen({ route, navigation }) {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { paddingBottom: insets.bottom + 14 }]}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior="padding"
     >
       <TextInput
         style={styles.captionInput}

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -34,7 +34,9 @@ export default function SupportScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      load().finally(() => setLoading(false));
+      load()
+        .catch((e) => Alert.alert("Couldn't load tickets", e.response?.data?.error || e.message))
+        .finally(() => setLoading(false));
     }, [load])
   );
 

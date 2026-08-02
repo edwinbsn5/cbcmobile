@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Image, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -66,12 +66,15 @@ function VideoGridRow({ row, onPress }) {
 }
 
 export default function GroupDetailScreen({ route, navigation }) {
-  const { groupId } = route.params;
+  const { groupId, focusPostId: initialFocusPostId, focusCommentId } = route.params;
   const { user, updateWalletBalance } = useAuth();
   const [group, setGroup] = useState(null);
   const [mySub, setMySub] = useState(null);
   const [activeTab, setActiveTab] = useState("Feed");
   const [posts, setPosts] = useState([]);
+  // Arriving via a "commented on your group post" notification tap.
+  const [focusPostId, setFocusPostId] = useState(initialFocusPostId ?? null);
+  const listRef = useRef(null);
   const [blogs, setBlogs] = useState([]);
   const [reviews, setReviews] = useState({ items: [], avgRating: 0, reviewCount: 0 });
   const [loading, setLoading] = useState(true);
@@ -141,7 +144,9 @@ export default function GroupDetailScreen({ route, navigation }) {
   }
 
   useEffect(() => {
-    load().finally(() => setLoading(false));
+    load()
+      .catch((e) => Alert.alert("Couldn't load group", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [groupId]);
 
   async function handleSubscribe(tier) {
@@ -345,13 +350,21 @@ export default function GroupDetailScreen({ route, navigation }) {
   }
 
   async function handleReact(postId, reaction) {
-    await client.post(`/groups/${groupId}/posts/${postId}/react`, { reaction });
-    load();
+    try {
+      await client.post(`/groups/${groupId}/posts/${postId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleDeletePost(postId) {
-    await client.delete(`/groups/${groupId}/posts/${postId}`);
-    load();
+    try {
+      await client.delete(`/groups/${groupId}/posts/${postId}`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleSubmitReview() {
@@ -382,6 +395,16 @@ export default function GroupDetailScreen({ route, navigation }) {
     }
   }
 
+  useEffect(() => {
+    if (!focusPostId || activeTab !== "Feed" || !posts.length) return;
+    const index = posts.findIndex((item) => item.id === focusPostId);
+    if (index >= 0) {
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.15 });
+    }
+    setFocusPostId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts, activeTab]);
+
   if (loading || !group) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   // Videos render as a 3-column grid rather than one card per row, so the
@@ -395,9 +418,13 @@ export default function GroupDetailScreen({ route, navigation }) {
 
   return (
     <FlatList
+      ref={listRef}
       style={styles.container}
       data={tabData}
       keyExtractor={(item, i) => (activeTab === "Videos" ? `Videos-row-${i}` : `${activeTab}-${item.kind || "x"}-${item.id}-${i}`)}
+      onScrollToIndexFailed={(info) => {
+        setTimeout(() => listRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.15 }), 300);
+      }}
       renderItem={({ item, index }) => {
         if (activeTab === "Reviews") return <ReviewCard review={item} />;
         if (activeTab === "Videos") {
@@ -417,6 +444,7 @@ export default function GroupDetailScreen({ route, navigation }) {
             onToggleSave={() => toggleSave("post", item.id)}
             onDelete={handleDeletePost}
             onChanged={load}
+            autoOpenComments={!!focusCommentId && item.id === focusPostId}
           />
         );
       }}

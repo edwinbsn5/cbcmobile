@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import client from "../api/client";
 import Avatar from "../components/Avatar";
 import { COLORS } from "../theme";
@@ -23,7 +23,9 @@ export default function StoryInsightsScreen({ route }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    client.get(`/stories/${storyId}/insights`).then((r) => setInsights(r.data)).finally(() => setLoading(false));
+    client.get(`/stories/${storyId}/insights`).then((r) => setInsights(r.data))
+      .catch((e) => Alert.alert("Couldn't load insights", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [storyId]);
 
   if (loading || !insights) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;

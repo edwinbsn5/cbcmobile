@@ -41,7 +41,9 @@ export default function InboxScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      load().finally(() => setLoading(false));
+      load()
+        .catch((e) => Alert.alert("Couldn't load inbox", e.response?.data?.error || e.message))
+        .finally(() => setLoading(false));
     }, [load])
   );
 

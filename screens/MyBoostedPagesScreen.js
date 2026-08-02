@@ -17,14 +17,20 @@ export default function MyBoostedPagesScreen() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    client.get("/page-boosts/mine").then((r) => setBoosts(r.data)).finally(() => setLoading(false));
+    client.get("/page-boosts/mine").then((r) => setBoosts(r.data))
+      .catch((e) => Alert.alert("Couldn't load boosts", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function handlePause(id) {
-    await client.post(`/page-boosts/${id}/pause`);
-    load();
+    try {
+      await client.post(`/page-boosts/${id}/pause`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't pause", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleResume(id) {
@@ -39,7 +45,14 @@ export default function MyBoostedPagesScreen() {
   function handleDelete(id) {
     Alert.alert("Delete boost", "Stop boosting this Page? This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: async () => { await client.post(`/page-boosts/${id}/delete`); load(); } },
+      { text: "Delete", style: "destructive", onPress: async () => {
+          try {
+            await client.post(`/page-boosts/${id}/delete`);
+            load();
+          } catch (e) {
+            Alert.alert("Couldn't delete", e.response?.data?.error || e.message);
+          }
+        } },
     ]);
   }
 

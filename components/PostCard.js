@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -37,12 +37,20 @@ export default function PostCard({
   isActive,
   shouldMount,
   onOpenVideoFullscreen,
+  autoOpenComments,
 }) {
   const { user } = useAuth();
   const navigation = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const isOwn = post.userId === user?.id;
+
+  // Opens this post's comments once when arriving here via a notification
+  // tap (e.g. "X commented on your post") — only fires on the false->true
+  // transition, so manually closing the sheet afterward doesn't reopen it.
+  useEffect(() => {
+    if (autoOpenComments) setCommentsOpen(true);
+  }, [autoOpenComments]);
 
   const commentsBasePath = post.pageId
     ? `/pages/${post.pageId}/feed/${post.id}/comments`

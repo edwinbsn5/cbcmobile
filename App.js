@@ -160,7 +160,7 @@ function HeaderIcons({ navigation }) {
 }
 
 function Wordmark() {
-  return <Text style={styles.wordmark}>The CBC</Text>;
+  return <Text style={styles.wordmark}>Tujijenge</Text>;
 }
 
 function MainTabs({ navigation }) {

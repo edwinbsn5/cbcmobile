@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import CAMPUSES from "../data/campuses";
@@ -15,6 +16,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const COUNTY_NAMES = COUNTIES.map((c) => c.name);
 
 export default function OnboardingProfileScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { user, updateUser, logout } = useAuth();
   const [gender, setGender] = useState(user?.gender || "");
   const [bio, setBio] = useState(user?.bio || "");
@@ -69,7 +71,7 @@ export default function OnboardingProfileScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 20 + insets.bottom }}>
       <Text style={styles.title}>Tell us about yourself</Text>
       <Text style={styles.subtitle}>Step 2 of 3 — this appears on your profile</Text>
 

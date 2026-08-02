@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { COLORS } from "../theme";
@@ -21,7 +21,9 @@ export default function CategoryPicker({ selectedIds, onChange, endpoint = "/cat
   const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
-    client.get(endpoint).then((r) => setCategories(r.data)).finally(() => setLoading(false));
+    client.get(endpoint).then((r) => setCategories(r.data))
+      .catch((e) => Alert.alert("Couldn't load categories", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [endpoint]);
 
   function toggle(id) {

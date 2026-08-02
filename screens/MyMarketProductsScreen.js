@@ -13,7 +13,9 @@ export default function MyMarketProductsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    client.get("/market/products/mine").then((r) => setProducts(r.data)).finally(() => setLoading(false));
+    client.get("/market/products/mine").then((r) => setProducts(r.data))
+      .catch((e) => Alert.alert("Couldn't load your listings", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -21,14 +23,28 @@ export default function MyMarketProductsScreen({ navigation }) {
   function handleMarkSold(product) {
     Alert.alert("Mark as sold?", `"${product.title}" will no longer appear in Browse.`, [
       { text: "Cancel", style: "cancel" },
-      { text: "Mark as sold", onPress: async () => { await client.post(`/market/products/${product.id}/mark-sold`); load(); } },
+      { text: "Mark as sold", onPress: async () => {
+          try {
+            await client.post(`/market/products/${product.id}/mark-sold`);
+            load();
+          } catch (e) {
+            Alert.alert("Couldn't update listing", e.response?.data?.error || e.message);
+          }
+        } },
     ]);
   }
 
   function handleDelete(product) {
     Alert.alert("Delete listing?", "This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: async () => { await client.delete(`/market/products/${product.id}`); load(); } },
+      { text: "Delete", style: "destructive", onPress: async () => {
+          try {
+            await client.delete(`/market/products/${product.id}`);
+            load();
+          } catch (e) {
+            Alert.alert("Couldn't delete listing", e.response?.data?.error || e.message);
+          }
+        } },
     ]);
   }
 

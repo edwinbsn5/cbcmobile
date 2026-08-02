@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from "react";
-import { View, FlatList, Image, RefreshControl, ActivityIndicator, StyleSheet, TouchableOpacity, Text } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, FlatList, Image, RefreshControl, ActivityIndicator, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -33,13 +33,20 @@ function isVideoItem(item) {
   return false;
 }
 
-export default function FeedScreen({ navigation }) {
+export default function FeedScreen({ navigation, route }) {
   const { user } = useAuth();
   const isFocused = useIsFocused();
   const [feed, setFeed] = useState([]);
   const [storyGroups, setStoryGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Arriving here via a "commented/reshared your post" notification tap —
+  // scroll to that post and pop its comments open once the feed loads.
+  // Cleared after the first attempt so a later feed refresh (pull-to-
+  // refresh, refocus) doesn't keep re-scrolling/re-opening on every render.
+  const [focusPostId, setFocusPostId] = useState(route.params?.focusPostId ?? null);
+  const focusCommentId = route.params?.focusCommentId;
+  const listRef = useRef(null);
   const { isSaved, toggleSave, loadSaved } = useSaved();
   const { isReshared, unreshare, loadReshared } = useReshared();
   const { activeIndex, viewabilityConfig, onViewableItemsChanged } = useSingleActiveVideo({
@@ -60,7 +67,9 @@ export default function FeedScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      load().finally(() => setLoading(false));
+      load()
+        .catch((e) => Alert.alert("Couldn't load feed", e.response?.data?.error || e.message))
+        .finally(() => setLoading(false));
     }, [load])
   );
 
@@ -80,22 +89,34 @@ export default function FeedScreen({ navigation }) {
   }
 
   async function handleReact(postId, reaction) {
-    const groupId = groupIdFor(postId);
-    if (groupId) await client.post(`/groups/${groupId}/posts/${postId}/react`, { reaction });
-    else await client.post(`/feed/${postId}/react`, { reaction });
-    load();
+    try {
+      const groupId = groupIdFor(postId);
+      if (groupId) await client.post(`/groups/${groupId}/posts/${postId}/react`, { reaction });
+      else await client.post(`/feed/${postId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleDeletePost(postId) {
-    const groupId = groupIdFor(postId);
-    if (groupId) await client.delete(`/groups/${groupId}/posts/${postId}`);
-    else await client.delete(`/feed/${postId}`);
-    load();
+    try {
+      const groupId = groupIdFor(postId);
+      if (groupId) await client.delete(`/groups/${groupId}/posts/${postId}`);
+      else await client.delete(`/feed/${postId}`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleFollow(userId) {
-    await client.post(`/users/${userId}/follow`);
-    load();
+    try {
+      await client.post(`/users/${userId}/follow`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't follow", e.response?.data?.error || e.message);
+    }
   }
 
   // Feed-order, index-stable list of the actual video posts (reshares
@@ -111,12 +132,25 @@ export default function FeedScreen({ navigation }) {
     navigation.navigate("FeedVideoFullscreen", { videos: videoPosts, startIndex: startIndex >= 0 ? startIndex : 0 });
   }
 
+  useEffect(() => {
+    if (!focusPostId || !feed.length) return;
+    const index = feed.findIndex(
+      (item) => (item.kind === "post" && item.id === focusPostId) || (item.kind === "reshare" && item.post.id === focusPostId)
+    );
+    if (index >= 0) {
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.15 });
+    }
+    setFocusPostId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feed]);
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   const hasRealContent = feed.some((item) => item.kind === "post" || item.kind === "reshare");
 
   return (
     <FlatList
+      ref={listRef}
       style={styles.container}
       data={feed}
       keyExtractor={(item) => `${item.kind}-${item.id}`}
@@ -125,6 +159,9 @@ export default function FeedScreen({ navigation }) {
       updateCellsBatchingPeriod={50}
       viewabilityConfig={viewabilityConfig}
       onViewableItemsChanged={onViewableItemsChanged}
+      onScrollToIndexFailed={(info) => {
+        setTimeout(() => listRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.15 }), 300);
+      }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={
         <>
@@ -240,6 +277,7 @@ export default function FeedScreen({ navigation }) {
                 isActive={isActive}
                 shouldMount={shouldMount}
                 onOpenVideoFullscreen={openVideoFullscreen}
+                autoOpenComments={!!focusCommentId && item.post.id === focusPostId}
               />
             </View>
           );
@@ -257,6 +295,7 @@ export default function FeedScreen({ navigation }) {
             isActive={isActive}
             shouldMount={shouldMount}
             onOpenVideoFullscreen={openVideoFullscreen}
+            autoOpenComments={!!focusCommentId && item.id === focusPostId}
           />
         );
       }}

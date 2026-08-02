@@ -9,9 +9,9 @@
 // out-of-the-box with test ads in any environment.
 module.exports = {
   expo: {
-    name: "The CBC",
+    name: "Tujijenge",
     slug: "socialapp",
-    version: "1.0.0",
+    version: "1.1.3",
     owner: "gekonge",
     // Navy-and-gold "Fine Seal" mark (mobile/assets/icon.png) — the native
     // Android launcher icons at android/app/src/main/res/mipmap-*/ were
@@ -38,7 +38,7 @@ module.exports = {
       supportsTablet: true,
       bundleIdentifier: "the.campusbiashara.club",
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: "The CBC uses your location to show you Comrades Nearby on your feed.",
+        NSLocationWhenInUseUsageDescription: "Tujijenge uses your location to show you Comrades Nearby on your feed.",
       },
     },
     android: {
@@ -47,7 +47,7 @@ module.exports = {
       // Play Store requires a strictly increasing versionCode on every
       // upload; bump this each time you build a new release for the Store
       // (it defaulted to 1 previously since this field was never set).
-      versionCode: 3,
+      versionCode: 7,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#0B1F3A",

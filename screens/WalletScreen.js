@@ -56,7 +56,9 @@ export default function WalletScreen({ navigation }) {
   }
 
   useEffect(() => {
-    load().finally(() => setLoading(false));
+    load()
+      .catch((e) => Alert.alert("Couldn't load wallet", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   // The backend credits/debits the wallet and emits this socket notification

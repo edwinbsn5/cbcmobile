@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import Avatar from "../components/Avatar";
@@ -8,6 +9,7 @@ import { COLORS } from "../theme";
 const REQUIRED_FOLLOWS = 5;
 
 export default function OnboardingFollowScreen() {
+  const insets = useSafeAreaInsets();
   const { updateUser, logout } = useAuth();
   const [users, setUsers] = useState([]);
   const [followingIds, setFollowingIds] = useState(new Set());
@@ -18,6 +20,7 @@ export default function OnboardingFollowScreen() {
   useEffect(() => {
     client.get("/users/popular", { params: { limit: 20 } })
       .then((r) => setUsers(r.data))
+      .catch((e) => Alert.alert("Couldn't load suggestions", e.response?.data?.error || e.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -59,7 +62,7 @@ export default function OnboardingFollowScreen() {
   const done = count >= REQUIRED_FOLLOWS;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Follow at least {REQUIRED_FOLLOWS} people</Text>
         <Text style={styles.subtitle}>Step 3 of 3 — these are the {users.length} most-followed accounts this week</Text>

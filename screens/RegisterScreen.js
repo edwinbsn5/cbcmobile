@@ -38,10 +38,10 @@ export default function RegisterScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create account</Text>
-      <TextInput style={styles.input} placeholder="Full name" value={name} onChangeText={setName} />
-      <TextInput style={styles.input} placeholder="Username" autoCapitalize="none" value={username} onChangeText={setUsername} />
-      <TextInput style={styles.input} placeholder="Email" autoCapitalize="none" value={email} onChangeText={setEmail} />
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+      <TextInput style={styles.input} placeholder="Full name" placeholderTextColor={COLORS.sub} value={name} onChangeText={setName} />
+      <TextInput style={styles.input} placeholder="Username" placeholderTextColor={COLORS.sub} autoCapitalize="none" value={username} onChangeText={setUsername} />
+      <TextInput style={styles.input} placeholder="Email" placeholderTextColor={COLORS.sub} autoCapitalize="none" value={email} onChangeText={setEmail} />
+      <TextInput style={styles.input} placeholder="Password" placeholderTextColor={COLORS.sub} secureTextEntry value={password} onChangeText={setPassword} />
 
       <TouchableOpacity style={styles.agreeRow} onPress={() => setAgreedToTerms((v) => !v)} activeOpacity={0.7}>
         <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>

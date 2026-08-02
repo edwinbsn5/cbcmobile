@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Image, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -208,11 +208,14 @@ async function uploadMultiplePhotos(photoList) {
 }
 
 export default function PageDetailScreen({ route, navigation }) {
-  const { pageId } = route.params;
+  const { pageId, focusPostId: initialFocusPostId, focusCommentId } = route.params;
   const { user } = useAuth();
   const [page, setPage] = useState(null);
   const [activeTab, setActiveTab] = useState("Feed");
   const [feed, setFeed] = useState([]);
+  // Arriving via a "commented on your Page post" notification tap.
+  const [focusPostId, setFocusPostId] = useState(initialFocusPostId ?? null);
+  const listRef = useRef(null);
   const [photos, setPhotos] = useState([]);
   const [videos, setVideos] = useState([]);
   const [reviews, setReviews] = useState({ items: [], avgRating: 0, totalCount: 0, recommendPct: 0, breakdown: {} });
@@ -268,7 +271,9 @@ export default function PageDetailScreen({ route, navigation }) {
   }
 
   useEffect(() => {
-    load().finally(() => setLoading(false));
+    load()
+      .catch((e) => Alert.alert("Couldn't load page", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [pageId]);
 
   async function handleAttachPhotos() {
@@ -323,13 +328,21 @@ export default function PageDetailScreen({ route, navigation }) {
   }
 
   async function handleReact(postId, reaction) {
-    await client.post(`/pages/${pageId}/feed/${postId}/react`, { reaction });
-    load();
+    try {
+      await client.post(`/pages/${pageId}/feed/${postId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleDeletePost(postId) {
-    await client.delete(`/pages/${pageId}/feed/${postId}`);
-    load();
+    try {
+      await client.delete(`/pages/${pageId}/feed/${postId}`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleAddPhoto() {
@@ -470,6 +483,16 @@ export default function PageDetailScreen({ route, navigation }) {
     ]);
   }
 
+  useEffect(() => {
+    if (!focusPostId || activeTab !== "Feed" || !feed.length) return;
+    const index = feed.findIndex((item) => item.id === focusPostId);
+    if (index >= 0) {
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.15 });
+    }
+    setFocusPostId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feed, activeTab]);
+
   if (loading || !page) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   const photoRows = [];
@@ -482,9 +505,13 @@ export default function PageDetailScreen({ route, navigation }) {
 
   return (
     <FlatList
+      ref={listRef}
       style={styles.container}
       data={tabData}
       keyExtractor={(item, i) => (activeTab === "Photos" || activeTab === "Videos" ? `${activeTab}-row-${i}` : `${activeTab}-${item.id}-${i}`)}
+      onScrollToIndexFailed={(info) => {
+        setTimeout(() => listRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.15 }), 300);
+      }}
       renderItem={({ item, index }) => {
         if (activeTab === "Reviews") return <PageReviewCard review={item} canReply={canReplyReviews} onReply={handleReplyReview} />;
         if (activeTab === "Photos") return <MediaGridRow row={item} />;
@@ -505,6 +532,7 @@ export default function PageDetailScreen({ route, navigation }) {
             onToggleSave={() => toggleSave("post", item.id)}
             onDelete={handleDeletePost}
             onChanged={load}
+            autoOpenComments={!!focusCommentId && item.id === focusPostId}
           />
         );
       }}

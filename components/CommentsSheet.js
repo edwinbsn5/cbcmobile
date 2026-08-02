@@ -71,23 +71,34 @@ export default function CommentsSheet({ progress, basePath, commentCountHint = 0
   const [replyTarget, setReplyTarget] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [totalCount, setTotalCount] = useState(commentCountHint);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const inputRef = useRef(null);
 
   const load = useCallback(() => {
     client.get(basePath).then((r) => {
       setTree(r.data);
       setTotalCount(countAll(r.data));
-    }).finally(() => setLoading(false));
+    }).catch((e) => Alert.alert("Couldn't load comments", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [basePath]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   useEffect(() => {
     Animated.timing(progress, { toValue: 1, duration: 220, useNativeDriver: false }).start();
-    const showSub = Keyboard.addListener("keyboardDidShow", () => {
+    // Tracking the keyboard's real height and applying it as this sheet's
+    // `bottom` offset (below) instead of trusting Android's OS-level window
+    // resize (`windowSoftInputMode="adjustResize"`) — edge-to-edge display
+    // (required for API 36 / Android 15+, see app.config.js) breaks that
+    // automatic resize, so a `position: absolute, bottom: 0` sheet like this
+    // one would otherwise sit right behind the keyboard with the composer
+    // hidden under it. See CHATSCREEN's equivalent fix for the same root cause.
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates?.height || 0);
       Animated.timing(progress, { toValue: 2, duration: 200, useNativeDriver: false }).start();
     });
     const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
       Animated.timing(progress, { toValue: 1, duration: 200, useNativeDriver: false }).start();
     });
     return () => {
@@ -113,8 +124,12 @@ export default function CommentsSheet({ progress, basePath, commentCountHint = 0
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          await client.delete(`/feed/comments/${commentId}`);
-          load();
+          try {
+            await client.delete(`/feed/comments/${commentId}`);
+            load();
+          } catch (e) {
+            Alert.alert("Couldn't delete comment", e.response?.data?.error || e.message);
+          }
         },
       },
     ]);
@@ -138,7 +153,7 @@ export default function CommentsSheet({ progress, basePath, commentCountHint = 0
   const top = progress.interpolate({ inputRange: [0, 1, 2], outputRange: ["100%", `${OPEN_TOP}%`, `${KEYBOARD_TOP}%`] });
 
   return (
-    <Animated.View style={[styles.sheet, { top }]}>
+    <Animated.View style={[styles.sheet, { top, bottom: keyboardHeight }]}>
       <View style={styles.grabber} />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{totalCount} Comment{totalCount === 1 ? "" : "s"}</Text>

@@ -17,14 +17,20 @@ export default function MySponsoredPostsScreen() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    client.get("/boosts/mine").then((r) => setBoosts(r.data)).finally(() => setLoading(false));
+    client.get("/boosts/mine").then((r) => setBoosts(r.data))
+      .catch((e) => Alert.alert("Couldn't load boosts", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function handlePause(id) {
-    await client.post(`/boosts/${id}/pause`);
-    load();
+    try {
+      await client.post(`/boosts/${id}/pause`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't pause", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleResume(id) {
@@ -39,7 +45,14 @@ export default function MySponsoredPostsScreen() {
   function handleDelete(id) {
     Alert.alert("Delete boost", "Stop boosting this post? This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: async () => { await client.post(`/boosts/${id}/delete`); load(); } },
+      { text: "Delete", style: "destructive", onPress: async () => {
+          try {
+            await client.post(`/boosts/${id}/delete`);
+            load();
+          } catch (e) {
+            Alert.alert("Couldn't delete", e.response?.data?.error || e.message);
+          }
+        } },
     ]);
   }
 

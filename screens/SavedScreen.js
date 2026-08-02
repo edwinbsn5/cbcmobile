@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
 import PostCard from "../components/PostCard";
@@ -19,7 +19,9 @@ export default function SavedScreen({ navigation }) {
   const { isReshared, unreshare, loadReshared } = useReshared();
 
   const load = useCallback(() => {
-    client.get("/saved").then((r) => setSaved(r.data)).finally(() => setLoading(false));
+    client.get("/saved").then((r) => setSaved(r.data))
+      .catch((e) => Alert.alert("Couldn't load saved items", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
     loadReshared();
   }, [loadReshared]);
 
@@ -38,17 +40,25 @@ export default function SavedScreen({ navigation }) {
   }
 
   async function handleReact(postId, reaction) {
-    const groupId = groupIdFor(postId);
-    if (groupId) await client.post(`/groups/${groupId}/posts/${postId}/react`, { reaction });
-    else await client.post(`/feed/${postId}/react`, { reaction });
-    load();
+    try {
+      const groupId = groupIdFor(postId);
+      if (groupId) await client.post(`/groups/${groupId}/posts/${postId}/react`, { reaction });
+      else await client.post(`/feed/${postId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleDeletePost(postId) {
-    const groupId = groupIdFor(postId);
-    if (groupId) await client.delete(`/groups/${groupId}/posts/${postId}`);
-    else await client.delete(`/feed/${postId}`);
-    load();
+    try {
+      const groupId = groupIdFor(postId);
+      if (groupId) await client.delete(`/groups/${groupId}/posts/${postId}`);
+      else await client.delete(`/feed/${postId}`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
+    }
   }
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;

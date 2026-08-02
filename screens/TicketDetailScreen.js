@@ -26,7 +26,9 @@ export default function TicketDetailScreen({ route, navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      load().finally(() => setLoading(false));
+      load()
+        .catch((e) => Alert.alert("Couldn't load ticket", e.response?.data?.error || e.message))
+        .finally(() => setLoading(false));
     }, [load])
   );
 
@@ -75,7 +77,7 @@ export default function TicketDetailScreen({ route, navigation }) {
   const isOpen = ticket.status === "open";
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <FlatList
         ref={listRef}
         data={ticket.messages}

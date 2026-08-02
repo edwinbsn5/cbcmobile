@@ -33,7 +33,9 @@ export default function PageTeamManagementScreen({ route }) {
   const debounceRef = useRef(null);
 
   const load = useCallback(() => {
-    client.get(`/pages/${pageId}/members`).then((r) => setMembers(r.data)).finally(() => setLoading(false));
+    client.get(`/pages/${pageId}/members`).then((r) => setMembers(r.data))
+      .catch((e) => Alert.alert("Couldn't load team members", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [pageId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

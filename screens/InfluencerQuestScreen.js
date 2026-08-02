@@ -24,7 +24,9 @@ export default function InfluencerQuestScreen({ navigation }) {
   const [watchingAd, setWatchingAd] = useState(false);
 
   const load = useCallback(() => {
-    client.get("/influencer-quest/me").then((r) => setProgress(r.data)).finally(() => setLoading(false));
+    client.get("/influencer-quest/me").then((r) => setProgress(r.data))
+      .catch((e) => Alert.alert("Couldn't load progress", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -63,7 +65,7 @@ export default function InfluencerQuestScreen({ navigation }) {
       <View style={styles.hero}>
         <Text style={styles.heroBadge}>✦ Influencer Quest ✦</Text>
         <Text style={styles.heroTitle}>Earn Your Tick.</Text>
-        <Text style={styles.heroSubtitle}>Rack up points from everyday activity — unlock a verified Blue or Gold tick on The CBC.</Text>
+        <Text style={styles.heroSubtitle}>Rack up points from everyday activity — unlock a verified Blue or Gold tick on Tujijenge.</Text>
       </View>
 
       {loading ? (

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
 import PostCard from "../components/PostCard";
@@ -19,24 +19,33 @@ export default function HashtagFeedScreen({ route }) {
     client.get(`/hashtags/${tag}/posts`).then((r) => {
       setHashtag(r.data.hashtag);
       setPosts(r.data.posts);
-    }).finally(() => setLoading(false));
+    }).catch((e) => Alert.alert("Couldn't load hashtag", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
     loadSaved();
   }, [tag]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function handleReact(postId, reaction) {
-    const post = posts.find((p) => p.id === postId);
-    const path = post?.pageId ? `/pages/${post.pageId}/feed/${postId}/react` : `/feed/${postId}/react`;
-    await client.post(path, { reaction });
-    load();
+    try {
+      const post = posts.find((p) => p.id === postId);
+      const path = post?.pageId ? `/pages/${post.pageId}/feed/${postId}/react` : `/feed/${postId}/react`;
+      await client.post(path, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
   }
 
   async function handleDeletePost(postId) {
-    const post = posts.find((p) => p.id === postId);
-    const path = post?.pageId ? `/pages/${post.pageId}/feed/${postId}` : `/feed/${postId}`;
-    await client.delete(path);
-    load();
+    try {
+      const post = posts.find((p) => p.id === postId);
+      const path = post?.pageId ? `/pages/${post.pageId}/feed/${postId}` : `/feed/${postId}`;
+      await client.delete(path);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
+    }
   }
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;

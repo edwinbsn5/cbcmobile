@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from "react-native";
+import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -25,6 +25,7 @@ export default function GroupsScreen({ navigation }) {
     client
       .get("/groups", filter ? { params: { filter } } : undefined)
       .then((r) => setGroups(r.data))
+      .catch((e) => Alert.alert("Couldn't load groups", e.response?.data?.error || e.message))
       .finally(() => setLoading(false));
     loadSaved();
   }, [filter, loadSaved]);
@@ -56,7 +57,7 @@ export default function GroupsScreen({ navigation }) {
             <View style={styles.hero}>
               <Text style={styles.heroBadge}>✦ Plugs Wako ✦</Text>
               <Text style={styles.heroTitle}>Find Plug Wako</Text>
-              <Text style={styles.heroSubtitle}>Communities, causes &amp; interests worth joining on The CBC.</Text>
+              <Text style={styles.heroSubtitle}>Communities, causes &amp; interests worth joining on Tujijenge.</Text>
             </View>
 
             <TouchableOpacity style={styles.filterButton} onPress={() => setPickerOpen(true)}>

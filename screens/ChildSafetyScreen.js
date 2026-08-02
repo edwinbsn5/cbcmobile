@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { openInAppBrowser } from "../utils/inAppBrowser";
 import { WEB_BASE_URL } from "../api/client";
@@ -11,7 +11,7 @@ export default function ChildSafetyScreen({ navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
       <Text style={styles.intro}>
-        The CBC has zero tolerance for child sexual abuse and exploitation (CSAE). This applies to every post,
+        Tujijenge has zero tolerance for child sexual abuse and exploitation (CSAE). This applies to every post,
         reel, story, comment, message, and account on the platform.
       </Text>
 
@@ -27,7 +27,16 @@ export default function ChildSafetyScreen({ navigation }) {
         message. To report a specific post, reel, or comment, use the Report option in its options menu instead.
       </Text>
 
-      <TouchableOpacity style={styles.linkRow} onPress={() => Linking.openURL(`mailto:${SAFETY_EMAIL}?subject=${encodeURIComponent("CSAE report")}`)}>
+      <TouchableOpacity
+        style={styles.linkRow}
+        onPress={() => {
+          const url = `mailto:${SAFETY_EMAIL}?subject=${encodeURIComponent("CSAE report")}`;
+          Linking.canOpenURL(url).then((ok) => {
+            if (ok) Linking.openURL(url);
+            else Alert.alert("No email app found", `Please email ${SAFETY_EMAIL} directly.`);
+          });
+        }}
+      >
         <View style={{ flex: 1 }}>
           <Text style={styles.rowLabel}>Contact us directly</Text>
           <Text style={styles.rowCaption}>{SAFETY_EMAIL} — for urgent concerns or if you don't have an account</Text>

@@ -10,7 +10,9 @@ export default function BlockedUsersScreen() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    client.get("/users/blocked/mine").then((r) => setBlocked(r.data)).finally(() => setLoading(false));
+    client.get("/users/blocked/mine").then((r) => setBlocked(r.data))
+      .catch((e) => Alert.alert("Couldn't load blocked users", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -21,8 +23,12 @@ export default function BlockedUsersScreen() {
       {
         text: "Unblock",
         onPress: async () => {
-          await client.post(`/users/${user.id}/unblock`);
-          load();
+          try {
+            await client.post(`/users/${user.id}/unblock`);
+            load();
+          } catch (e) {
+            Alert.alert("Couldn't unblock", e.response?.data?.error || e.message);
+          }
         },
       },
     ]);

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,7 +11,9 @@ export default function SavedMarketProductsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    client.get("/market/products/saved").then((r) => setProducts(r.data)).finally(() => setLoading(false));
+    client.get("/market/products/saved").then((r) => setProducts(r.data))
+      .catch((e) => Alert.alert("Couldn't load saved products", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

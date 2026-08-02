@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,7 +23,9 @@ export default function PageVideoPlayerScreen({ route, navigation }) {
   const { activeIndex, viewabilityConfig, onViewableItemsChanged } = useSingleActiveVideo({ threshold: 80 });
 
   useEffect(() => {
-    client.get(`/pages/${slug}/videos`).then((r) => setVideos(r.data)).finally(() => setLoading(false));
+    client.get(`/pages/${slug}/videos`).then((r) => setVideos(r.data))
+      .catch((e) => Alert.alert("Couldn't load videos", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [slug]);
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color="#fff" />;

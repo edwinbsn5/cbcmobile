@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
 import { COLORS } from "../theme";
@@ -16,7 +16,9 @@ export default function TrendingHashtagsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    client.get("/hashtags/trending", { params: { hours } }).then((r) => setTags(r.data)).finally(() => setLoading(false));
+    client.get("/hashtags/trending", { params: { hours } }).then((r) => setTags(r.data))
+      .catch((e) => Alert.alert("Couldn't load trending hashtags", e.response?.data?.error || e.message))
+      .finally(() => setLoading(false));
   }, [hours]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
