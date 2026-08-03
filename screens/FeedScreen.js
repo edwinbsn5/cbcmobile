@@ -42,10 +42,21 @@ export default function FeedScreen({ navigation, route }) {
   const [refreshing, setRefreshing] = useState(false);
   // Arriving here via a "commented/reshared your post" notification tap —
   // scroll to that post and pop its comments open once the feed loads.
-  // Cleared after the first attempt so a later feed refresh (pull-to-
-  // refresh, refocus) doesn't keep re-scrolling/re-opening on every render.
-  const [focusPostId, setFocusPostId] = useState(route.params?.focusPostId ?? null);
-  const focusCommentId = route.params?.focusCommentId;
+  // Home is a bottom-tab screen that Expo/React Navigation keeps mounted
+  // once visited, so a SECOND notification tap while it's already mounted
+  // delivers new route.params without remounting the component — reading
+  // route.params only into a useState initializer (as this used to) would
+  // silently miss every tap after the first, since useState's initial value
+  // is only ever used on mount. Watching route.params in an effect instead
+  // picks up each new arrival regardless of mount state.
+  const [focusPostId, setFocusPostId] = useState(null);
+  const [focusCommentId, setFocusCommentId] = useState(null);
+  useEffect(() => {
+    if (route.params?.focusPostId) {
+      setFocusPostId(route.params.focusPostId);
+      setFocusCommentId(route.params.focusCommentId ?? null);
+    }
+  }, [route.params?.focusPostId, route.params?.focusCommentId]);
   const listRef = useRef(null);
   const { isSaved, toggleSave, loadSaved } = useSaved();
   const { isReshared, unreshare, loadReshared } = useReshared();
@@ -141,8 +152,9 @@ export default function FeedScreen({ navigation, route }) {
       listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.15 });
     }
     setFocusPostId(null);
+    setFocusCommentId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feed]);
+  }, [feed, focusPostId]);
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 

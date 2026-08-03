@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import Avatar from "../components/Avatar";
@@ -10,6 +10,18 @@ export default function ReshareComposerScreen({ route, navigation }) {
   const { post } = route.params;
   const [caption, setCaption] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Same manual keyboard-height tracking as ChatScreen.js — see its comment
+  // for why KeyboardAvoidingView's automatic behavior isn't reliable here.
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => setKeyboardHeight(e.endCoordinates?.height || 0));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   async function handleShare() {
     setSubmitting(true);
@@ -24,10 +36,7 @@ export default function ReshareComposerScreen({ route, navigation }) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { paddingBottom: insets.bottom + 14 }]}
-      behavior="padding"
-    >
+    <View style={[styles.container, { paddingBottom: insets.bottom + 14, marginBottom: keyboardHeight }]}>
       <TextInput
         style={styles.captionInput}
         placeholder="Say something about this (optional)"
@@ -55,7 +64,7 @@ export default function ReshareComposerScreen({ route, navigation }) {
       <TouchableOpacity style={[styles.shareButton, submitting && styles.shareButtonDisabled]} onPress={handleShare} disabled={submitting}>
         <Text style={styles.shareButtonText}>{submitting ? "Sharing..." : "Share now"}</Text>
       </TouchableOpacity>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

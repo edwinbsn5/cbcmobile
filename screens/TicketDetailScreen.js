@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, Keyboard,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
@@ -16,7 +16,20 @@ export default function TicketDetailScreen({ route, navigation }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const listRef = useRef(null);
+
+  // Same manual keyboard-height tracking as ChatScreen.js/CommentsSheet.js —
+  // KeyboardAvoidingView's automatic behavior isn't reliable once edge-to-edge
+  // display is on (breaks Android's adjustResize; see those files' comments).
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => setKeyboardHeight(e.endCoordinates?.height || 0));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const load = useCallback(async () => {
     const { data } = await client.get(`/support/tickets/${ticketId}`);
@@ -77,7 +90,7 @@ export default function TicketDetailScreen({ route, navigation }) {
   const isOpen = ticket.status === "open";
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior="padding">
+    <View style={[styles.container, { marginBottom: keyboardHeight }]}>
       <FlatList
         ref={listRef}
         data={ticket.messages}
@@ -121,7 +134,7 @@ export default function TicketDetailScreen({ route, navigation }) {
           <Text style={styles.closedBarText}>This ticket is closed</Text>
         </View>
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

@@ -20,7 +20,7 @@ const { height, width } = Dimensions.get("window");
 let interstitialShownThisSession = false;
 
 export default function ReelsScreen({ route, navigation }) {
-  const { authorId, startIndex = 0, focusReelId, focusCommentId } = route.params || {};
+  const { authorId, startIndex = 0 } = route.params || {};
   const { user } = useAuth();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
@@ -28,7 +28,14 @@ export default function ReelsScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [commentsOpenId, setCommentsOpenId] = useState(null);
   const listRef = useRef(null);
-  const focusHandledRef = useRef(false);
+  // Tracks the last focusReelId we've already scrolled to/opened, not just
+  // "have we ever handled one" — Reels is a stack screen React Navigation
+  // can bring back into focus with new params without remounting it (e.g.
+  // it was already open from the "Suggested Reels" row), so a boolean
+  // "handled" flag would permanently ignore every notification tap after
+  // the first. Comparing against the specific id lets a new tap through
+  // even if an earlier one was already processed on this same mount.
+  const lastHandledReelIdRef = useRef(null);
   // Shared across every slide — only ever driven while exactly one slide has
   // comments open, so there's no cross-talk between slides. Reset to 0 by
   // CommentsSheet's own close animation before it unmounts, so it's always
@@ -55,16 +62,21 @@ export default function ReelsScreen({ route, navigation }) {
 
   // Arriving via a "commented on your reel" notification tap — jump to that
   // reel (it may not be at startIndex/0 in this ranked list) and pop its
-  // comments open. Only attempted once per mount, even if reels re-fetches.
+  // comments open. Re-runs on every new focusReelId, including a second
+  // notification tap while this screen was already open (see
+  // lastHandledReelIdRef's comment above for why a plain "handled once"
+  // flag isn't enough here).
   useEffect(() => {
-    if (!focusReelId || focusHandledRef.current || !reels.length) return;
+    const focusReelId = route.params?.focusReelId;
+    const focusCommentId = route.params?.focusCommentId;
+    if (!focusReelId || focusReelId === lastHandledReelIdRef.current || !reels.length) return;
     const index = reels.findIndex((r) => r.id === focusReelId);
     if (index >= 0) {
       listRef.current?.scrollToIndex({ index, animated: false });
       if (focusCommentId) setCommentsOpenId(focusReelId);
-      focusHandledRef.current = true;
+      lastHandledReelIdRef.current = focusReelId;
     }
-  }, [reels, focusReelId, focusCommentId]);
+  }, [reels, route.params?.focusReelId, route.params?.focusCommentId]);
 
   // Once per session, the first time Reels is opened: load + show one
   // interstitial ad. Deliberately the only ad-frequency behavior this adds —

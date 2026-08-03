@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, Image, TextInput, TouchableOpacity, Pressable, StyleSheet,
-  Alert, KeyboardAvoidingView, Platform,
+  Alert, Keyboard,
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,9 +43,21 @@ export default function StoryViewerScreen({ route, navigation }) {
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const pausedRef = useRef(false);
   const viewedRef = useRef(new Set());
   const videoRef = useRef(null);
+
+  // Same manual keyboard-height tracking as ChatScreen.js — see its comment
+  // for why KeyboardAvoidingView's automatic behavior isn't reliable here.
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => setKeyboardHeight(e.endCoordinates?.height || 0));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const group = groups[groupIndex];
   const story = group?.stories[storyIndex];
@@ -256,9 +268,8 @@ export default function StoryViewerScreen({ route, navigation }) {
         onPress={goNext}
       />
 
-      <KeyboardAvoidingView
-        behavior="padding"
-        style={[styles.bottomArea, { paddingBottom: insets.bottom + 16 }]}
+      <View
+        style={[styles.bottomArea, { paddingBottom: insets.bottom + 16, bottom: keyboardHeight }]}
       >
         {isOwn ? (
           <TouchableOpacity style={styles.statsBar} onPress={() => navigation.navigate("StoryInsights", { storyId: story.id })}>
@@ -304,7 +315,7 @@ export default function StoryViewerScreen({ route, navigation }) {
             )}
           </View>
         )}
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }

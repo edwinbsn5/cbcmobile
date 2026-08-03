@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Keyboard,
+  ActivityIndicator, Alert, Keyboard,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -70,19 +70,20 @@ export default function ChatScreen({ route, navigation }) {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [markingSold, setMarkingSold] = useState(false);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const socketRef = useRef(null);
   const listRef = useRef(null);
 
-  // KeyboardAvoidingView already shifts the whole composer above the
-  // keyboard by the keyboard's own height — the static insets.bottom padding
-  // below is only there to clear the gesture nav bar while the keyboard is
-  // CLOSED. Applying both at once double-counts, pushing the composer
-  // partway back down behind the keyboard (reported as the send button/
-  // input being clipped by the keyboard's suggestion bar).
+  // Tracking the real keyboard height and applying it directly (below,
+  // as marginBottom on the outer container) instead of trusting
+  // KeyboardAvoidingView/adjustResize — edge-to-edge display (required for
+  // API 36 / Android 15+) breaks Android's automatic window resize on
+  // keyboard show (documented in react-native-edge-to-edge's own README),
+  // which is what left the composer sitting behind the keyboard even with
+  // KeyboardAvoidingView in place. Same technique as CommentsSheet.js.
   useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => setKeyboardHeight(e.endCoordinates?.height || 0));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0));
     return () => {
       showSub.remove();
       hideSub.remove();
@@ -187,7 +188,11 @@ export default function ChatScreen({ route, navigation }) {
     setSending(true);
     try {
       const { data } = await client.post(`/inbox/${conversationId}/messages`, body);
-      setMessages((prev) => [...prev, data]);
+      // The socket's "message:new" echo can arrive before this HTTP response
+      // does (they're independent round-trips with no guaranteed order) —
+      // same dedup-by-id guard as the socket handler below, applied here too,
+      // otherwise whichever of the two resolves second re-adds it.
+      setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [...prev, data]));
       scrollToEnd();
     } catch (e) {
       Alert.alert("Message not sent", e.response?.data?.error || e.message);
@@ -224,7 +229,7 @@ export default function ChatScreen({ route, navigation }) {
         type: messageType,
         mediaUrl: uploaded.url,
       });
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
       scrollToEnd();
     } catch (e) {
       Alert.alert("Upload failed", e.response?.data?.error || e.message);
@@ -254,11 +259,7 @@ export default function ChatScreen({ route, navigation }) {
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-    >
+    <View style={[styles.container, { marginBottom: keyboardHeight }]}>
       {conversation?.contextType === "market_product" && (
         <ProductPin
           product={conversation.contextProduct}
@@ -332,7 +333,7 @@ export default function ChatScreen({ route, navigation }) {
           <Text style={styles.waitingBannerText}>Waiting for {otherUser?.name} to reply before you can send another message</Text>
         </View>
       )}
-      <View style={[styles.composer, { paddingBottom: 8 + (keyboardVisible ? 0 : insets.bottom) }]}>
+      <View style={[styles.composer, { paddingBottom: 8 + (keyboardHeight ? 0 : insets.bottom) }]}>
         <TouchableOpacity style={styles.attachButton} onPress={handleAttach} disabled={uploading || waitingForReply}>
           {uploading ? <ActivityIndicator size="small" color={COLORS.accent} /> : <Text style={styles.attachButtonText}>📎</Text>}
         </TouchableOpacity>
@@ -349,7 +350,7 @@ export default function ChatScreen({ route, navigation }) {
           <Text style={styles.sendButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

@@ -208,13 +208,22 @@ async function uploadMultiplePhotos(photoList) {
 }
 
 export default function PageDetailScreen({ route, navigation }) {
-  const { pageId, focusPostId: initialFocusPostId, focusCommentId } = route.params;
+  const { pageId } = route.params;
   const { user } = useAuth();
   const [page, setPage] = useState(null);
   const [activeTab, setActiveTab] = useState("Feed");
   const [feed, setFeed] = useState([]);
-  // Arriving via a "commented on your Page post" notification tap.
-  const [focusPostId, setFocusPostId] = useState(initialFocusPostId ?? null);
+  // Arriving via a "commented on your Page post" notification tap. Same
+  // already-mounted-in-the-stack caveat as GroupDetailScreen — read from
+  // route.params in an effect, not a useState initializer.
+  const [focusPostId, setFocusPostId] = useState(null);
+  const [focusCommentId, setFocusCommentId] = useState(null);
+  useEffect(() => {
+    if (route.params?.focusPostId) {
+      setFocusPostId(route.params.focusPostId);
+      setFocusCommentId(route.params.focusCommentId ?? null);
+    }
+  }, [route.params?.focusPostId, route.params?.focusCommentId]);
   const listRef = useRef(null);
   const [photos, setPhotos] = useState([]);
   const [videos, setVideos] = useState([]);
@@ -490,8 +499,9 @@ export default function PageDetailScreen({ route, navigation }) {
       listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.15 });
     }
     setFocusPostId(null);
+    setFocusCommentId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feed, activeTab]);
+  }, [feed, activeTab, focusPostId]);
 
   if (loading || !page) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 

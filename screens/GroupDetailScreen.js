@@ -66,14 +66,25 @@ function VideoGridRow({ row, onPress }) {
 }
 
 export default function GroupDetailScreen({ route, navigation }) {
-  const { groupId, focusPostId: initialFocusPostId, focusCommentId } = route.params;
+  const { groupId } = route.params;
   const { user, updateWalletBalance } = useAuth();
   const [group, setGroup] = useState(null);
   const [mySub, setMySub] = useState(null);
   const [activeTab, setActiveTab] = useState("Feed");
   const [posts, setPosts] = useState([]);
-  // Arriving via a "commented on your group post" notification tap.
-  const [focusPostId, setFocusPostId] = useState(initialFocusPostId ?? null);
+  // Arriving via a "commented on your group post" notification tap. If this
+  // screen was already in the nav stack (e.g. the user browsed here earlier),
+  // navigate() brings it back into focus with new params WITHOUT remounting
+  // it, so these have to be picked up from route.params in an effect rather
+  // than a useState initializer, which only ever runs once on mount.
+  const [focusPostId, setFocusPostId] = useState(null);
+  const [focusCommentId, setFocusCommentId] = useState(null);
+  useEffect(() => {
+    if (route.params?.focusPostId) {
+      setFocusPostId(route.params.focusPostId);
+      setFocusCommentId(route.params.focusCommentId ?? null);
+    }
+  }, [route.params?.focusPostId, route.params?.focusCommentId]);
   const listRef = useRef(null);
   const [blogs, setBlogs] = useState([]);
   const [reviews, setReviews] = useState({ items: [], avgRating: 0, reviewCount: 0 });
@@ -402,8 +413,9 @@ export default function GroupDetailScreen({ route, navigation }) {
       listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.15 });
     }
     setFocusPostId(null);
+    setFocusCommentId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, activeTab]);
+  }, [posts, activeTab, focusPostId]);
 
   if (loading || !group) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
