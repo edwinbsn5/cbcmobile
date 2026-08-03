@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   markAllText: { color: COLORS.accent, fontWeight: "700", fontSize: 13 },
   row: { flexDirection: "row", alignItems: "flex-start", backgroundColor: COLORS.surface, padding: 14, marginHorizontal: 10, marginTop: 8, borderRadius: 10 },
   rowUnread: { borderLeftWidth: 3, borderLeftColor: COLORS.accent },
-  title: { fontWeight: "700", fontSize: 15 },
+  title: { color: COLORS.ink, fontWeight: "700", fontSize: 15 },
   body: { color: COLORS.sub, marginTop: 3 },
   time: { color: COLORS.sub, fontSize: 12, marginLeft: 8 },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },

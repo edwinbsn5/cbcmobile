@@ -42,7 +42,7 @@ export default function CheckEmailScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24, backgroundColor: COLORS.surface },
   icon: { fontSize: 44, marginBottom: 16 },
-  title: { fontSize: 22, fontWeight: "800", marginBottom: 12 },
+  title: { color: COLORS.ink, fontSize: 22, fontWeight: "800", marginBottom: 12 },
   body: { fontSize: 14, color: COLORS.sub, textAlign: "center", lineHeight: 21, marginBottom: 28 },
   email: { fontWeight: "700", color: COLORS.ink },
   button: { backgroundColor: COLORS.accent, borderRadius: 8, paddingVertical: 14, paddingHorizontal: 28, alignItems: "center", minWidth: 200 },

@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
   sponsored: { color: COLORS.sub, fontSize: 12, fontWeight: "600" },
   advertiser: { color: COLORS.sub, fontSize: 12, marginLeft: 4 },
   media: { width: "100%", height: 180, borderRadius: 8, backgroundColor: "#eee", marginBottom: 8 },
-  headline: { fontSize: 15, fontWeight: "600", marginBottom: 8 },
+  headline: { color: COLORS.ink, fontSize: 15, fontWeight: "600", marginBottom: 8 },
   cta: { backgroundColor: COLORS.wash, paddingVertical: 8, borderRadius: 6, alignItems: "center" },
   ctaText: { color: COLORS.accent, fontWeight: "700" },
 });

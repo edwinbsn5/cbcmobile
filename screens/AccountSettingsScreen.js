@@ -136,7 +136,7 @@ export default function AccountSettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  sectionTitle: { fontWeight: "700", fontSize: 15, marginBottom: 8, marginTop: 8 },
+  sectionTitle: { color: COLORS.ink, fontWeight: "700", fontSize: 15, marginBottom: 8, marginTop: 8 },
   card: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginBottom: 20 },
   avatarRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   avatarPreview: { width: 56, height: 56, borderRadius: 28, marginRight: 12 },

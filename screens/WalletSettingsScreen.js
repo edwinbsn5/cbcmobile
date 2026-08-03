@@ -171,8 +171,8 @@ function TextInputCode({ value, onChangeText }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  sectionTitle: { fontWeight: "700", fontSize: 15, marginBottom: 4 },
-  cardTitle: { fontWeight: "700", fontSize: 15, marginBottom: 10 },
+  sectionTitle: { color: COLORS.ink, fontWeight: "700", fontSize: 15, marginBottom: 4 },
+  cardTitle: { color: COLORS.ink, fontWeight: "700", fontSize: 15, marginBottom: 10 },
   hint: { fontSize: 12.5, color: COLORS.sub, marginBottom: 16, lineHeight: 18 },
   card: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginBottom: 20 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 8 },

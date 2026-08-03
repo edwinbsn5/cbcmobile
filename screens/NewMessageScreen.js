@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   row: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, padding: 12, marginHorizontal: 10, marginTop: 8, borderRadius: 10 },
   avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 12 },
-  name: { fontWeight: "600", fontSize: 15 },
+  name: { color: COLORS.ink, fontWeight: "600", fontSize: 15 },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },
 });

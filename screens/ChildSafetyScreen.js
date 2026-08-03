@@ -65,6 +65,6 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 15 },
   caption: { color: COLORS.sub, fontSize: 12, marginTop: 8, marginBottom: 20, lineHeight: 17 },
   linkRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginTop: 12 },
-  rowLabel: { fontSize: 15, fontWeight: "600" },
+  rowLabel: { color: COLORS.ink, fontSize: 15, fontWeight: "600" },
   rowCaption: { color: COLORS.sub, fontSize: 12, marginTop: 4 },
 });

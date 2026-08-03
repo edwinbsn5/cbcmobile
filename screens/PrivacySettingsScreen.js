@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
   intro: { color: COLORS.sub, fontSize: 13, marginBottom: 16, lineHeight: 18 },
   row: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 12, padding: 16 },
   linkRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginTop: 12 },
-  rowLabel: { fontSize: 15, fontWeight: "600" },
+  rowLabel: { color: COLORS.ink, fontSize: 15, fontWeight: "600" },
   rowCaption: { color: COLORS.sub, fontSize: 12, marginTop: 4 },
 });

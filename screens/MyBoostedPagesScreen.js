@@ -108,7 +108,7 @@ export default function MyBoostedPagesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   card: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 10, padding: 14 },
-  content: { fontSize: 15, fontWeight: "600" },
+  content: { color: COLORS.ink, fontSize: 15, fontWeight: "600" },
   meta: { color: COLORS.sub, fontSize: 12, marginTop: 6 },
   status: { color: COLORS.accent, fontWeight: "700", fontSize: 12, marginTop: 6 },
   actionsRow: { flexDirection: "row", marginTop: 12 },

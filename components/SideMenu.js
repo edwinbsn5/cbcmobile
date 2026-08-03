@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   panel: { position: "absolute", top: 0, bottom: 0, left: 0, backgroundColor: COLORS.surface, paddingTop: 56, paddingHorizontal: 16 },
   header: { marginBottom: 20 },
   avatar: { width: 64, height: 64, borderRadius: 32, marginBottom: 10 },
-  name: { fontSize: 17, fontWeight: "700" },
+  name: { color: COLORS.ink, fontSize: 17, fontWeight: "700" },
   email: { color: COLORS.sub, fontSize: 13, marginTop: 2 },
   section: { marginBottom: 4 },
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 12 },

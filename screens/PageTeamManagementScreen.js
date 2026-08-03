@@ -153,7 +153,7 @@ export default function PageTeamManagementScreen({ route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   inviteCard: { marginBottom: 4 },
-  sectionTitle: { fontSize: 15, fontWeight: "700", marginBottom: 10 },
+  sectionTitle: { color: COLORS.ink, fontSize: 15, fontWeight: "700", marginBottom: 10 },
   label: { fontSize: 12, color: COLORS.sub, marginBottom: 6 },
   rolePicker: { flexDirection: "row", gap: 8, marginBottom: 12, flexWrap: "wrap" },
   roleOption: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 },
@@ -166,6 +166,6 @@ const styles = StyleSheet.create({
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#eee" },
   memberCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 8 },
   memberRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
-  rowName: { fontWeight: "700", fontSize: 14.5 },
+  rowName: { color: COLORS.ink, fontWeight: "700", fontSize: 14.5 },
   rowMeta: { color: COLORS.sub, fontSize: 12, marginTop: 2 },
 });

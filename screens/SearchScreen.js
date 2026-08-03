@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   sectionHeader: { fontWeight: "700", fontSize: 13, color: COLORS.sub, textTransform: "uppercase", backgroundColor: COLORS.bg, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 6 },
   row: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, padding: 12, marginHorizontal: 10, marginBottom: 6, borderRadius: 8 },
   avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 12, backgroundColor: "#eee" },
-  rowTitle: { fontWeight: "600", fontSize: 15 },
+  rowTitle: { color: COLORS.ink, fontWeight: "600", fontSize: 15 },
   rowSubtitle: { color: COLORS.sub, fontSize: 13, marginTop: 2 },
   rowMeta: { color: COLORS.sub, fontWeight: "400", fontSize: 12 },
   empty: { textAlign: "center", color: "#999", marginTop: 30 },

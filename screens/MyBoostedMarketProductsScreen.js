@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 12 },
   thumb: { width: 56, height: 56, borderRadius: 8, backgroundColor: COLORS.wash },
   info: { flex: 1 },
-  content: { fontSize: 15, fontWeight: "600" },
+  content: { color: COLORS.ink, fontSize: 15, fontWeight: "600" },
   price: { color: COLORS.accent, fontWeight: "700", fontSize: 13, marginTop: 2 },
   meta: { color: COLORS.sub, fontSize: 12, marginTop: 6 },
   status: { color: COLORS.accent, fontWeight: "700", fontSize: 12, marginTop: 6 },

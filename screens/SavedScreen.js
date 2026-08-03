@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   reelThumb: { width: 90, height: 90, backgroundColor: "#eee" },
   groupCover: { width: 90, height: 90, backgroundColor: "#eee" },
   cardBody: { flex: 1, padding: 12 },
-  cardTitle: { fontSize: 15, fontWeight: "700" },
+  cardTitle: { color: COLORS.ink, fontSize: 15, fontWeight: "700" },
   cardMeta: { color: COLORS.sub, fontSize: 12, marginTop: 4 },
   unsaveButton: { alignSelf: "flex-start", marginTop: 8 },
   unsaveText: { color: "#D32F2F", fontWeight: "600", fontSize: 13 },
