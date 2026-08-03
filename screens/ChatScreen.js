@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet,
   ActivityIndicator, Alert, Keyboard,
 } from "react-native";
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
@@ -70,20 +71,30 @@ export default function ChatScreen({ route, navigation }) {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [markingSold, setMarkingSold] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  // Only used to toggle the composer's bottom safe-area padding (below) —
+  // Keyboard's show/hide *events* fire reliably on Android even under
+  // edge-to-edge; it was only the *height* it reports that undershoots
+  // (a getWindowVisibleDisplayFrame heuristic that predates edge-to-edge
+  // display), which is why the real height now comes from reanimated's
+  // useAnimatedKeyboard() below instead.
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const socketRef = useRef(null);
   const listRef = useRef(null);
 
-  // Tracking the real keyboard height and applying it directly (below,
-  // as marginBottom on the outer container) instead of trusting
+  // Reads the true keyboard height straight from Android's WindowInsets IME
+  // value (native, via reanimated) instead of trusting
   // KeyboardAvoidingView/adjustResize — edge-to-edge display (required for
   // API 36 / Android 15+) breaks Android's automatic window resize on
-  // keyboard show (documented in react-native-edge-to-edge's own README),
-  // which is what left the composer sitting behind the keyboard even with
-  // KeyboardAvoidingView in place. Same technique as CommentsSheet.js.
+  // keyboard show (documented in react-native-edge-to-edge's own README).
+  // A prior attempt tracked height via Keyboard.addListener's
+  // endCoordinates, but that undershoots under edge-to-edge, leaving the
+  // composer still partly covered.
+  const keyboard = useAnimatedKeyboard();
+  const animatedContainerStyle = useAnimatedStyle(() => ({ marginBottom: keyboard.height.value }));
+
   useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", (e) => setKeyboardHeight(e.endCoordinates?.height || 0));
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0));
+    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
     return () => {
       showSub.remove();
       hideSub.remove();
@@ -259,7 +270,7 @@ export default function ChatScreen({ route, navigation }) {
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   return (
-    <View style={[styles.container, { marginBottom: keyboardHeight }]}>
+    <Animated.View style={[styles.container, animatedContainerStyle]}>
       {conversation?.contextType === "market_product" && (
         <ProductPin
           product={conversation.contextProduct}
@@ -333,7 +344,7 @@ export default function ChatScreen({ route, navigation }) {
           <Text style={styles.waitingBannerText}>Waiting for {otherUser?.name} to reply before you can send another message</Text>
         </View>
       )}
-      <View style={[styles.composer, { paddingBottom: 8 + (keyboardHeight ? 0 : insets.bottom) }]}>
+      <View style={[styles.composer, { paddingBottom: 8 + (keyboardVisible ? 0 : insets.bottom) }]}>
         <TouchableOpacity style={styles.attachButton} onPress={handleAttach} disabled={uploading || waitingForReply}>
           {uploading ? <ActivityIndicator size="small" color={COLORS.accent} /> : <Text style={styles.attachButtonText}>📎</Text>}
         </TouchableOpacity>
@@ -350,7 +361,7 @@ export default function ChatScreen({ route, navigation }) {
           <Text style={styles.sendButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

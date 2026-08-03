@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
   ActivityIndicator, Animated, Keyboard, Alert,
 } from "react-native";
+import { useAnimatedKeyboard, useAnimatedReaction, runOnJS } from "react-native-reanimated";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -73,6 +74,20 @@ export default function CommentsSheet({ progress, basePath, commentCountHint = 0
   const [totalCount, setTotalCount] = useState(commentCountHint);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const inputRef = useRef(null);
+  // Keyboard.addListener's endCoordinates.height undershoots under
+  // edge-to-edge display (same root cause as ChatScreen.js) — the true
+  // height comes from Android's WindowInsets IME value via reanimated
+  // instead, bridged into the same `keyboardHeight` state the `bottom`
+  // style below already used, so the sheet-position logic elsewhere in
+  // this file (Keyboard.addListener + progress.timing) stays untouched.
+  const keyboard = useAnimatedKeyboard();
+  useAnimatedReaction(
+    () => keyboard.height.value,
+    (h, prev) => {
+      if (h !== prev) runOnJS(setKeyboardHeight)(h);
+    },
+    []
+  );
 
   const load = useCallback(() => {
     client.get(basePath).then((r) => {
@@ -93,12 +108,10 @@ export default function CommentsSheet({ progress, basePath, commentCountHint = 0
     // automatic resize, so a `position: absolute, bottom: 0` sheet like this
     // one would otherwise sit right behind the keyboard with the composer
     // hidden under it. See CHATSCREEN's equivalent fix for the same root cause.
-    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
-      setKeyboardHeight(e.endCoordinates?.height || 0);
+    const showSub = Keyboard.addListener("keyboardDidShow", () => {
       Animated.timing(progress, { toValue: 2, duration: 200, useNativeDriver: false }).start();
     });
     const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardHeight(0);
       Animated.timing(progress, { toValue: 1, duration: 200, useNativeDriver: false }).start();
     });
     return () => {
