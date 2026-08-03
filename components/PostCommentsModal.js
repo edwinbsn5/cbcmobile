@@ -33,6 +33,11 @@ export default function PostCommentsModal({ visible, post, basePath, onClose }) 
 
   const isVideo = post.type === "video" && !!post.mediaUrl;
   const photoUri = post.photoUrls?.[0] || post.mediaUrl;
+  // A pure-text post (colored background, no photo/video — see
+  // CreatePostScreen's bgColor/textColor composer) has neither, so falling
+  // through to the <Image> below with an undefined uri rendered nothing but
+  // this modal's black root background — reproduce the actual post instead.
+  const isTextOnly = !isVideo && !photoUri;
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
@@ -51,6 +56,14 @@ export default function PostCommentsModal({ visible, post, basePath, onClose }) 
           <Animated.View style={[styles.mediaInner, mediaAnimatedStyle]}>
             {isVideo ? (
               <FeedVideoPlayer uri={post.mediaUrl} poster={post.thumbnailUrl} isActive variant="fullscreen" onPressBody={() => {}} />
+            ) : isTextOnly ? (
+              <View style={[styles.textPost, post.bgColor && { backgroundColor: post.bgColor }]}>
+                <Text
+                  style={[styles.textPostContent, { color: post.textColor || "#fff", textAlign: post.textAlign || "left" }]}
+                >
+                  {post.content}
+                </Text>
+              </View>
             ) : (
               <Image source={{ uri: photoUri }} style={styles.image} resizeMode="contain" />
             )}
@@ -78,4 +91,6 @@ const styles = StyleSheet.create({
   mediaArea: { flex: 1, overflow: "hidden" },
   mediaInner: { width: "100%", height: SCREEN_HEIGHT, backgroundColor: "#000" },
   image: { width: "100%", height: "100%" },
+  textPost: { flex: 1, backgroundColor: "#12233F", alignItems: "center", justifyContent: "center", padding: 28 },
+  textPostContent: { fontSize: 22, fontWeight: "700", lineHeight: 30 },
 });

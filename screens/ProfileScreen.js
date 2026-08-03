@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, Image, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -59,7 +59,7 @@ function ReviewCard({ review }) {
   );
 }
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen({ navigation, route }) {
   const { user } = useAuth();
   const [counts, setCounts] = useState({ followerCount: 0, followingCount: 0, avgRating: 0, reviewCount: 0 });
   const [posts, setPosts] = useState([]);
@@ -70,6 +70,21 @@ export default function ProfileScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const { isSaved, toggleSave, loadSaved } = useSaved();
   const { isReshared, unreshare, loadReshared } = useReshared();
+  // Arriving via a "commented/reacted/reshared your post" notification tap.
+  // Profile is a RootStack screen React Navigation can bring back into focus
+  // with new params without remounting it (if it was already open), so these
+  // are read from route.params in an effect, not a useState initializer —
+  // see FeedScreen.js's equivalent comment for the full explanation.
+  const [focusPostId, setFocusPostId] = useState(null);
+  const [focusCommentId, setFocusCommentId] = useState(null);
+  const listRef = useRef(null);
+  useEffect(() => {
+    if (route?.params?.focusPostId) {
+      setActiveTab("Posts");
+      setFocusPostId(route.params.focusPostId);
+      setFocusCommentId(route.params.focusCommentId ?? null);
+    }
+  }, [route?.params?.focusPostId, route?.params?.focusCommentId]);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -114,6 +129,17 @@ export default function ProfileScreen({ navigation }) {
       Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
     }
   }
+
+  useEffect(() => {
+    if (!focusPostId || activeTab !== "Posts" || !posts.length) return;
+    const index = posts.findIndex((item) => item.id === focusPostId);
+    if (index >= 0) {
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.15 });
+    }
+    setFocusPostId(null);
+    setFocusCommentId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts, activeTab, focusPostId]);
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
@@ -281,9 +307,13 @@ export default function ProfileScreen({ navigation }) {
   return (
     <FlatList
       key="Posts"
+      ref={listRef}
       style={styles.container}
       data={posts}
       keyExtractor={(item, i) => `${item.kind}-${item.id}-${i}`}
+      onScrollToIndexFailed={(info) => {
+        setTimeout(() => listRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.15 }), 300);
+      }}
       renderItem={({ item }) =>
         item.kind === "ad" ? (
           item.network === "google" ? <AdMobBanner /> : <AdCard ad={item} />
@@ -297,6 +327,7 @@ export default function ProfileScreen({ navigation }) {
             onUnreshare={() => unreshare(item.id)}
             onDelete={handleDeletePost}
             onChanged={load}
+            autoOpenComments={!!focusCommentId && item.id === focusPostId}
           />
         )
       }

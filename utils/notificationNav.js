@@ -16,6 +16,8 @@ export async function navigateForData(navigation, data) {
     navigation.navigate("PageDetail", { pageId: data.pageId, focusPostId: data.postId, focusCommentId: data.commentId });
   } else if (data.screen === "Feed" && data.postId) {
     navigation.navigate("MainTabs", { screen: "Home", params: { focusPostId: data.postId, focusCommentId: data.commentId } });
+  } else if (data.screen === "Profile" && data.postId) {
+    navigation.navigate("Profile", { focusPostId: data.postId, focusCommentId: data.commentId });
   } else if (data.screen === "Reels" && data.reelId) {
     navigation.navigate("Reels", { focusReelId: data.reelId, focusCommentId: data.commentId });
   } else if (data.screen === "StoryViewer" && data.storyId) {
