@@ -11,7 +11,7 @@ module.exports = {
   expo: {
     name: "Tujijenge",
     slug: "socialapp",
-    version: "1.1.6",
+    version: "1.1.7",
     owner: "gekonge",
     // Navy-and-gold "Fine Seal" mark (mobile/assets/icon.png) — the native
     // Android launcher icons at android/app/src/main/res/mipmap-*/ were
@@ -47,7 +47,7 @@ module.exports = {
       // Play Store requires a strictly increasing versionCode on every
       // upload; bump this each time you build a new release for the Store
       // (it defaulted to 1 previously since this field was never set).
-      versionCode: 10,
+      versionCode: 12,
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#0B1F3A",

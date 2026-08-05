@@ -10,3 +10,6 @@ npm-debug.log*
 *.p12
 *.key
 *.mobileprovision
+theCBCkey
+backend.zip
+.idea/

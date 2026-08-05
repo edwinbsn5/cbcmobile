@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, Keyboard } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Keyboard } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import Avatar from "../components/Avatar";
@@ -54,7 +55,7 @@ export default function ReshareComposerScreen({ route, navigation }) {
         </View>
         {!!post.content && <Text style={styles.previewContent} numberOfLines={4}>{post.content}</Text>}
         {!!post.mediaUrl && post.type !== "video" && (
-          <Image source={{ uri: post.mediaUrl }} style={styles.previewMedia} resizeMode="cover" />
+          <Image source={{ uri: post.mediaUrl }} style={styles.previewMedia} contentFit="cover" />
         )}
         {post.photoUrls?.length > 1 && (
           <Text style={styles.photoCountBadge}>+{post.photoUrls.length - 1} more photo{post.photoUrls.length - 1 === 1 ? "" : "s"}</Text>

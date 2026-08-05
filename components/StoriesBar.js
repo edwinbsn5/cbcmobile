@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import Avatar from "./Avatar";
 import { COLORS } from "../theme";
@@ -8,7 +9,7 @@ function CardBackground({ story }) {
   if (!story) return <View style={[styles.cardBg, styles.emptyCardBg]} />;
   if (story.type === "video") {
     if (story.thumbnailUrl) {
-      return <Image source={{ uri: story.thumbnailUrl }} style={styles.cardBg} resizeMode="cover" />;
+      return <Image source={{ uri: story.thumbnailUrl }} style={styles.cardBg} contentFit="cover" />;
     }
     return (
       <View style={[styles.cardBg, styles.videoPlaceholder]}>
@@ -28,7 +29,7 @@ function CardBackground({ story }) {
       </View>
     );
   }
-  return <Image source={{ uri: story.mediaUrl }} style={styles.cardBg} resizeMode="cover" />;
+  return <Image source={{ uri: story.mediaUrl }} style={styles.cardBg} contentFit="cover" />;
 }
 
 export default function StoriesBar({ storyGroups, myUserId, onOpenStory, onAddStory }) {

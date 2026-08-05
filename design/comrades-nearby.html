@@ -1,0 +1,214 @@
+<title>The CBC — Comrades Nearby (final direction)</title>
+<style>
+  :root {
+    --page-bg: #F7F6F3; --page-ink: #201E1A; --page-sub: #6B6A65; --page-accent: #0E9384;
+    --bg: #F1FAF8; --surface: #FFFFFF; --ink: #0B2723; --sub: #5C8D85;
+    --accent: #0E9384; --accent-ink: #FFFFFF; --wash: #D6F0EB; --border: #CFE8E2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page-bg: #12171A; --page-ink: #EAF5F2; --page-sub: #8FB3AC; }
+  }
+  :root[data-theme="dark"] { --page-bg: #12171A; --page-ink: #EAF5F2; --page-sub: #8FB3AC; }
+  :root[data-theme="light"] { --page-bg: #F7F6F3; --page-ink: #201E1A; --page-sub: #6B6A65; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 40px 20px 80px;
+  }
+  .intro { max-width: 660px; margin: 0 auto 44px; }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-accent); margin: 0 0 10px; }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 12px; text-wrap: balance; }
+  .intro p { font-size: 15px; line-height: 1.55; color: var(--page-sub); margin: 0 0 10px; }
+  .intro ul { margin: 10px 0 0; padding-left: 20px; font-size: 14px; color: var(--page-sub); line-height: 1.6; }
+
+  .gallery { display: flex; flex-wrap: wrap; justify-content: center; gap: 44px 28px; max-width: 1300px; margin: 0 auto; }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .slot-name { font-size: 14px; font-weight: 700; }
+  .slot-desc { font-size: 11.5px; color: var(--page-sub); text-align: center; max-width: 320px; line-height: 1.5; }
+
+  .phone { width: 320px; background: var(--bg); border: 1px solid var(--border); border-radius: 22px; overflow: hidden; box-shadow: 0 10px 30px -12px rgba(11,39,35,0.25); }
+  .phone-inner { padding: 12px 0 16px; }
+
+  svg.i { width: 15px; height: 15px; }
+
+  .quick-row { display: flex; gap: 6px; padding: 0 12px 10px; }
+  .quick-item { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; height: 30px; }
+
+  .composer { display: flex; align-items: center; gap: 8px; background: var(--surface); margin: 0 12px 10px; border-radius: 8px; padding: 9px 10px; }
+  .composer .post-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--wash); }
+  .composer span { font-size: 12px; color: var(--sub); }
+
+  .stories-row { display: flex; gap: 6px; padding: 0 12px 10px; }
+  .story-card { width: 40px; height: 62px; border-radius: 8px; background: var(--wash); border: 2px solid var(--accent); }
+
+  .post { background: var(--surface); border-radius: 10px; margin: 0 12px 10px; padding: 12px; }
+  .post-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .post-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--wash); flex-shrink: 0; }
+  .post-line { height: 8px; border-radius: 4px; background: var(--wash); }
+  .post-line.w60 { width: 60%; }
+  .post-line.w40 { width: 40%; margin-top: 6px; }
+  .post-media { height: 66px; border-radius: 6px; background: var(--wash); margin-top: 8px; }
+
+  .item-tag {
+    display: inline-flex; align-items: center; gap: 5px; background: var(--ink); color: #fff; font-size: 10px;
+    font-weight: 800; padding: 3px 9px; border-radius: 8px; margin: 2px 12px 8px; letter-spacing: 0.3px;
+  }
+
+  .section-label { display: flex; align-items: center; gap: 6px; margin: 4px 12px 10px; }
+  .section-label-text { font-size: 12.5px; font-weight: 800; color: var(--ink); }
+  .section-sub { font-size: 10.5px; color: var(--sub); margin: -6px 12px 10px; }
+
+  .avatar { border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
+
+  .row3 { display: flex; gap: 14px; overflow-x: auto; padding: 0 12px 6px; }
+  .card3 { flex-shrink: 0; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .ring3 { width: 62px; height: 62px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
+  .card3 .avatar { width: 52px; height: 52px; font-size: 15px; }
+  .card3 .distance-badge {
+    position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff;
+    font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 8px; white-space: nowrap;
+  }
+  .card3 .name-row { display: flex; align-items: center; gap: 3px; margin-top: 4px; }
+  .card3 .name { font-size: 11.5px; font-weight: 700; color: var(--ink); }
+  .card3 .gender-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .card3 .gender-dot.m { background: #3B82F6; }
+  .card3 .gender-dot.f { background: #EC4899; }
+  .card3 .follow-pill { border: 1.5px solid var(--accent); color: var(--accent); border-radius: 12px; padding: 4px 14px; font-size: 11px; font-weight: 700; background: transparent; }
+
+  .empty-box { margin: 4px 12px 14px; text-align: center; padding: 18px 10px; }
+  .empty-box p { font-size: 12.5px; color: var(--sub); line-height: 1.5; margin: 0; }
+
+  .legend { display: flex; gap: 18px; margin-top: 26px; flex-wrap: wrap; justify-content: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--page-sub); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="i-people"><circle cx="8" cy="7" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="7" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 18c0-3 2.5-5 5.5-5s5.5 2 5.5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13 13.2c2.7.3 4.5 2.2 4.5 4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></g>
+  </defs>
+</svg>
+
+<div class="intro">
+  <p class="eyebrow">The CBC — main feed</p>
+  <h1>Comrades Nearby — finalized direction</h1>
+  <p>The Proximity Ring treatment, renamed from "People Nearby" to <strong>"Comrades Nearby,"</strong> shown in
+  its two real placements: as the 5th item in a normal feed, and as the centerpiece of a brand-new account's
+  empty feed (where it's the main thing to do until you follow people and posts start showing up).</p>
+  <ul>
+    <li>Sample lineup alternates gender each card — Amina (F) → Brian (M) → Cynthia (F) → Dennis (M) — representing the random-but-alternating selection you described.</li>
+    <li>Ring fill = closer means a fuller ring, same as the earlier draft.</li>
+  </ul>
+</div>
+
+<div class="gallery">
+
+  <!-- Scenario 1: normal feed, carousel as 5th item -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <span class="item-tag">1 · Quick links</span>
+        <div class="quick-row">
+          <div class="quick-item"></div><div class="quick-item"></div><div class="quick-item"></div><div class="quick-item"></div>
+        </div>
+
+        <span class="item-tag">2 · Stories</span>
+        <div class="stories-row">
+          <div class="story-card"></div><div class="story-card"></div><div class="story-card"></div>
+        </div>
+
+        <span class="item-tag">3 · Composer</span>
+        <div class="composer"><div class="post-avatar"></div><span>What's on your mind?</span></div>
+
+        <span class="item-tag">4 · First post</span>
+        <div class="post">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+          <div class="post-media"></div>
+        </div>
+
+        <span class="item-tag" style="background:var(--accent)">5 · Comrades Nearby</span>
+        <div class="section-label"><svg class="i" style="color:var(--accent)"><use href="#i-people"/></svg><span class="section-label-text">Comrades Nearby</span></div>
+        <div class="row3">
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 300deg, var(--wash) 0deg)"><div class="avatar">AY</div><div class="distance-badge">0.8 km</div></div>
+            <div class="name-row"><span class="gender-dot f"></span><span class="name">Amina</span></div>
+            <button class="follow-pill">Follow</button>
+          </div>
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 220deg, var(--wash) 0deg)"><div class="avatar">BK</div><div class="distance-badge">1.5 km</div></div>
+            <div class="name-row"><span class="gender-dot m"></span><span class="name">Brian</span></div>
+            <button class="follow-pill">Follow</button>
+          </div>
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 120deg, var(--wash) 0deg)"><div class="avatar">CN</div><div class="distance-badge">2.3 km</div></div>
+            <div class="name-row"><span class="gender-dot f"></span><span class="name">Cynthia</span></div>
+            <button class="follow-pill">Follow</button>
+          </div>
+        </div>
+
+        <div class="post" style="margin-top:12px">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+        </div>
+      </div>
+    </div>
+    <span class="slot-name">Normal feed — 5th item</span>
+    <span class="slot-desc">Counting the header blocks (quick links, stories, composer) as items 1–3, the first post is item 4 and Comrades Nearby lands right after it as item 5, then the feed continues underneath.</span>
+  </div>
+
+  <!-- Scenario 2: empty feed / new user -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="quick-row">
+          <div class="quick-item"></div><div class="quick-item"></div><div class="quick-item"></div><div class="quick-item"></div>
+        </div>
+        <div class="stories-row">
+          <div class="story-card"></div><div class="story-card"></div>
+        </div>
+        <div class="composer"><div class="post-avatar"></div><span>What's on your mind?</span></div>
+
+        <div class="empty-box">
+          <p>Your feed is empty — follow people to see their posts here.</p>
+        </div>
+
+        <div class="section-label"><svg class="i" style="color:var(--accent)"><use href="#i-people"/></svg><span class="section-label-text">Comrades Nearby</span></div>
+        <div class="section-sub">Start by following a few people near you</div>
+        <div class="row3">
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 300deg, var(--wash) 0deg)"><div class="avatar">DM</div><div class="distance-badge">0.4 km</div></div>
+            <div class="name-row"><span class="gender-dot m"></span><span class="name">Dennis</span></div>
+            <button class="follow-pill">Follow</button>
+          </div>
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 260deg, var(--wash) 0deg)"><div class="avatar">FW</div><div class="distance-badge">1.1 km</div></div>
+            <div class="name-row"><span class="gender-dot f"></span><span class="name">Faith</span></div>
+            <button class="follow-pill">Follow</button>
+          </div>
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 180deg, var(--wash) 0deg)"><div class="avatar">GK</div><div class="distance-badge">2.0 km</div></div>
+            <div class="name-row"><span class="gender-dot m"></span><span class="name">George</span></div>
+            <button class="follow-pill">Follow</button>
+          </div>
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 90deg, var(--wash) 0deg)"><div class="avatar">HN</div><div class="distance-badge">3.4 km</div></div>
+            <div class="name-row"><span class="gender-dot f"></span><span class="name">Hannah</span></div>
+            <button class="follow-pill">Follow</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="slot-name">Empty feed — new account</span>
+    <span class="slot-desc">A brand-new user with nobody followed yet sees Comrades Nearby directly under the "your feed is empty" message — the fastest path from zero to a feed with content.</span>
+  </div>
+
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#EC4899"></div>Female</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3B82F6"></div>Male</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Ring fill = proximity</div>
+</div>

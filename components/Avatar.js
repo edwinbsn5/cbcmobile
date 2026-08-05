@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 
 // Small, fixed palette — deterministic per name so the same person always
 // gets the same badge color across every screen.
@@ -23,7 +24,7 @@ function initialsFor(name) {
 // an initials badge using the same `style` so every call site's existing
 // size/shape (circular or rounded-square) is preserved untouched.
 export default function Avatar({ uri, name, style }) {
-  if (uri) return <Image source={{ uri }} style={style} />;
+  if (uri) return <Image source={{ uri }} style={style} contentFit="cover" />;
 
   const flat = StyleSheet.flatten(style) || {};
   const dim = flat.width || flat.height || 40;

@@ -1,0 +1,20 @@
+# OSX
+#
+.DS_Store
+
+# Android/IntelliJ
+#
+build/
+.idea
+.gradle
+.kotlin/
+local.properties
+*.iml
+*.hprof
+.cxx/
+
+# Bundle artifacts
+*.jsbundle
+
+# Manually staged release build outputs (APK/AAB/baseline profiles)
+app/release/

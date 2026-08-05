@@ -23,6 +23,7 @@
     "expo-device": "~7.1.4",
     "expo-file-system": "~18.1.11",
     "expo-font": "~13.3.2",
+    "expo-image": "~2.1.0",
     "expo-image-picker": "~16.1.4",
     "expo-location": "~18.1.6",
     "expo-notifications": "~0.31.5",
@@ -32,8 +33,9 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.6",
-    "react-native-compressor": "^1.19.4",
+    "react-native-compressor": "^2.0.3",
     "react-native-google-mobile-ads": "14.7.2",
+    "react-native-nitro-modules": "^0.36.5",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
@@ -44,5 +46,12 @@
   "devDependencies": {
     "@babel/core": "^7.24.0"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": ["expo-image"]
+      }
+    }
+  }
 }

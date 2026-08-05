@@ -1,0 +1,201 @@
+<title>The CBC — Post Action Row, 5 Treatments</title>
+<style>
+  :root {
+    --page-bg: #F7F6F3; --page-ink: #201E1A; --page-sub: #6B6A65; --page-accent: #0E9384;
+    --bg: #F1FAF8; --surface: #FFFFFF; --ink: #0B2723; --sub: #5C8D85;
+    --accent: #0E9384; --accent-ink: #FFFFFF; --wash: #D6F0EB; --border: #CFE8E2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page-bg: #12171A; --page-ink: #EAF5F2; --page-sub: #8FB3AC; }
+  }
+  :root[data-theme="dark"] { --page-bg: #12171A; --page-ink: #EAF5F2; --page-sub: #8FB3AC; }
+  :root[data-theme="light"] { --page-bg: #F7F6F3; --page-ink: #201E1A; --page-sub: #6B6A65; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 40px 24px 80px;
+  }
+  .intro { max-width: 640px; margin: 0 auto 44px; }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-accent); margin: 0 0 10px; }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 12px; text-wrap: balance; }
+  .intro p { font-size: 15px; line-height: 1.55; color: var(--page-sub); margin: 0; }
+
+  .gallery { display: flex; flex-wrap: wrap; justify-content: center; gap: 40px 28px; max-width: 1300px; margin: 0 auto; }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .slot-name { font-size: 14px; font-weight: 700; }
+  .slot-desc { font-size: 11.5px; color: var(--page-sub); text-align: center; max-width: 340px; }
+
+  .card {
+    width: 360px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px; box-shadow: 0 1px 2px rgba(11,39,35,0.04);
+  }
+  .post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .post-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .post-time { font-size: 11px; color: var(--sub); }
+  .post-text { font-size: 13.5px; line-height: 1.45; color: var(--ink); margin: 0 0 12px; }
+
+  svg.i { width: 17px; height: 17px; }
+
+  /* ---------- 1. Classic labeled row ---------- */
+  .row1 { display: flex; border-top: 1px solid var(--border); padding-top: 6px; }
+  .row1 .action { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 0; border-radius: 8px; }
+  .row1 .action.active svg, .row1 .action.active span { color: var(--accent); }
+  .row1 .action svg, .row1 .action span { color: var(--sub); }
+  .row1 .action span { font-size: 12.5px; font-weight: 700; }
+
+  /* ---------- 2. Compact icon row ---------- */
+  .row2 { display: flex; align-items: center; gap: 18px; padding-top: 4px; }
+  .row2 .action { display: flex; align-items: center; gap: 5px; }
+  .row2 .action svg { color: var(--sub); }
+  .row2 .action.active svg { color: var(--accent); }
+  .row2 .action span { font-size: 12px; font-weight: 600; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .row2 .spacer { flex: 1; }
+
+  /* ---------- 3. Pill buttons ---------- */
+  .row3 { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+  .pill { display: flex; align-items: center; gap: 6px; background: var(--wash); border-radius: 16px; padding: 7px 12px; }
+  .pill svg { color: var(--accent); }
+  .pill span { font-size: 12px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .pill.active { background: var(--accent); }
+  .pill.active svg, .pill.active span { color: var(--accent-ink); }
+
+  /* ---------- 4. Reaction popover ---------- */
+  .row4-wrap { position: relative; padding-top: 10px; }
+  .popover {
+    position: absolute; top: -40px; left: 0; display: flex; gap: 4px; background: var(--surface);
+    border-radius: 22px; padding: 6px 8px; box-shadow: 0 8px 20px -6px rgba(11,39,35,0.35), 0 1px 2px rgba(11,39,35,0.1);
+  }
+  .popover .emoji { font-size: 21px; padding: 2px; }
+  .popover .emoji.picked { transform: scale(1.15); }
+  .popover::after {
+    content: ""; position: absolute; bottom: -5px; left: 16px; width: 10px; height: 10px;
+    background: var(--surface); transform: rotate(45deg);
+  }
+  .row4 { display: flex; align-items: center; gap: 16px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .row4 .action { display: flex; align-items: center; gap: 6px; }
+  .row4 .action span { font-size: 12.5px; font-weight: 700; color: var(--sub); }
+  .row4 .action.reacted span { color: #D7263D; }
+
+  /* ---------- 5. Minimal text row ---------- */
+  .row5 { display: flex; align-items: center; gap: 10px; padding-top: 6px; }
+  .row5 .action { font-size: 12.5px; font-weight: 700; color: var(--sub); }
+  .row5 .action.active { color: var(--accent); }
+  .row5 .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border); }
+</style>
+
+<!-- shared icons -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="i-heart-outline"><path d="M12 20s-7.5-4.6-9.7-9.3C.8 7.4 2.6 4 6 4c2 0 3.4 1 4 2.3.6-1.3 2-2.3 4-2.3 3.4 0 5.2 3.4 3.7 6.7C19.5 15.4 12 20 12 20Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g>
+    <g id="i-heart-filled"><path d="M12 20s-7.5-4.6-9.7-9.3C.8 7.4 2.6 4 6 4c2 0 3.4 1 4 2.3.6-1.3 2-2.3 4-2.3 3.4 0 5.2 3.4 3.7 6.7C19.5 15.4 12 20 12 20Z" fill="currentColor"/></g>
+    <g id="i-comment"><path d="M4 5h16v10.5H9.5L5.5 19v-3.5H4V5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></g>
+    <g id="i-reshare"><path d="M7 7h8V4.5L19 8l-4 3.5V9H8a2 2 0 0 0-2 2v2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17H9v2.5L5 16l4-3.5V15h8a2 2 0 0 0 2-2v-2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g id="i-bookmark-outline"><path d="M6 4.5h12v15l-6-4-6 4v-15Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g>
+    <g id="i-bookmark-filled"><path d="M6 4.5h12v15l-6-4-6 4v-15Z" fill="currentColor"/></g>
+  </defs>
+</svg>
+
+<div class="intro">
+  <p class="eyebrow">The CBC — post action row</p>
+  <h1>Five treatments for Like / Comment / Reshare / Save</h1>
+  <p>Same sample post, same Lake Turquoise palette throughout — the variable
+  here is layout and interaction weight, not color. Counts and states
+  (liked, reacted, saved) are shown mid-use, not empty, so you can judge how
+  each reads once people have actually engaged.</p>
+</div>
+
+<div class="gallery">
+
+  <!-- 1. Classic labeled row -->
+  <div class="slot">
+    <div class="card">
+      <div class="post-head"><div class="avatar">AY</div><div><div class="post-name">Amina Yusuf</div><div class="post-time">2h</div></div></div>
+      <p class="post-text">Just landed my first gig through the Jobs board 🎉 KES 15,000 for a two-week logo design project!</p>
+      <div class="row1">
+        <div class="action active"><svg class="i"><use href="#i-heart-filled"/></svg><span>Liked</span></div>
+        <div class="action"><svg class="i"><use href="#i-comment"/></svg><span>Comment</span></div>
+        <div class="action"><svg class="i"><use href="#i-reshare"/></svg><span>Reshare</span></div>
+        <div class="action"><svg class="i"><use href="#i-bookmark-outline"/></svg><span>Save</span></div>
+      </div>
+    </div>
+    <span class="slot-name">Classic Labeled Row</span>
+    <span class="slot-desc">Full-width, evenly split, icon + word on every button — the most familiar pattern, easiest to scan for a first-time user.</span>
+  </div>
+
+  <!-- 2. Compact icon row -->
+  <div class="slot">
+    <div class="card">
+      <div class="post-head"><div class="avatar">AY</div><div><div class="post-name">Amina Yusuf</div><div class="post-time">2h</div></div></div>
+      <p class="post-text">Just landed my first gig through the Jobs board 🎉 KES 15,000 for a two-week logo design project!</p>
+      <div class="row2">
+        <div class="action active"><svg class="i"><use href="#i-heart-filled"/></svg><span>128</span></div>
+        <div class="action"><svg class="i"><use href="#i-comment"/></svg><span>24</span></div>
+        <div class="action"><svg class="i"><use href="#i-reshare"/></svg><span>12</span></div>
+        <div class="spacer"></div>
+        <div class="action"><svg class="i"><use href="#i-bookmark-outline"/></svg></div>
+      </div>
+    </div>
+    <span class="slot-name">Compact Icon Row</span>
+    <span class="slot-desc">Left-aligned counts, Save pinned to the right with no label — dense and quiet, prioritizes the numbers over button size.</span>
+  </div>
+
+  <!-- 3. Pill buttons -->
+  <div class="slot">
+    <div class="card">
+      <div class="post-head"><div class="avatar">AY</div><div><div class="post-name">Amina Yusuf</div><div class="post-time">2h</div></div></div>
+      <p class="post-text">Just landed my first gig through the Jobs board 🎉 KES 15,000 for a two-week logo design project!</p>
+      <div class="row3">
+        <div class="pill active"><svg class="i"><use href="#i-heart-filled"/></svg><span>128</span></div>
+        <div class="pill"><svg class="i"><use href="#i-comment"/></svg><span>24</span></div>
+        <div class="pill"><svg class="i"><use href="#i-reshare"/></svg><span>12</span></div>
+        <div class="pill"><svg class="i"><use href="#i-bookmark-outline"/></svg><span>Save</span></div>
+      </div>
+    </div>
+    <span class="slot-name">Pill Buttons</span>
+    <span class="slot-desc">Each action gets its own rounded chip on a wash background; the active state (Liked, here) fills solid — clearest "this is a toggle" affordance of the five.</span>
+  </div>
+
+  <!-- 4. Reaction popover -->
+  <div class="slot">
+    <div class="card">
+      <div class="post-head"><div class="avatar">AY</div><div><div class="post-name">Amina Yusuf</div><div class="post-time">2h</div></div></div>
+      <p class="post-text">Just landed my first gig through the Jobs board 🎉 KES 15,000 for a two-week logo design project!</p>
+      <div class="row4-wrap">
+        <div class="popover">
+          <span class="emoji">👍</span><span class="emoji picked">❤️</span><span class="emoji">😆</span><span class="emoji">😮</span><span class="emoji">😢</span><span class="emoji">😡</span>
+        </div>
+        <div class="row4">
+          <div class="action reacted"><span>❤️ Loved</span></div>
+          <div class="action"><svg class="i"><use href="#i-comment"/></svg><span>Comment</span></div>
+          <div class="action"><svg class="i"><use href="#i-reshare"/></svg><span>Reshare</span></div>
+          <div class="action"><svg class="i"><use href="#i-bookmark-outline"/></svg><span>Save</span></div>
+        </div>
+      </div>
+    </div>
+    <span class="slot-name">Reaction Popover</span>
+    <span class="slot-desc">Matches the app's existing 6-reaction system exactly (👍❤️😆😮😢😡) — long-press Like to reveal this strip, shown here mid-pick with Love selected. Comment/Reshare/Save stay simple.</span>
+  </div>
+
+  <!-- 5. Minimal text row -->
+  <div class="slot">
+    <div class="card">
+      <div class="post-head"><div class="avatar">AY</div><div><div class="post-name">Amina Yusuf</div><div class="post-time">2h</div></div></div>
+      <p class="post-text">Just landed my first gig through the Jobs board 🎉 KES 15,000 for a two-week logo design project!</p>
+      <div class="row5">
+        <span class="action active">Liked · 128</span>
+        <span class="dot"></span>
+        <span class="action">Comment · 24</span>
+        <span class="dot"></span>
+        <span class="action">Reshare</span>
+        <span class="dot"></span>
+        <span class="action">Save</span>
+      </div>
+    </div>
+    <span class="slot-name">Minimal Text Row</span>
+    <span class="slot-desc">No icons at all — just weighted text separated by dot dividers. Quietest option, lets the post content stay the visual focus.</span>
+  </div>
+
+</div>

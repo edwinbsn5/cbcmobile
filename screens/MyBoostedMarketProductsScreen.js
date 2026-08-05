@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
 import { COLORS } from "../theme";
@@ -74,7 +75,7 @@ export default function MyBoostedMarketProductsScreen() {
         return (
           <View style={styles.card}>
             <View style={styles.row}>
-              {!!thumb && <Image source={{ uri: thumb }} style={styles.thumb} />}
+              {!!thumb && <Image source={{ uri: thumb }} style={styles.thumb} contentFit="cover" />}
               <View style={styles.info}>
                 <Text style={styles.content} numberOfLines={2}>{item.product?.title || "(product deleted)"}</Text>
                 {item.product?.priceKES != null && <Text style={styles.price}>KES {item.product.priceKES}</Text>}

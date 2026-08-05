@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { COLORS } from "../theme";
 
 // The home feed's "Featured Pages" slot — an admin-boosted Page (see
@@ -11,7 +12,7 @@ export default function FeaturedPageCard({ page, onPress }) {
       <View style={styles.badgeRow}>
         <Text style={styles.featured}>Featured Page</Text>
       </View>
-      {!!page.coverUrl && <Image source={{ uri: page.coverUrl }} style={styles.media} resizeMode="cover" />}
+      {!!page.coverUrl && <Image source={{ uri: page.coverUrl }} style={styles.media} contentFit="cover" />}
       <Text style={styles.name}>{page.name}</Text>
       {!!page.description && <Text style={styles.desc} numberOfLines={2}>{page.description}</Text>}
       <TouchableOpacity style={styles.cta} onPress={onPress}>

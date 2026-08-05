@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -90,7 +91,7 @@ export default function EventsScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("EventDetail", { eventId: item.id })}>
-            {item.coverUrl && <Image source={{ uri: item.coverUrl }} style={styles.cover} />}
+            {item.coverUrl && <Image source={{ uri: item.coverUrl }} style={styles.cover} contentFit="cover" />}
             <View style={styles.body}>
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{item.name}</Text>

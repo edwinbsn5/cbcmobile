@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import CampusPicker from "../components/CampusPicker";
@@ -71,7 +72,7 @@ export default function BoostPostScreen({ route, navigation }) {
       <View style={styles.previewCard}>
         <Text style={styles.previewLabel}>Boosting this post</Text>
         {!!post.content && <Text style={styles.previewContent} numberOfLines={3}>{post.content}</Text>}
-        {post.mediaUrl && <Image source={{ uri: post.mediaUrl }} style={styles.previewMedia} resizeMode="cover" />}
+        {post.mediaUrl && <Image source={{ uri: post.mediaUrl }} style={styles.previewMedia} contentFit="cover" />}
         {post.photoUrls?.length > 1 && (
           <Text style={styles.photoCountBadge}>+{post.photoUrls.length - 1} more photo{post.photoUrls.length - 1 === 1 ? "" : "s"}</Text>
         )}

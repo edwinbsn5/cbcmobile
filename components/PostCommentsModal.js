@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, Modal, Animated, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import FeedVideoPlayer from "./FeedVideoPlayer";
@@ -65,7 +66,7 @@ export default function PostCommentsModal({ visible, post, basePath, onClose }) 
                 </Text>
               </View>
             ) : (
-              <Image source={{ uri: photoUri }} style={styles.image} resizeMode="contain" />
+              <Image source={{ uri: photoUri }} style={styles.image} contentFit="contain" />
             )}
           </Animated.View>
         </View>

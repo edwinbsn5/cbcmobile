@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  View, Text, Image, TextInput, TouchableOpacity, Pressable, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet,
   Alert, Keyboard,
 } from "react-native";
+import { Image } from "expo-image";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -221,7 +222,7 @@ export default function StoryViewerScreen({ route, navigation }) {
           </Text>
         </View>
       ) : (
-        <Image source={{ uri: story.mediaUrl }} style={styles.media} resizeMode="contain" />
+        <Image source={{ uri: story.mediaUrl }} style={styles.media} contentFit="contain" />
       )}
 
       <View style={[styles.progressRow, { top: insets.top + 10 }]}>

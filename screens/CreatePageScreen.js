@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -89,7 +90,7 @@ export default function CreatePageScreen({ navigation }) {
         <Text style={styles.label}>Avatar</Text>
         {avatar ? (
           <View style={styles.avatarPreviewWrap}>
-            <Image source={{ uri: avatar.uri }} style={styles.avatarPreview} resizeMode="cover" />
+            <Image source={{ uri: avatar.uri }} style={styles.avatarPreview} contentFit="cover" />
             <TouchableOpacity style={styles.imageRemoveButton} onPress={() => setAvatar(null)}>
               <Ionicons name="close" size={16} color="#fff" />
             </TouchableOpacity>
@@ -104,7 +105,7 @@ export default function CreatePageScreen({ navigation }) {
         <Text style={styles.label}>Cover photo</Text>
         {cover ? (
           <View style={styles.coverPreviewWrap}>
-            <Image source={{ uri: cover.uri }} style={styles.coverPreview} resizeMode="cover" />
+            <Image source={{ uri: cover.uri }} style={styles.coverPreview} contentFit="cover" />
             <TouchableOpacity style={styles.imageRemoveButton} onPress={() => setCover(null)}>
               <Ionicons name="close" size={16} color="#fff" />
             </TouchableOpacity>

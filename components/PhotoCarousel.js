@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Image, FlatList, Text, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Image as RNImage, FlatList, Text, StyleSheet, useWindowDimensions } from "react-native";
+import { Image } from "expo-image";
 import { clampAspectRatio } from "../utils/videoAspect";
 
 // Design 1 — swipe carousel: one photo fills the frame at a time, a "2/5"
@@ -23,7 +24,7 @@ export default function PhotoCarousel({ photos }) {
 
   useEffect(() => {
     let cancelled = false;
-    Image.getSize(
+    RNImage.getSize(
       photos[0],
       (w, h) => {
         if (!cancelled && w && h) setRatio(w / h);
@@ -49,7 +50,7 @@ export default function PhotoCarousel({ photos }) {
         onScroll={onScroll}
         scrollEventThrottle={16}
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-        renderItem={({ item }) => <Image source={{ uri: item }} style={{ width, height }} resizeMode="cover" />}
+        renderItem={({ item }) => <Image source={{ uri: item }} style={{ width, height }} contentFit="cover" />}
       />
       <View style={styles.countBadge}>
         <Text style={styles.countText}>{index + 1}/{photos.length}</Text>

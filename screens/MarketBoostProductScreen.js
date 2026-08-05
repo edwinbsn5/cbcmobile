@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import CountyPicker from "../components/CountyPicker";
@@ -65,7 +66,7 @@ export default function MarketBoostProductScreen({ route, navigation }) {
           <Image
             source={{ uri: product.mediaType === "video" ? product.thumbnailUrl : product.photoUrls?.[0] }}
             style={styles.previewMedia}
-            resizeMode="cover"
+            contentFit="cover"
           />
           <View style={{ flex: 1 }}>
             <Text style={styles.previewTitle} numberOfLines={2}>{product.title}</Text>

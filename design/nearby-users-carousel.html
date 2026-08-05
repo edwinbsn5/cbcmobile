@@ -1,0 +1,263 @@
+<title>The CBC — Users Nearby Carousel, 5 Drafts</title>
+<style>
+  :root {
+    --page-bg: #F7F6F3; --page-ink: #201E1A; --page-sub: #6B6A65; --page-accent: #0E9384;
+    --bg: #F1FAF8; --surface: #FFFFFF; --ink: #0B2723; --sub: #5C8D85;
+    --accent: #0E9384; --accent-ink: #FFFFFF; --wash: #D6F0EB; --border: #CFE8E2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page-bg: #12171A; --page-ink: #EAF5F2; --page-sub: #8FB3AC; }
+  }
+  :root[data-theme="dark"] { --page-bg: #12171A; --page-ink: #EAF5F2; --page-sub: #8FB3AC; }
+  :root[data-theme="light"] { --page-bg: #F7F6F3; --page-ink: #201E1A; --page-sub: #6B6A65; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 40px 20px 80px;
+  }
+  .intro { max-width: 640px; margin: 0 auto 44px; }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-accent); margin: 0 0 10px; }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 12px; text-wrap: balance; }
+  .intro p { font-size: 15px; line-height: 1.55; color: var(--page-sub); margin: 0; }
+
+  .gallery { display: flex; flex-wrap: wrap; justify-content: center; gap: 44px 28px; max-width: 1300px; margin: 0 auto; }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .slot-name { font-size: 14px; font-weight: 700; }
+  .slot-desc { font-size: 11.5px; color: var(--page-sub); text-align: center; max-width: 320px; line-height: 1.5; }
+
+  .phone { width: 320px; background: var(--bg); border: 1px solid var(--border); border-radius: 22px; overflow: hidden; box-shadow: 0 10px 30px -12px rgba(11,39,35,0.25); }
+  .phone-inner { padding: 12px 0 16px; }
+
+  svg.i { width: 16px; height: 16px; }
+  svg.i-sm { width: 12px; height: 12px; }
+
+  /* shared compact "post" placeholder above/below the carousel, for feed context */
+  .post { background: var(--surface); border-radius: 10px; margin: 0 12px 10px; padding: 12px; }
+  .post-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .post-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--wash); flex-shrink: 0; }
+  .post-line { height: 8px; border-radius: 4px; background: var(--wash); }
+  .post-line.w60 { width: 60%; }
+  .post-line.w40 { width: 40%; margin-top: 6px; }
+  .post-media { height: 70px; border-radius: 6px; background: var(--wash); margin-top: 8px; }
+
+  .section-label { display: flex; align-items: center; gap: 6px; margin: 4px 12px 10px; }
+  .section-label-text { font-size: 12px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.4px; }
+
+  /* avatar with initials, shared */
+  .avatar { border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
+
+  /* ---------- 1. Classic Card ---------- */
+  .row1 { display: flex; gap: 10px; overflow-x: auto; padding: 0 12px 4px; }
+  .card1 { flex-shrink: 0; width: 108px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .card1 .avatar { width: 52px; height: 52px; font-size: 16px; }
+  .card1 .name { font-size: 12.5px; font-weight: 700; color: var(--ink); text-align: center; }
+  .card1 .distance { font-size: 11px; color: var(--sub); font-weight: 600; }
+  .card1 .follow { width: 100%; background: var(--accent); color: var(--accent-ink); border: none; border-radius: 7px; padding: 6px 0; font-size: 11.5px; font-weight: 700; }
+
+  /* ---------- 2. Compact Chip ---------- */
+  .row2 { display: flex; gap: 8px; overflow-x: auto; padding: 0 12px 4px; }
+  .card2 { flex-shrink: 0; width: 76px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .card2 .avatar { width: 44px; height: 44px; font-size: 14px; position: relative; }
+  .card2 .name { font-size: 11px; font-weight: 700; color: var(--ink); }
+  .card2 .distance { font-size: 10px; color: var(--sub); font-weight: 600; }
+  .card2 .plus {
+    position: absolute; bottom: -3px; right: -3px; width: 20px; height: 20px; border-radius: 10px;
+    background: var(--accent); border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ---------- 3. Proximity Ring ---------- */
+  .row3 { display: flex; gap: 14px; overflow-x: auto; padding: 0 12px 6px; }
+  .card3 { flex-shrink: 0; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .ring3 { width: 62px; height: 62px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
+  .card3 .avatar { width: 52px; height: 52px; font-size: 15px; }
+  .card3 .distance-badge {
+    position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff;
+    font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 8px; white-space: nowrap;
+  }
+  .card3 .name { font-size: 11.5px; font-weight: 700; color: var(--ink); margin-top: 4px; }
+  .card3 .follow-pill { border: 1.5px solid var(--accent); color: var(--accent); border-radius: 12px; padding: 4px 14px; font-size: 11px; font-weight: 700; background: transparent; }
+
+  /* ---------- 4. Map-pin Style ---------- */
+  .row4 { display: flex; gap: 10px; overflow-x: auto; padding: 0 12px 4px; }
+  .card4 { flex-shrink: 0; width: 100px; background: var(--surface); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; overflow: hidden; }
+  .card4::before {
+    content: ""; position: absolute; inset: 0; opacity: 0.5;
+    background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 12px 12px;
+  }
+  .card4 .pin-tag { position: relative; display: flex; align-items: center; gap: 3px; background: var(--wash); color: var(--accent); border-radius: 8px; padding: 2px 7px; font-size: 10px; font-weight: 800; }
+  .card4 .avatar { position: relative; width: 48px; height: 48px; font-size: 14px; border: 2px solid var(--surface); }
+  .card4 .name { position: relative; font-size: 12px; font-weight: 700; color: var(--ink); }
+  .card4 .follow { position: relative; width: 100%; background: var(--accent); color: var(--accent-ink); border: none; border-radius: 7px; padding: 6px 0; font-size: 11px; font-weight: 700; }
+
+  /* ---------- 5. Minimal List-in-Carousel ---------- */
+  .row5 { display: flex; gap: 18px; overflow-x: auto; padding: 0 12px 4px; }
+  .card5 { flex-shrink: 0; width: 74px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .card5 .avatar { width: 46px; height: 46px; font-size: 14px; background: var(--wash); color: var(--accent); }
+  .card5 .name { font-size: 11px; font-weight: 600; color: var(--ink); }
+  .card5 .distance { font-size: 10.5px; color: var(--sub); }
+  .card5 .follow-link { font-size: 11px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--accent); padding-bottom: 1px; background: none; border-top: none; border-left: none; border-right: none; }
+</style>
+
+<!-- shared icons -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="i-people"><circle cx="8" cy="7" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="7" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 18c0-3 2.5-5 5.5-5s5.5 2 5.5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13 13.2c2.7.3 4.5 2.2 4.5 4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></g>
+    <g id="i-pin"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/></g>
+    <g id="i-plus"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></g>
+  </defs>
+</svg>
+
+<div class="intro">
+  <p class="eyebrow">The CBC — main feed</p>
+  <h1>Five drafts: "Users Nearby" carousel</h1>
+  <p>A horizontal carousel showing profile picture, distance in kilometres, and a Follow action — positioned
+  as the 5th item in the main feed, between posts. Each draft is shown in a feed slice for context; the
+  carousel itself is the thing to compare.</p>
+</div>
+
+<div class="gallery">
+
+  <!-- 1. Classic Card -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="post">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+          <div class="post-media"></div>
+        </div>
+        <div class="section-label"><svg class="i" style="color:var(--sub)"><use href="#i-people"/></svg><span class="section-label-text">People Nearby</span></div>
+        <div class="row1">
+          <div class="card1"><div class="avatar">AY</div><div class="name">Amina</div><div class="distance">0.8 km</div><button class="follow">Follow</button></div>
+          <div class="card1"><div class="avatar">BK</div><div class="name">Brian</div><div class="distance">1.5 km</div><button class="follow">Follow</button></div>
+          <div class="card1"><div class="avatar">CN</div><div class="name">Cynthia</div><div class="distance">2.3 km</div><button class="follow">Follow</button></div>
+        </div>
+        <div class="post" style="margin-top:12px">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+        </div>
+      </div>
+    </div>
+    <span class="slot-name">Classic Card</span>
+    <span class="slot-desc">Full card per person — avatar, name, distance, full-width Follow button. Most familiar, easiest to scan, takes the most horizontal space per person.</span>
+  </div>
+
+  <!-- 2. Compact Chip -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="post">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+          <div class="post-media"></div>
+        </div>
+        <div class="section-label"><svg class="i" style="color:var(--sub)"><use href="#i-people"/></svg><span class="section-label-text">People Nearby</span></div>
+        <div class="row2">
+          <div class="card2"><div class="avatar">AY<div class="plus"><svg class="i-sm" style="color:#fff"><use href="#i-plus"/></svg></div></div><div class="name">Amina</div><div class="distance">0.8 km</div></div>
+          <div class="card2"><div class="avatar">BK<div class="plus"><svg class="i-sm" style="color:#fff"><use href="#i-plus"/></svg></div></div><div class="name">Brian</div><div class="distance">1.5 km</div></div>
+          <div class="card2"><div class="avatar">CN<div class="plus"><svg class="i-sm" style="color:#fff"><use href="#i-plus"/></svg></div></div><div class="name">Cynthia</div><div class="distance">2.3 km</div></div>
+          <div class="card2"><div class="avatar">DM<div class="plus"><svg class="i-sm" style="color:#fff"><use href="#i-plus"/></svg></div></div><div class="name">Dennis</div><div class="distance">3.7 km</div></div>
+          <div class="card2"><div class="avatar">FW<div class="plus"><svg class="i-sm" style="color:#fff"><use href="#i-plus"/></svg></div></div><div class="name">Faith</div><div class="distance">5.1 km</div></div>
+        </div>
+        <div class="post" style="margin-top:12px">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+        </div>
+      </div>
+    </div>
+    <span class="slot-name">Compact Chip</span>
+    <span class="slot-desc">Follow shrinks to a small "+" badge on the avatar itself. Denser — five or more people fit in the same width the Classic Card needs for three.</span>
+  </div>
+
+  <!-- 3. Proximity Ring -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="post">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+          <div class="post-media"></div>
+        </div>
+        <div class="section-label"><svg class="i" style="color:var(--sub)"><use href="#i-people"/></svg><span class="section-label-text">People Nearby</span></div>
+        <div class="row3">
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 300deg, var(--wash) 0deg)"><div class="avatar">AY</div><div class="distance-badge">0.8 km</div></div>
+            <div class="name">Amina</div>
+            <button class="follow-pill">Follow</button>
+          </div>
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 220deg, var(--wash) 0deg)"><div class="avatar">BK</div><div class="distance-badge">1.5 km</div></div>
+            <div class="name">Brian</div>
+            <button class="follow-pill">Follow</button>
+          </div>
+          <div class="card3">
+            <div class="ring3" style="background:conic-gradient(var(--accent) 120deg, var(--wash) 0deg)"><div class="avatar">CN</div><div class="distance-badge">2.3 km</div></div>
+            <div class="name">Cynthia</div>
+            <button class="follow-pill">Follow</button>
+          </div>
+        </div>
+        <div class="post" style="margin-top:12px">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+        </div>
+      </div>
+    </div>
+    <span class="slot-name">Proximity Ring</span>
+    <span class="slot-desc">A ring around each avatar fills more as someone gets closer — distance is felt at a glance, not just read. Distance badge overlaps the avatar's edge; Follow is an outlined pill below.</span>
+  </div>
+
+  <!-- 4. Map-pin Style -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="post">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+          <div class="post-media"></div>
+        </div>
+        <div class="section-label"><svg class="i" style="color:var(--sub)"><use href="#i-pin"/></svg><span class="section-label-text">People Nearby</span></div>
+        <div class="row4">
+          <div class="card4"><div class="pin-tag"><svg class="i-sm"><use href="#i-pin"/></svg>0.8 km</div><div class="avatar">AY</div><div class="name">Amina</div><button class="follow">Follow</button></div>
+          <div class="card4"><div class="pin-tag"><svg class="i-sm"><use href="#i-pin"/></svg>1.5 km</div><div class="avatar">BK</div><div class="name">Brian</div><button class="follow">Follow</button></div>
+          <div class="card4"><div class="pin-tag"><svg class="i-sm"><use href="#i-pin"/></svg>2.3 km</div><div class="avatar">CN</div><div class="name">Cynthia</div><button class="follow">Follow</button></div>
+        </div>
+        <div class="post" style="margin-top:12px">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+        </div>
+      </div>
+    </div>
+    <span class="slot-name">Map-pin Style</span>
+    <span class="slot-desc">Leads with location: a pin+distance tag sits above the avatar like a map sticker, on a faint grid texture. Makes the "nearby" framing the first thing you read, not an afterthought.</span>
+  </div>
+
+  <!-- 5. Minimal List-in-Carousel -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="post">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+          <div class="post-media"></div>
+        </div>
+        <div class="section-label"><svg class="i" style="color:var(--sub)"><use href="#i-people"/></svg><span class="section-label-text">People Nearby</span></div>
+        <div class="row5">
+          <div class="card5"><div class="avatar">AY</div><div class="name">Amina</div><div class="distance">0.8 km</div><button class="follow-link">Follow</button></div>
+          <div class="card5"><div class="avatar">BK</div><div class="name">Brian</div><div class="distance">1.5 km</div><button class="follow-link">Follow</button></div>
+          <div class="card5"><div class="avatar">CN</div><div class="name">Cynthia</div><div class="distance">2.3 km</div><button class="follow-link">Follow</button></div>
+          <div class="card5"><div class="avatar">DM</div><div class="name">Dennis</div><div class="distance">3.7 km</div><button class="follow-link">Follow</button></div>
+        </div>
+        <div class="post" style="margin-top:12px">
+          <div class="post-head"><div class="post-avatar"></div><div class="post-line w40" style="width:90px"></div></div>
+          <div class="post-line w60"></div>
+        </div>
+      </div>
+    </div>
+    <span class="slot-name">Minimal List-in-Carousel</span>
+    <span class="slot-desc">No button chrome at all — Follow is a plain underlined text link. Quietest option, keeps the eye on the surrounding posts rather than pulling attention to this section.</span>
+  </div>
+
+</div>

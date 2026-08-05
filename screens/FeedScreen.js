@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, FlatList, Image, RefreshControl, ActivityIndicator, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
+import { View, FlatList, RefreshControl, ActivityIndicator, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -254,7 +255,7 @@ export default function FeedScreen({ navigation, route }) {
                 contentContainerStyle={{ paddingHorizontal: 10 }}
                 renderItem={({ item: reel, index: reelIndex }) => (
                   <TouchableOpacity style={styles.reelCard} onPress={() => navigation.navigate("Reels", { startIndex: reelIndex })}>
-                    <Image source={{ uri: reel.thumbnailUrl }} style={styles.reelThumb} resizeMode="cover" />
+                    <Image source={{ uri: reel.thumbnailUrl }} style={styles.reelThumb} contentFit="cover" />
                     <View style={styles.reelPlayBadge}>
                       <Ionicons name="play" size={12} color="#fff" />
                     </View>

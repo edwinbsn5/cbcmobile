@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -251,7 +252,7 @@ export default function ProfileScreen({ navigation, route }) {
           <View style={styles.productGrid}>
             {photos.map((p) => (
               <TouchableOpacity key={p.id} style={styles.productTile} onPress={() => navigation.navigate("MarketProductDetail", { productId: p.id })}>
-                <Image source={{ uri: p.photoUrls?.[0] }} style={styles.productTileMedia} resizeMode="cover" />
+                <Image source={{ uri: p.photoUrls?.[0] }} style={styles.productTileMedia} contentFit="cover" />
                 {p.status === "sold" && <View style={styles.soldBadge}><Text style={styles.soldBadgeText}>SOLD</Text></View>}
               </TouchableOpacity>
             ))}
@@ -264,7 +265,7 @@ export default function ProfileScreen({ navigation, route }) {
           <View style={styles.productGrid}>
             {videos.map((p) => (
               <TouchableOpacity key={p.id} style={styles.productTile} onPress={() => navigation.navigate("MarketProductDetail", { productId: p.id })}>
-                <Image source={{ uri: p.thumbnailUrl }} style={styles.productTileMedia} resizeMode="cover" />
+                <Image source={{ uri: p.thumbnailUrl }} style={styles.productTileMedia} contentFit="cover" />
                 <Ionicons name="play" size={16} color="#fff" style={styles.reelTilePlayIcon} />
                 {p.status === "sold" && <View style={styles.soldBadge}><Text style={styles.soldBadgeText}>SOLD</Text></View>}
               </TouchableOpacity>
@@ -293,7 +294,7 @@ export default function ProfileScreen({ navigation, route }) {
             onPress={() => navigation.navigate("Reels", { authorId: user.id, startIndex: index })}
           >
             {item.thumbnailUrl ? (
-              <Image source={{ uri: item.thumbnailUrl }} style={styles.reelTileMedia} resizeMode="cover" />
+              <Image source={{ uri: item.thumbnailUrl }} style={styles.reelTileMedia} contentFit="cover" />
             ) : (
               <View style={[styles.reelTileMedia, styles.reelTilePlaceholder]} />
             )}

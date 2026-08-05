@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -197,7 +198,7 @@ export default function InboxScreen({ navigation }) {
             )}
             {item.contextType === "market_product" ? (
               item.displayAvatar ? (
-                <Image source={{ uri: item.displayAvatar }} style={styles.thumb} />
+                <Image source={{ uri: item.displayAvatar }} style={styles.thumb} contentFit="cover" />
               ) : (
                 <View style={[styles.thumb, styles.thumbPlaceholder]} />
               )

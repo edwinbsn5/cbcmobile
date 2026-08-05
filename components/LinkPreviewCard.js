@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { COLORS } from "../theme";
 import { openInAppBrowser } from "../utils/inAppBrowser";
 
@@ -18,7 +19,7 @@ export default function LinkPreviewCard({ preview }) {
     <TouchableOpacity activeOpacity={0.85} onPress={() => openInAppBrowser(preview.url)}>
       {!!preview.imageUrl && (
         <View style={styles.mediaFullBleed}>
-          <Image source={{ uri: preview.imageUrl }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri: preview.imageUrl }} style={styles.image} contentFit="cover" />
         </View>
       )}
       <View style={styles.body}>

@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, Animated, PanResponder, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Animated, PanResponder, Dimensions } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import AdMobBanner from "./AdMobBanner";
 import { COLORS } from "../theme";
@@ -66,7 +67,7 @@ export default function MarketSwipeCard({ product, isAd, isTop, onSwipeLeft, onS
 
   return (
     <Animated.View style={[styles.card, style, cardStyle]} {...(isTop ? panResponder.panHandlers : {})}>
-      <Image source={{ uri: product.photoUrls[0] }} style={styles.image} resizeMode="cover" />
+      <Image source={{ uri: product.photoUrls[0] }} style={styles.image} contentFit="cover" />
 
       {isTop && (
         <>

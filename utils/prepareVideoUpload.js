@@ -1,4 +1,4 @@
-import { Compressor } from "react-native-compressor";
+import { Video } from "react-native-compressor";
 import * as FileSystem from "expo-file-system";
 
 // Keep in sync with MAX_UPLOAD_BYTES in backend/routes/upload.js and
@@ -15,7 +15,7 @@ export async function prepareVideoUpload(asset) {
   let uri = asset.uri;
 
   try {
-    uri = await Compressor.compress(asset.uri, {
+    uri = await Video.compress(asset.uri, {
       compressionMethod: "auto",
     });
   } catch {

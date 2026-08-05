@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -84,7 +85,7 @@ export default function GroupsScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("GroupDetail", { groupId: item.id })}>
-            <Image source={{ uri: item.coverUrl }} style={styles.cover} />
+            <Image source={{ uri: item.coverUrl }} style={styles.cover} contentFit="cover" />
             <TouchableOpacity style={styles.saveButton} onPress={() => toggleSave("group", item.id)}>
               <Ionicons name={isSaved("group", item.id) ? "bookmark" : "bookmark-outline"} size={20} color="#fff" />
             </TouchableOpacity>

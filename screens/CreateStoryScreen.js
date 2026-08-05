@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Video, ResizeMode } from "expo-av";
@@ -117,7 +118,7 @@ export default function CreateStoryScreen({ navigation }) {
               {media.type === "video" ? (
                 <Video source={{ uri: media.uri }} style={styles.preview} useNativeControls resizeMode={ResizeMode.CONTAIN} />
               ) : (
-                <Image source={{ uri: media.uri }} style={styles.preview} resizeMode="cover" />
+                <Image source={{ uri: media.uri }} style={styles.preview} contentFit="cover" />
               )}
               <TouchableOpacity style={styles.removeButton} onPress={() => setMedia(null)}>
                 <Ionicons name="close" size={18} color="#fff" />

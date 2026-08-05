@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import CampusPicker from "../components/CampusPicker";
@@ -72,7 +73,7 @@ export default function BoostPageScreen({ route, navigation }) {
       <View style={styles.previewCard}>
         <Text style={styles.previewLabel}>Boosting this Page</Text>
         <View style={styles.previewRow}>
-          {!!page.coverUrl && <Image source={{ uri: page.coverUrl }} style={styles.previewCover} resizeMode="cover" />}
+          {!!page.coverUrl && <Image source={{ uri: page.coverUrl }} style={styles.previewCover} contentFit="cover" />}
           <View style={{ flex: 1 }}>
             <Text style={styles.previewName}>{page.name}</Text>
             {!!page.description && <Text style={styles.previewDesc} numberOfLines={2}>{page.description}</Text>}

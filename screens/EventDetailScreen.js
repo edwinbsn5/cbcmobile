@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import client from "../api/client";
 import { COLORS } from "../theme";
 
@@ -55,7 +56,7 @@ export default function EventDetailScreen({ route }) {
 
   return (
     <View style={styles.container}>
-      {event.coverUrl && <Image source={{ uri: event.coverUrl }} style={styles.cover} />}
+      {event.coverUrl && <Image source={{ uri: event.coverUrl }} style={styles.cover} contentFit="cover" />}
       <View style={styles.body}>
         <Text style={styles.name}>{event.name}</Text>
         <Text style={styles.when}>{formatWhen(event.startAt, event.endAt)}</Text>

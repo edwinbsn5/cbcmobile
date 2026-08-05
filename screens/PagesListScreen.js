@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -163,10 +164,10 @@ export default function PagesListScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("PageDetail", { pageId: item.id })}>
-            <Image source={{ uri: item.coverUrl }} style={styles.cover} />
+            <Image source={{ uri: item.coverUrl }} style={styles.cover} contentFit="cover" />
             <View style={styles.body}>
               <View style={styles.nameRow}>
-                <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+                <Image source={{ uri: item.avatarUrl }} style={styles.avatar} contentFit="cover" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{item.name}</Text>
                   <View style={styles.categoryPillRow}>

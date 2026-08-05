@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, Image, TouchableOpacity, SectionList, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, SectionList, StyleSheet, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import client from "../api/client";
 import Avatar from "../components/Avatar";
 import { COLORS } from "../theme";
@@ -61,7 +62,7 @@ export default function SearchScreen({ navigation }) {
     if (section.key === "groups") {
       return (
         <TouchableOpacity style={styles.row} onPress={() => navigation.navigate("GroupDetail", { groupId: item.id })}>
-          <Image source={{ uri: item.coverUrl }} style={styles.avatar} />
+          <Image source={{ uri: item.coverUrl }} style={styles.avatar} contentFit="cover" />
           <View style={{ flex: 1 }}>
             <Text style={styles.rowTitle}>{item.name}</Text>
             {!!item.description && <Text style={styles.rowSubtitle} numberOfLines={1}>{item.description}</Text>}

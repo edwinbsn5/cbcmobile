@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Image, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Video, ResizeMode } from "expo-av";
@@ -215,7 +216,7 @@ export default function CreatePostScreen({ navigation }) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow}>
           {photos.map((p, i) => (
             <View key={i} style={styles.photoThumbWrap}>
-              <Image source={{ uri: p.uri }} style={styles.photoThumb} resizeMode="cover" />
+              <Image source={{ uri: p.uri }} style={styles.photoThumb} contentFit="cover" />
               <TouchableOpacity style={styles.removeButtonSmall} onPress={() => removePhoto(i)}>
                 <Ionicons name="close" size={12} color="#fff" />
               </TouchableOpacity>

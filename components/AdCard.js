@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { openInAppBrowser } from "../utils/inAppBrowser";
 import { COLORS } from "../theme";
 
@@ -15,7 +16,7 @@ export default function AdCard({ ad }) {
         <Text style={styles.sponsored}>Sponsored</Text>
         <Text style={styles.advertiser}>· {ad.advertiser}</Text>
       </View>
-      <Image source={{ uri: ad.imageUrl }} style={styles.media} resizeMode="cover" />
+      <Image source={{ uri: ad.imageUrl }} style={styles.media} contentFit="cover" />
       <Text style={styles.headline}>{ad.headline}</Text>
       <TouchableOpacity style={styles.cta} onPress={() => openInAppBrowser(ad.targetUrl)}>
         <Text style={styles.ctaText}>{ad.cta}</Text>

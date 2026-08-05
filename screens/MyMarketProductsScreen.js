@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Video, ResizeMode } from "expo-av";
 import client from "../api/client";
@@ -61,7 +62,7 @@ export default function MyMarketProductsScreen({ navigation }) {
           {item.mediaType === "video" ? (
             <Video source={{ uri: item.mediaUrl }} style={styles.thumb} resizeMode={ResizeMode.COVER} shouldPlay={false} isMuted />
           ) : (
-            <Image source={{ uri: item.photoUrls[0] }} style={styles.thumb} resizeMode="cover" />
+            <Image source={{ uri: item.photoUrls[0] }} style={styles.thumb} contentFit="cover" />
           )}
           <View style={styles.body}>
             <View style={styles.titleRow}>

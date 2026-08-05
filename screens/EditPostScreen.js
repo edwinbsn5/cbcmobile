@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
@@ -48,7 +49,7 @@ export default function EditPostScreen({ route, navigation }) {
           {post.type === "video" ? (
             <Video source={{ uri: post.mediaUrl }} style={styles.media} useNativeControls resizeMode={ResizeMode.CONTAIN} />
           ) : (
-            <Image source={{ uri: post.mediaUrl }} style={styles.media} resizeMode="cover" />
+            <Image source={{ uri: post.mediaUrl }} style={styles.media} contentFit="cover" />
           )}
           {post.photoUrls?.length > 1 && (
             <Text style={styles.photoCountHint}>+{post.photoUrls.length - 1} more photo{post.photoUrls.length - 1 === 1 ? "" : "s"} in this post</Text>

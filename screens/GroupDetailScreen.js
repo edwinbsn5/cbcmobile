@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Image, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
@@ -472,7 +473,7 @@ export default function GroupDetailScreen({ route, navigation }) {
       ListHeaderComponent={
         <View>
           <View>
-            <Image source={{ uri: group.coverUrl }} style={styles.cover} />
+            <Image source={{ uri: group.coverUrl }} style={styles.cover} contentFit="cover" />
             {isAdmin && (
               <TouchableOpacity style={styles.changeCoverButton} onPress={handleChangeCover} disabled={changingCover}>
                 <Ionicons name="camera-outline" size={13} color="#fff" />
@@ -577,7 +578,7 @@ export default function GroupDetailScreen({ route, navigation }) {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow}>
                       {photos.map((p, i) => (
                         <View key={i} style={styles.photoThumbWrap}>
-                          <Image source={{ uri: p.uri }} style={styles.photoThumb} resizeMode="cover" />
+                          <Image source={{ uri: p.uri }} style={styles.photoThumb} contentFit="cover" />
                           <TouchableOpacity style={styles.removeButtonSmall} onPress={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}>
                             <Ionicons name="close" size={12} color="#fff" />
                           </TouchableOpacity>
@@ -640,7 +641,7 @@ export default function GroupDetailScreen({ route, navigation }) {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow}>
                       {blogPhotos.map((p, i) => (
                         <View key={i} style={styles.photoThumbWrap}>
-                          <Image source={{ uri: p.uri }} style={styles.photoThumb} resizeMode="cover" />
+                          <Image source={{ uri: p.uri }} style={styles.photoThumb} contentFit="cover" />
                           <TouchableOpacity style={styles.removeButtonSmall} onPress={() => setBlogPhotos((prev) => prev.filter((_, idx) => idx !== i))}>
                             <Ionicons name="close" size={12} color="#fff" />
                           </TouchableOpacity>

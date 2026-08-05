@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import CampusPicker from "../components/CampusPicker";
@@ -71,7 +72,7 @@ export default function BoostGroupScreen({ route, navigation }) {
       <View style={styles.previewCard}>
         <Text style={styles.previewLabel}>Boosting this group</Text>
         <View style={styles.previewRow}>
-          {!!group.coverUrl && <Image source={{ uri: group.coverUrl }} style={styles.previewCover} resizeMode="cover" />}
+          {!!group.coverUrl && <Image source={{ uri: group.coverUrl }} style={styles.previewCover} contentFit="cover" />}
           <View style={{ flex: 1 }}>
             <Text style={styles.previewName}>{group.name}</Text>
             {!!group.description && <Text style={styles.previewDesc} numberOfLines={2}>{group.description}</Text>}

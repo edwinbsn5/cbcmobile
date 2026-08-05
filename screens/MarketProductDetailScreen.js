@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
@@ -71,7 +72,7 @@ export default function MarketProductDetailScreen({ route, navigation }) {
       ) : product.photoUrls.length > 1 ? (
         <PhotoCarousel photos={product.photoUrls} />
       ) : (
-        <Image source={{ uri: product.photoUrls[0] }} style={styles.media} resizeMode="cover" />
+        <Image source={{ uri: product.photoUrls[0] }} style={styles.media} contentFit="cover" />
       )}
 
       <View style={styles.body}>

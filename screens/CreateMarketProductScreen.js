@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -151,7 +152,7 @@ export default function CreateMarketProductScreen({ navigation }) {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow}>
                 {photos.map((p, i) => (
                   <View key={i} style={styles.photoThumbWrap}>
-                    <Image source={{ uri: p.uri }} style={styles.photoThumb} resizeMode="cover" />
+                    <Image source={{ uri: p.uri }} style={styles.photoThumb} contentFit="cover" />
                     <TouchableOpacity style={styles.removeButtonSmall} onPress={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}>
                       <Ionicons name="close" size={12} color="#fff" />
                     </TouchableOpacity>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
@@ -39,7 +40,7 @@ export default function EditMarketProductScreen({ route, navigation }) {
       {product.mediaType === "video" ? (
         <Video source={{ uri: product.mediaUrl }} style={styles.media} useNativeControls resizeMode={ResizeMode.CONTAIN} />
       ) : (
-        <Image source={{ uri: product.photoUrls[0] }} style={styles.media} resizeMode="cover" />
+        <Image source={{ uri: product.photoUrls[0] }} style={styles.media} contentFit="cover" />
       )}
       {product.photoUrls?.length > 1 && (
         <Text style={styles.photoCountHint}>+{product.photoUrls.length - 1} more photo{product.photoUrls.length - 1 === 1 ? "" : "s"} in this listing</Text>

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, Image, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
   ActivityIndicator, Alert, Keyboard,
 } from "react-native";
+import { Image } from "expo-image";
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -36,7 +37,7 @@ function ProductPin({ product, isSeller, onMarkSold, marking, onView }) {
   return (
     <View style={styles.pin}>
       {product.thumbnailUrl ? (
-        <Image source={{ uri: product.thumbnailUrl }} style={styles.pinThumb} />
+        <Image source={{ uri: product.thumbnailUrl }} style={styles.pinThumb} contentFit="cover" />
       ) : (
         <View style={[styles.pinThumb, styles.pinThumbPlaceholder]} />
       )}
@@ -306,7 +307,7 @@ export default function ChatScreen({ route, navigation }) {
                   <View>
                     <View style={styles.storyReplyQuote}>
                       {item.mediaUrl ? (
-                        <Image source={{ uri: item.mediaUrl }} style={styles.storyReplyThumb} resizeMode="cover" />
+                        <Image source={{ uri: item.mediaUrl }} style={styles.storyReplyThumb} contentFit="cover" />
                       ) : (
                         // A reply to a colored TEXT story has no media file
                         // to snapshot (mediaUrl is '' for those) — a plain
@@ -323,7 +324,7 @@ export default function ChatScreen({ route, navigation }) {
                   </View>
                 )}
                 {item.type === "image" && (
-                  <Image source={{ uri: item.mediaUrl }} style={styles.media} resizeMode="cover" />
+                  <Image source={{ uri: item.mediaUrl }} style={styles.media} contentFit="cover" />
                 )}
                 {item.type === "video" && (
                   <Video

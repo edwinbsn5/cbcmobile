@@ -1,0 +1,215 @@
+<title>The CBC — County Revenue Portal (concept)</title>
+<style>
+  :root {
+    --page-bg: #F7F6F3; --page-ink: #201E1A; --page-sub: #6B6A65; --page-accent: #0E9384;
+    --bg: #F1FAF8; --surface: #FFFFFF; --ink: #0B2723; --sub: #5C8D85;
+    --accent: #0E9384; --accent-ink: #FFFFFF; --wash: #D6F0EB; --border: #CFE8E2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page-bg: #12171A; --page-ink: #EAF5F2; --page-sub: #8FB3AC; }
+  }
+  :root[data-theme="dark"] { --page-bg: #12171A; --page-ink: #EAF5F2; --page-sub: #8FB3AC; }
+  :root[data-theme="light"] { --page-bg: #F7F6F3; --page-ink: #201E1A; --page-sub: #6B6A65; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page-bg); color: var(--page-ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 40px 20px 80px;
+  }
+  .intro { max-width: 700px; margin: 0 auto 44px; }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-accent); margin: 0 0 10px; }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 12px; text-wrap: balance; }
+  .intro p { font-size: 15px; line-height: 1.55; color: var(--page-sub); margin: 0; }
+
+  .flow { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 8px; max-width: 1300px; margin: 0 auto; }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 300px; }
+  .slot-name { font-size: 14px; font-weight: 700; }
+  .slot-desc { font-size: 11.5px; color: var(--page-sub); text-align: center; max-width: 280px; line-height: 1.5; }
+  .arrow { align-self: center; margin-top: 160px; color: var(--page-sub); opacity: 0.6; flex-shrink: 0; }
+
+  .phone { width: 300px; background: var(--bg); border: 1px solid var(--border); border-radius: 22px; overflow: hidden; box-shadow: 0 10px 30px -12px rgba(11,39,35,0.25); }
+  .phone-inner { padding: 20px 16px; min-height: 480px; }
+
+  svg.i { width: 15px; height: 15px; }
+
+  /* ---------- Screen 1: login ---------- */
+  .brand { text-align: center; margin-bottom: 28px; }
+  .brand-mark { font-size: 13px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .brand-title { font-size: 18px; font-weight: 800; color: var(--ink); margin-top: 6px; }
+  .brand-sub { font-size: 12px; color: var(--sub); margin-top: 4px; }
+
+  .field-label { font-size: 12px; font-weight: 700; color: var(--sub); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .county-trigger {
+    display: flex; align-items: center; justify-content: space-between; background: var(--surface);
+    border: 1.5px solid var(--accent); border-radius: 8px; padding: 12px 14px;
+  }
+  .county-trigger span { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+
+  .county-scroll {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-top: 8px;
+    max-height: 150px; overflow: hidden; position: relative;
+  }
+  .county-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; font-size: 13px; color: var(--ink); border-bottom: 1px solid var(--wash); }
+  .county-row.selected { background: var(--wash); font-weight: 800; color: var(--accent); }
+  .county-scroll::after {
+    content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 30px;
+    background: linear-gradient(transparent, var(--surface));
+  }
+  .scroll-hint { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 10.5px; color: var(--sub); margin-top: 6px; }
+
+  .pw-field { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .pw-dots { font-size: 15px; letter-spacing: 3px; color: var(--ink); font-weight: 700; }
+
+  .primary-btn { background: var(--accent); color: var(--accent-ink); text-align: center; font-weight: 700; font-size: 14.5px; border-radius: 9px; padding: 13px; margin-top: 24px; }
+
+  /* ---------- Screen 2: period picker ---------- */
+  .context-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--wash); color: var(--accent); border-radius: 14px; padding: 5px 12px; font-size: 12px; font-weight: 700; margin-bottom: 18px; }
+  .period-title { font-size: 17px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+  .period-sub { font-size: 12.5px; color: var(--sub); margin-bottom: 20px; }
+  .picker-row { display: flex; gap: 10px; }
+  .picker-col { flex: 1; }
+  .wheel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 6px 0; height: 150px;
+    display: flex; flex-direction: column; align-items: stretch; position: relative; overflow: hidden;
+  }
+  .wheel-item { text-align: center; font-size: 13px; color: var(--sub); padding: 8px 0; }
+  .wheel-item.active { color: var(--accent); font-weight: 800; font-size: 15px; background: var(--wash); }
+
+  /* ---------- Screen 3: report ---------- */
+  .report-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .report-summary-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12.5px; }
+  .report-summary-row .k { color: var(--sub); font-weight: 600; }
+  .report-summary-row .v { color: var(--ink); font-weight: 700; }
+  .report-summary-row.total { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 10px; }
+  .report-summary-row.total .k { color: var(--ink); font-weight: 800; font-size: 13.5px; }
+  .report-summary-row.total .v { color: var(--accent); font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .t-row { display: grid; grid-template-columns: 1.3fr 1.5fr 0.9fr 0.8fr 0.9fr; gap: 4px; padding: 8px 8px; font-size: 9.5px; }
+  .t-head { background: var(--wash); font-weight: 800; color: var(--sub); text-transform: uppercase; letter-spacing: 0.2px; font-size: 8px; }
+  .t-body { border-top: 1px solid var(--wash); color: var(--ink); }
+  .t-body .amt { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .t-body .pct { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--accent); }
+  .t-meta { font-size: 8px; color: var(--sub); }
+</style>
+
+<div class="intro">
+  <p class="eyebrow">The CBC — new concept</p>
+  <h1>County Revenue Portal — 3-screen flow</h1>
+  <p>A separate portal for county revenue officers: log in by county, pick a reporting month, and see
+  a summary + line-by-line breakdown of the platform's 5% cut of group-membership subscriptions paid by
+  users in that county during that period.</p>
+</div>
+
+<div class="flow">
+
+  <!-- Screen 1: Login -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="brand">
+          <div class="brand-mark">THE CBC</div>
+          <div class="brand-title">County Revenue Portal</div>
+          <div class="brand-sub">For authorized county revenue officers</div>
+        </div>
+
+        <div class="field-label">Select county</div>
+        <div class="county-trigger"><span>Nairobi</span><svg class="i" style="color:var(--accent)"><use href="#i-chevron"/></svg></div>
+        <div class="county-scroll">
+          <div class="county-row">Kiambu</div>
+          <div class="county-row">Mombasa</div>
+          <div class="county-row selected">Nairobi</div>
+          <div class="county-row">Nakuru</div>
+          <div class="county-row">Kisumu</div>
+        </div>
+        <div class="scroll-hint"><svg class="i" style="width:11px;height:11px"><use href="#i-scroll"/></svg>Scroll to pick from all 47 counties</div>
+
+        <div class="field-label">Password</div>
+        <div class="pw-field"><span class="pw-dots">••••••••</span><svg class="i" style="color:var(--sub)"><use href="#i-eye"/></svg></div>
+
+        <div class="primary-btn">Log In</div>
+      </div>
+    </div>
+    <span class="slot-name">1 · Log in</span>
+    <span class="slot-desc">Officer selects their county from a scrollable list of all 47, then enters their password.</span>
+  </div>
+
+  <div class="arrow"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M4 12h15M13 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+  <!-- Screen 2: Period picker -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="context-chip"><svg class="i" style="width:12px;height:12px"><use href="#i-pin"/></svg>Nairobi County</div>
+        <div class="period-title">Choose a reporting period</div>
+        <div class="period-sub">See platform earnings from group subscriptions for this county</div>
+
+        <div class="picker-row">
+          <div class="picker-col">
+            <div class="field-label" style="margin-top:0">Month</div>
+            <div class="wheel">
+              <div class="wheel-item">April</div>
+              <div class="wheel-item">May</div>
+              <div class="wheel-item active">June</div>
+              <div class="wheel-item">July</div>
+              <div class="wheel-item">August</div>
+            </div>
+          </div>
+          <div class="picker-col">
+            <div class="field-label" style="margin-top:0">Year</div>
+            <div class="wheel">
+              <div class="wheel-item">2024</div>
+              <div class="wheel-item">2025</div>
+              <div class="wheel-item active">2026</div>
+              <div class="wheel-item">2027</div>
+              <div class="wheel-item">2028</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="primary-btn">Proceed</div>
+      </div>
+    </div>
+    <span class="slot-name">2 · Pick month &amp; year</span>
+    <span class="slot-desc">A simple form: month wheel, year wheel, and a Proceed button — nothing else needed before generating the report.</span>
+  </div>
+
+  <div class="arrow"><svg width="28" height="28" viewBox="0 0 24 24"><path d="M4 12h15M13 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+  <!-- Screen 3: Report -->
+  <div class="slot">
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="report-summary">
+          <div class="report-summary-row"><span class="k">County</span><span class="v">Nairobi</span></div>
+          <div class="report-summary-row"><span class="k">Month</span><span class="v">June</span></div>
+          <div class="report-summary-row"><span class="k">Year</span><span class="v">2026</span></div>
+          <div class="report-summary-row total"><span class="k">Total earnings (5%)</span><span class="v">KES 257</span></div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="t-row t-head"><div>User</div><div>Group</div><div>Paid</div><div>5%</div><div>When</div></div>
+
+          <div class="t-row t-body"><div>amina_y</div><div>Nairobi Entrepreneurs Hub</div><div class="amt">500</div><div class="pct">25</div><div class="t-meta">Jun 3<br/>09:14</div></div>
+          <div class="t-row t-body"><div>brian.k</div><div>Campus Hustlers</div><div class="amt">1,200</div><div class="pct">60</div><div class="t-meta">Jun 5<br/>14:02</div></div>
+          <div class="t-row t-body"><div>cynthia92</div><div>Nairobi Foodies</div><div class="amt">800</div><div class="pct">40</div><div class="t-meta">Jun 10<br/>11:47</div></div>
+          <div class="t-row t-body"><div>dennis_m</div><div>Tech Bros KE</div><div class="amt">2,000</div><div class="pct">100</div><div class="t-meta">Jun 18<br/>16:30</div></div>
+          <div class="t-row t-body"><div>faith.w</div><div>Nairobi Fitness Club</div><div class="amt">640</div><div class="pct">32</div><div class="t-meta">Jun 24<br/>08:55</div></div>
+        </div>
+      </div>
+    </div>
+    <span class="slot-name">3 · Report</span>
+    <span class="slot-desc">Summary card up top (county, month, year, total 5% earnings), then a row per subscription payment: username, group, amount paid, the platform's 5% cut, date &amp; time.</span>
+  </div>
+
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="i-chevron"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g id="i-scroll"><rect x="7" y="3" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="8" r="1.4" fill="currentColor"/></g>
+    <g id="i-eye"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></g>
+    <g id="i-pin"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/></g>
+  </defs>
+</svg>

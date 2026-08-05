@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
 import PostCard from "../components/PostCard";
@@ -101,7 +102,7 @@ export default function SavedScreen({ navigation }) {
           contentContainerStyle={{ padding: 10 }}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <Image source={{ uri: item.thumbnailUrl }} style={styles.reelThumb} resizeMode="cover" />
+              <Image source={{ uri: item.thumbnailUrl }} style={styles.reelThumb} contentFit="cover" />
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle} numberOfLines={2}>{item.caption || "(no caption)"}</Text>
                 <Text style={styles.cardMeta}>by {item.author?.name}</Text>
@@ -122,7 +123,7 @@ export default function SavedScreen({ navigation }) {
           contentContainerStyle={{ padding: 10 }}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("GroupDetail", { groupId: item.id })}>
-              <Image source={{ uri: item.coverUrl }} style={styles.groupCover} resizeMode="cover" />
+              <Image source={{ uri: item.coverUrl }} style={styles.groupCover} contentFit="cover" />
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{item.name}</Text>
                 <Text style={styles.cardMeta}>Admin: {item.admin?.name}</Text>

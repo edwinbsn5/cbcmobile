@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Image } from "react-native";
+import { Image as RNImage } from "react-native";
+import { Image } from "expo-image";
 import { clampAspectRatio } from "../utils/videoAspect";
 
 // Single-photo feed media — mirrors FeedVideoPlayer's approach: measure the
@@ -11,7 +12,7 @@ export default function FeedImage({ uri, style }) {
 
   useEffect(() => {
     let cancelled = false;
-    Image.getSize(
+    RNImage.getSize(
       uri,
       (w, h) => {
         if (!cancelled && w && h) setRatio(w / h);
@@ -25,5 +26,5 @@ export default function FeedImage({ uri, style }) {
 
   const { displayRatio } = clampAspectRatio(ratio);
 
-  return <Image source={{ uri }} style={[style, { width: "100%", aspectRatio: displayRatio }]} resizeMode="cover" />;
+  return <Image source={{ uri }} style={[style, { width: "100%", aspectRatio: displayRatio }]} contentFit="cover" />;
 }

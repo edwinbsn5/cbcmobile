@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,7 +35,7 @@ export default function SavedMarketProductsScreen({ navigation }) {
           {item.mediaType === "video" ? (
             <Video source={{ uri: item.mediaUrl }} style={styles.thumb} resizeMode={ResizeMode.COVER} shouldPlay={false} isMuted />
           ) : (
-            <Image source={{ uri: item.photoUrls[0] }} style={styles.thumb} resizeMode="cover" />
+            <Image source={{ uri: item.photoUrls[0] }} style={styles.thumb} contentFit="cover" />
           )}
           {item.mediaType === "video" && (
             <View style={styles.playBadge}><Ionicons name="play" size={16} color="#fff" /></View>

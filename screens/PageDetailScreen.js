@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Image, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
@@ -149,7 +150,7 @@ function MediaGridRow({ row, onPress }) {
               </View>
             </>
           ) : (
-            <Image source={{ uri: item.url }} style={styles.mediaCellMedia} resizeMode="cover" />
+            <Image source={{ uri: item.url }} style={styles.mediaCellMedia} contentFit="cover" />
           )}
         </TouchableOpacity>
       ))}
@@ -558,14 +559,14 @@ export default function PageDetailScreen({ route, navigation }) {
       ListHeaderComponent={
         <View>
           <View>
-            <Image source={{ uri: page.coverUrl }} style={styles.cover} />
+            <Image source={{ uri: page.coverUrl }} style={styles.cover} contentFit="cover" />
             {canManageTeam && (
               <TouchableOpacity style={styles.changeCoverButton} onPress={handleChangeCover} disabled={changingCover}>
                 <Ionicons name="camera-outline" size={13} color="#fff" />
                 <Text style={styles.changeCoverText}>{changingCover ? "Uploading..." : "Change cover"}</Text>
               </TouchableOpacity>
             )}
-            <Image source={{ uri: page.avatarUrl }} style={styles.avatar} />
+            <Image source={{ uri: page.avatarUrl }} style={styles.avatar} contentFit="cover" />
           </View>
           <View style={styles.body}>
             <Text style={styles.name}>{page.name}</Text>
@@ -687,7 +688,7 @@ export default function PageDetailScreen({ route, navigation }) {
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow}>
                     {attachedPhotos.map((p, i) => (
                       <View key={i} style={styles.photoThumbWrap}>
-                        <Image source={{ uri: p.uri }} style={styles.photoThumb} resizeMode="cover" />
+                        <Image source={{ uri: p.uri }} style={styles.photoThumb} contentFit="cover" />
                         <TouchableOpacity style={styles.removeButtonSmall} onPress={() => setAttachedPhotos((prev) => prev.filter((_, idx) => idx !== i))}>
                           <Ionicons name="close" size={12} color="#fff" />
                         </TouchableOpacity>

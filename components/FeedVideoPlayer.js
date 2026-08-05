@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions, ActivityIndicator, Image } from "react-native";
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions, ActivityIndicator, Image as RNImage } from "react-native";
+import { Image } from "expo-image";
 import { Video, ResizeMode } from "expo-av";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -80,7 +81,7 @@ export default function FeedVideoPlayer({ uri, poster, isActive, shouldMount, on
   useEffect(() => {
     if (!poster) return;
     let cancelled = false;
-    Image.getSize(
+    RNImage.getSize(
       poster,
       (w, h) => {
         if (!cancelled && w && h) setNaturalRatio(w / h);
@@ -163,7 +164,7 @@ export default function FeedVideoPlayer({ uri, poster, isActive, shouldMount, on
           />
         </>
       ) : poster ? (
-        <Image source={{ uri: poster }} style={[StyleSheet.absoluteFill, styles.poster]} resizeMode="cover" />
+        <Image source={{ uri: poster }} style={[StyleSheet.absoluteFill, styles.poster]} contentFit="cover" />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.placeholder]} />
       )}
