@@ -14,6 +14,8 @@ const FEATURE_ITEMS = [
   { icon: "person-circle-outline", label: "My Profile", screen: "Profile" },
   { icon: "school-outline", label: "Influencer Quest", screen: "InfluencerQuest" },
   { icon: "people-outline", label: "Plug Wako", screen: "Groups" },
+  { icon: "cash-outline", label: "Chama & Savings", screen: "ChamaHome" },
+  { icon: "rocket-outline", label: "Investments & Projects", screen: "ProjectsHome" },
   { icon: "flag-outline", label: "Mtu Wako", screen: "Pages" },
   { icon: "female-outline", label: "A Girls Market", screen: "AGirlsMarket" },
   { icon: "calendar-outline", label: "Events", screen: "Events" },

@@ -49,6 +49,14 @@ import HashtagFeedScreen from "./screens/HashtagFeedScreen";
 import TrendingHashtagsScreen from "./screens/TrendingHashtagsScreen";
 import FeedVideoFullscreenScreen from "./screens/FeedVideoFullscreenScreen";
 import CreateGroupScreen from "./screens/CreateGroupScreen";
+import ChamaScreen from "./screens/ChamaScreen";
+import CreateChamaScreen from "./screens/CreateChamaScreen";
+import ChamaDetailScreen from "./screens/ChamaDetailScreen";
+import ChamaAdminScreen from "./screens/ChamaAdminScreen";
+import ProjectsScreen from "./screens/ProjectsScreen";
+import CreateProjectScreen from "./screens/CreateProjectScreen";
+import ProjectDetailScreen from "./screens/ProjectDetailScreen";
+import ProjectAdminScreen from "./screens/ProjectAdminScreen";
 import BoostPostScreen from "./screens/BoostPostScreen";
 import MySponsoredPostsScreen from "./screens/MySponsoredPostsScreen";
 import BoostGroupScreen from "./screens/BoostGroupScreen";
@@ -160,7 +168,7 @@ function HeaderIcons({ navigation }) {
 }
 
 function Wordmark() {
-  return <Text style={styles.wordmark}>Tujijenge</Text>;
+  return <Text style={styles.wordmark}>TUJIJENGE</Text>;
 }
 
 function MainTabs({ navigation }) {
@@ -192,16 +200,16 @@ function MainTabs({ navigation }) {
           options={{ tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }}
         />
         <Tabs.Screen
-          name="WalletTab"
+          name="ChamaTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "My Wallet",
-            tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
+            tabBarLabel: "Chama & Savings",
+            tabBarIcon: ({ color, size }) => <Ionicons name="cash-outline" size={size} color={color} />,
           }}
           listeners={{
             tabPress: (e) => {
               e.preventDefault();
-              navigation.navigate("Wallet");
+              navigation.navigate("ChamaHome");
             },
           }}
         />
@@ -224,16 +232,16 @@ function MainTabs({ navigation }) {
           }}
         />
         <Tabs.Screen
-          name="SavedTab"
+          name="ProjectsTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "Saved",
-            tabBarIcon: ({ color, size }) => <Ionicons name="bookmark-outline" size={size} color={color} />,
+            tabBarLabel: "Investments & Projects",
+            tabBarIcon: ({ color, size }) => <Ionicons name="rocket-outline" size={size} color={color} />,
           }}
           listeners={{
             tabPress: (e) => {
               e.preventDefault();
-              navigation.navigate("Saved");
+              navigation.navigate("ProjectsHome");
             },
           }}
         />
@@ -313,6 +321,14 @@ function RootNavigator() {
         <RootStack.Screen name="TrendingHashtags" component={TrendingHashtagsScreen} options={{ title: "Trending" }} />
         <RootStack.Screen name="FeedVideoFullscreen" component={FeedVideoFullscreenScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: "Create Group" }} />
+        <RootStack.Screen name="ChamaHome" component={ChamaScreen} options={{ title: "Chama & Savings" }} />
+        <RootStack.Screen name="CreateChama" component={CreateChamaScreen} options={{ title: "Create Chama" }} />
+        <RootStack.Screen name="ChamaDetail" component={ChamaDetailScreen} options={{ title: "Chama" }} />
+        <RootStack.Screen name="ChamaAdmin" component={ChamaAdminScreen} options={{ title: "Manage Chama" }} />
+        <RootStack.Screen name="ProjectsHome" component={ProjectsScreen} options={{ title: "Investments & Projects" }} />
+        <RootStack.Screen name="CreateProject" component={CreateProjectScreen} options={{ title: "Create Project" }} />
+        <RootStack.Screen name="ProjectDetail" component={ProjectDetailScreen} options={{ title: "Project" }} />
+        <RootStack.Screen name="ProjectAdmin" component={ProjectAdminScreen} options={{ title: "Manage Project" }} />
         <RootStack.Screen name="BoostPost" component={BoostPostScreen} options={{ title: "Boost Post" }} />
         <RootStack.Screen name="MySponsoredPosts" component={MySponsoredPostsScreen} options={{ title: "My Sponsored Posts" }} />
         <RootStack.Screen name="BoostGroup" component={BoostGroupScreen} options={{ title: "Boost Group" }} />
