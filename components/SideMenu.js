@@ -16,6 +16,9 @@ const FEATURE_ITEMS = [
   { icon: "people-outline", label: "Plug Wako", screen: "Groups" },
   { icon: "cash-outline", label: "Chama & Savings", screen: "ChamaHome" },
   { icon: "rocket-outline", label: "Investments & Projects", screen: "ProjectsHome" },
+  { icon: "shield-checkmark-outline", label: "Verify My Identity (KYC)", screen: "KYC" },
+  { icon: "people-circle-outline", label: "My Guarantors", screen: "Guarantors" },
+  { icon: "warning-outline", label: "Wall of Shame", screen: "WallOfShame" },
   { icon: "flag-outline", label: "Mtu Wako", screen: "Pages" },
   { icon: "female-outline", label: "A Girls Market", screen: "AGirlsMarket" },
   { icon: "calendar-outline", label: "Events", screen: "Events" },
@@ -31,6 +34,7 @@ const SETTINGS_ITEMS = [
   { icon: "settings-outline", label: "Account Settings", screen: "AccountSettings" },
   { icon: "shield-checkmark-outline", label: "Privacy", screen: "PrivacySettings" },
   { icon: "alert-circle-outline", label: "Child Safety", screen: "ChildSafety" },
+  { icon: "flag-outline", label: "Fraud Reports Against Me", screen: "MyFraudReports" },
   { icon: "help-buoy-outline", label: "Support", screen: "Support" },
 ];
 

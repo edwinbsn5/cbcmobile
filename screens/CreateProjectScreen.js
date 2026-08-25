@@ -91,7 +91,14 @@ export default function CreateProjectScreen({ navigation }) {
       Alert.alert("Project created!", "You're the admin — start assembling your team.");
       navigation.replace("ProjectDetail", { projectId: data.id });
     } catch (e) {
-      Alert.alert("Couldn't create project", e.response?.data?.error || e.message);
+      if (e.response?.data?.requiresKyc) {
+        Alert.alert("Identity verification required", e.response.data.error, [
+          { text: "Not now", style: "cancel" },
+          { text: "Verify now", onPress: () => navigation.navigate("KYC") },
+        ]);
+      } else {
+        Alert.alert("Couldn't create project", e.response?.data?.error || e.message);
+      }
     } finally {
       setUploading(false);
       setSubmitting(false);

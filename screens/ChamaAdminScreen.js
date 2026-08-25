@@ -186,17 +186,36 @@ function ContributionsTab({ chamaId }) {
 
 function PayoutsTab({ chamaId, chama, onChange }) {
   const [rotation, setRotation] = useState(null);
-  const load = useCallback(() => { client.get(`/chama/${chamaId}/rotation`).then((r) => setRotation(r.data)).catch(() => setRotation([])); }, [chamaId]);
+  const [pendingPayouts, setPendingPayouts] = useState([]);
+  const load = useCallback(() => {
+    client.get(`/chama/${chamaId}/rotation`).then((r) => setRotation(r.data)).catch(() => setRotation([]));
+    client.get(`/chama/${chamaId}/payouts/pending`).then((r) => setPendingPayouts(r.data)).catch(() => setPendingPayouts([]));
+  }, [chamaId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  async function trigger(slotId) {
+  async function schedule(slotId) {
     try {
       const { data } = await client.post(`/chama/${chamaId}/payouts/trigger`, { slotId });
-      Alert.alert("Payout sent", `${formatKES(data.payout.amount)} sent to their wallet`);
+      Alert.alert("Payout scheduled", `Will execute in ${data.coolingOffHours}h unless flagged or released early`);
       load(); onChange();
     } catch (e) {
-      Alert.alert("Payout failed", e.response?.data?.error || e.message);
+      Alert.alert("Couldn't schedule", e.response?.data?.error || e.message);
     }
+  }
+
+  async function release(pendingId) {
+    try {
+      const { data } = await client.post(`/chama/${chamaId}/payouts/pending/${pendingId}/release`, {});
+      Alert.alert("Payout released", `${formatKES(data.payout.amount)} sent to their wallet`);
+      load(); onChange();
+    } catch (e) {
+      Alert.alert("Couldn't release", e.response?.data?.error || e.message);
+    }
+  }
+
+  async function cancel(pendingId) {
+    try { await client.post(`/chama/${chamaId}/payouts/pending/${pendingId}/cancel`, {}); load(); }
+    catch (e) { Alert.alert("Couldn't cancel", e.response?.data?.error || e.message); }
   }
 
   async function shuffle() {
@@ -218,6 +237,7 @@ function PayoutsTab({ chamaId, chama, onChange }) {
   if (!rotation) return <ActivityIndicator color={COLORS.accent} />;
   const current = rotation.filter((s) => s.cycle === chama.currentCycle).sort((a, b) => a.position - b.position);
   const allPaid = current.length > 0 && current.every((s) => s.paidAt);
+  const pendingBySlot = new Map(pendingPayouts.map((p) => [p.slotId, p]));
 
   return (
     <View>
@@ -226,12 +246,28 @@ function PayoutsTab({ chamaId, chama, onChange }) {
         <TouchableOpacity style={styles.smallBtn} onPress={shuffle}><Text style={styles.smallBtnText}>Shuffle order</Text></TouchableOpacity>
         {allPaid && <TouchableOpacity style={styles.approveBtn} onPress={completeCycle}><Text style={styles.approveBtnText}>Start next cycle</Text></TouchableOpacity>}
       </View>
-      {current.map((s) => (
-        <View key={s.id} style={styles.row}>
-          <Text style={styles.rowName}>#{s.position} {s.user?.name}</Text>
-          {s.paidAt ? <Text style={styles.paidBadge}>Paid</Text> : <TouchableOpacity style={styles.approveBtn} onPress={() => trigger(s.id)}><Text style={styles.approveBtnText}>Trigger payout</Text></TouchableOpacity>}
-        </View>
-      ))}
+      {current.map((s) => {
+        const pending = pendingBySlot.get(s.id);
+        return (
+          <View key={s.id} style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowName}>#{s.position} {s.user?.name}</Text>
+              {pending?.status === "flagged" && <Text style={[styles.rowSub, { color: "#D32F2F" }]}>Flagged: {pending.flagReason || "no reason given"}</Text>}
+              {pending?.status === "scheduled" && <Text style={styles.rowSub}>Executes {new Date(pending.executeAt).toLocaleString()}</Text>}
+            </View>
+            {s.paidAt ? (
+              <Text style={styles.paidBadge}>Paid</Text>
+            ) : pending ? (
+              <View style={styles.rowActions}>
+                <TouchableOpacity style={styles.approveBtn} onPress={() => release(pending.id)}><Text style={styles.approveBtnText}>Release now</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.rejectBtn} onPress={() => cancel(pending.id)}><Text style={styles.rejectBtnText}>Cancel</Text></TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.approveBtn} onPress={() => schedule(s.id)}><Text style={styles.approveBtnText}>Schedule payout</Text></TouchableOpacity>
+            )}
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -272,12 +308,14 @@ function SettingsTab({ chamaId, chama, onChange }) {
   const [maxMembers, setMaxMembers] = useState(String(chama.maxMembers));
   const [contributionAmount, setContributionAmount] = useState(String(chama.contributionAmount || ""));
   const [membersVisible, setMembersVisible] = useState(chama.membersVisibleToMembers);
+  const [requireKyc, setRequireKyc] = useState(chama.requireKycToJoin);
+  const [requireGuarantors, setRequireGuarantors] = useState(chama.requireGuarantorsToJoin);
   const [saving, setSaving] = useState(false);
 
   async function save() {
     setSaving(true);
     try {
-      const body = { membersVisibleToMembers: membersVisible };
+      const body = { membersVisibleToMembers: membersVisible, requireKycToJoin: requireKyc, requireGuarantorsToJoin: requireGuarantors };
       const max = parseInt(maxMembers, 10);
       if (max && max !== chama.maxMembers) body.maxMembers = max;
       if (chama.contributionType === "fixed_recurring") {
@@ -335,6 +373,14 @@ function SettingsTab({ chamaId, chama, onChange }) {
       <View style={styles.switchRow}>
         <Text style={styles.rowName}>Members can see each other</Text>
         <Switch value={membersVisible} onValueChange={setMembersVisible} trackColor={{ true: COLORS.accent }} />
+      </View>
+      <View style={styles.switchRow}>
+        <Text style={styles.rowName}>Require identity verification (KYC) to join</Text>
+        <Switch value={requireKyc} onValueChange={setRequireKyc} trackColor={{ true: COLORS.accent }} />
+      </View>
+      <View style={styles.switchRow}>
+        <Text style={styles.rowName}>Require 2 accepted guarantors to join</Text>
+        <Switch value={requireGuarantors} onValueChange={setRequireGuarantors} trackColor={{ true: COLORS.accent }} />
       </View>
       <TouchableOpacity style={styles.approveBtn} onPress={save} disabled={saving}><Text style={styles.approveBtnText}>{saving ? "Saving..." : "Save settings"}</Text></TouchableOpacity>
 

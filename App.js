@@ -57,6 +57,10 @@ import ProjectsScreen from "./screens/ProjectsScreen";
 import CreateProjectScreen from "./screens/CreateProjectScreen";
 import ProjectDetailScreen from "./screens/ProjectDetailScreen";
 import ProjectAdminScreen from "./screens/ProjectAdminScreen";
+import KYCScreen from "./screens/KYCScreen";
+import GuarantorsScreen from "./screens/GuarantorsScreen";
+import WallOfShameScreen from "./screens/WallOfShameScreen";
+import MyFraudReportsScreen from "./screens/MyFraudReportsScreen";
 import BoostPostScreen from "./screens/BoostPostScreen";
 import MySponsoredPostsScreen from "./screens/MySponsoredPostsScreen";
 import BoostGroupScreen from "./screens/BoostGroupScreen";
@@ -329,6 +333,10 @@ function RootNavigator() {
         <RootStack.Screen name="CreateProject" component={CreateProjectScreen} options={{ title: "Create Project" }} />
         <RootStack.Screen name="ProjectDetail" component={ProjectDetailScreen} options={{ title: "Project" }} />
         <RootStack.Screen name="ProjectAdmin" component={ProjectAdminScreen} options={{ title: "Manage Project" }} />
+        <RootStack.Screen name="KYC" component={KYCScreen} options={{ title: "Verify My Identity" }} />
+        <RootStack.Screen name="Guarantors" component={GuarantorsScreen} options={{ title: "My Guarantors" }} />
+        <RootStack.Screen name="WallOfShame" component={WallOfShameScreen} options={{ title: "Wall of Shame" }} />
+        <RootStack.Screen name="MyFraudReports" component={MyFraudReportsScreen} options={{ title: "Fraud Reports Against Me" }} />
         <RootStack.Screen name="BoostPost" component={BoostPostScreen} options={{ title: "Boost Post" }} />
         <RootStack.Screen name="MySponsoredPosts" component={MySponsoredPostsScreen} options={{ title: "My Sponsored Posts" }} />
         <RootStack.Screen name="BoostGroup" component={BoostGroupScreen} options={{ title: "Boost Group" }} />

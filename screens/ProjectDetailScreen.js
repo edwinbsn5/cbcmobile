@@ -126,18 +126,18 @@ export default function ProjectDetailScreen({ route, navigation }) {
           {tab === "tasks" && <TasksTab projectId={projectId} isMember={isMember} />}
           {tab === "milestones" && <MilestonesTab projectId={projectId} isMember={isMember} isAdmin={isAdmin} />}
           {tab === "docs" && <DocsTab projectId={projectId} isMember={isMember} />}
-          {tab === "members" && <MembersTab projectId={projectId} isMember={isMember} project={project} />}
+          {tab === "members" && <MembersTab projectId={projectId} isMember={isMember} project={project} myUserId={user?.id} />}
           {tab === "finance" && project.requiresCapital && <FinanceTab projectId={projectId} isMember={isMember} />}
         </View>
       </ScrollView>
 
-      <JoinModal visible={joinVisible} onClose={() => setJoinVisible(false)} project={project} onDone={() => { setJoinVisible(false); load(); }} />
+      <JoinModal visible={joinVisible} onClose={() => setJoinVisible(false)} project={project} navigation={navigation} onDone={() => { setJoinVisible(false); load(); }} />
       <ContributeModal visible={contributeVisible} onClose={() => setContributeVisible(false)} projectId={projectId} onDone={() => { setContributeVisible(false); load(); }} />
     </View>
   );
 }
 
-function JoinModal({ visible, onClose, project, onDone }) {
+function JoinModal({ visible, onClose, project, navigation, onDone }) {
   const [roleId, setRoleId] = useState(null);
   const [pitch, setPitch] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -152,7 +152,13 @@ function JoinModal({ visible, onClose, project, onDone }) {
       );
       onDone();
     } catch (e) {
-      Alert.alert("Couldn't apply", e.response?.data?.error || e.message);
+      if (e.response?.data?.requiresKyc) {
+        Alert.alert("Identity verification required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Verify now", onPress: () => navigation.navigate("KYC") }]);
+      } else if (e.response?.data?.requiresGuarantors) {
+        Alert.alert("Guarantors required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Add guarantors", onPress: () => navigation.navigate("Guarantors") }]);
+      } else {
+        Alert.alert("Couldn't apply", e.response?.data?.error || e.message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -364,9 +370,11 @@ function DocsTab({ projectId, isMember }) {
   );
 }
 
-function MembersTab({ projectId, isMember, project }) {
+function MembersTab({ projectId, isMember, project, myUserId }) {
   const [members, setMembers] = useState(null);
-  useFocusEffect(useCallback(() => { if (isMember) client.get(`/projects/${projectId}/members`).then((r) => setMembers(r.data)).catch(() => setMembers([])); }, [projectId, isMember]));
+  const [reportTarget, setReportTarget] = useState(null);
+  const load = useCallback(() => { if (isMember) client.get(`/projects/${projectId}/members`).then((r) => setMembers(r.data)).catch(() => setMembers([])); }, [projectId, isMember]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
   if (!isMember) return <Text style={styles.gatedText}>Join this project to view the team.</Text>;
   if (!members) return <ActivityIndicator color={COLORS.accent} />;
   return (
@@ -375,11 +383,54 @@ function MembersTab({ projectId, isMember, project }) {
         <View key={m.id} style={styles.memberRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.ledgerName}>{m.user?.name}{m.userId === project.creatorId ? " (Creator)" : ""}</Text>
-            <Text style={styles.ledgerMeta}>{m.projectRole?.name || (m.role === "admin" ? "Admin" : "Member")}</Text>
+            <Text style={styles.ledgerMeta}>{m.projectRole?.name || (m.role === "admin" ? "Admin" : "Member")} · Trust {m.trust?.score ?? "—"}{m.trust?.kycVerified ? " · KYC ✓" : ""}</Text>
           </View>
+          {m.userId !== myUserId && (
+            <TouchableOpacity style={styles.reportButton} onPress={() => setReportTarget(m)}>
+              <Ionicons name="alert-circle-outline" size={16} color="#D32F2F" />
+            </TouchableOpacity>
+          )}
         </View>
       ))}
+      <ReportFraudModal groupPath={`/projects/${projectId}`} target={reportTarget} onClose={() => setReportTarget(null)} onDone={() => setReportTarget(null)} />
     </View>
+  );
+}
+
+function ReportFraudModal({ groupPath, target, onClose, onDone }) {
+  const [reason, setReason] = useState("");
+  const [details, setDetails] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    if (!reason.trim()) return Alert.alert("Reason required", "Briefly describe what happened");
+    setSubmitting(true);
+    try {
+      await client.post(`${groupPath}/fraud-reports`, { reportedUserId: target.userId, reason: reason.trim(), details: details.trim() || undefined });
+      Alert.alert("Report filed", "This group's funds are now frozen pending a platform review. Thank you for flagging this.");
+      setReason(""); setDetails("");
+      onDone();
+    } catch (e) {
+      Alert.alert("Couldn't file report", e.response?.data?.error || e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={!!target} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Report {target?.user?.name}</Text>
+        <Text style={styles.tabHint}>This freezes the group's funds and starts a platform investigation. Only report genuine fraud/theft concerns.</Text>
+        <TextInput style={styles.input} placeholder="Reason (short)" value={reason} onChangeText={setReason} />
+        <TextInput style={[styles.input, styles.multiline]} placeholder="Additional details (optional)" value={details} onChangeText={setDetails} multiline />
+        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: "#D32F2F" }]} onPress={submit} disabled={submitting}>
+          <Text style={styles.primaryButtonText}>{submitting ? "Filing..." : "File report"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
   );
 }
 
@@ -486,6 +537,7 @@ const styles = StyleSheet.create({
   gatedText: { color: COLORS.sub, textAlign: "center", marginTop: 20 },
   gatedTextSmall: { color: COLORS.sub, fontSize: 12, marginTop: 4 },
   tabHint: { color: COLORS.sub, fontSize: 12, marginBottom: 8 },
+  reportButton: { padding: 6, marginLeft: 6 },
   sectionTitle: { fontSize: 13, fontWeight: "800", color: COLORS.ink, marginBottom: 8 },
   taskCard: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8 },
   ledgerRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8 },

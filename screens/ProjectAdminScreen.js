@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, TextInput, Alert, Share } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, TextInput, Alert, Share, Switch } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
 import { COLORS } from "../theme";
@@ -232,12 +232,14 @@ function SettingsTab({ projectId, project, onChange }) {
   const [maxMembers, setMaxMembers] = useState(String(project.maxMembers));
   const [description, setDescription] = useState(project.description);
   const [visibility, setVisibility] = useState(project.visibility);
+  const [requireKyc, setRequireKyc] = useState(project.requireKycToJoin);
+  const [requireGuarantors, setRequireGuarantors] = useState(project.requireGuarantorsToJoin);
   const [saving, setSaving] = useState(false);
 
   async function save() {
     setSaving(true);
     try {
-      const body = { description, visibility };
+      const body = { description, visibility, requireKycToJoin: requireKyc, requireGuarantorsToJoin: requireGuarantors };
       const max = parseInt(maxMembers, 10);
       if (max && max !== project.maxMembers) body.maxMembers = max;
       await client.patch(`/projects/${projectId}`, body);
@@ -270,6 +272,14 @@ function SettingsTab({ projectId, project, onChange }) {
       <View style={styles.rowActions}>
         <TouchableOpacity style={[styles.smallBtn, visibility === "public" && styles.smallBtnActive]} onPress={() => setVisibility("public")}><Text style={[styles.smallBtnText, visibility === "public" && styles.smallBtnTextActive]}>Public</Text></TouchableOpacity>
         <TouchableOpacity style={[styles.smallBtn, visibility === "invite_only" && styles.smallBtnActive]} onPress={() => setVisibility("invite_only")}><Text style={[styles.smallBtnText, visibility === "invite_only" && styles.smallBtnTextActive]}>Invite-only</Text></TouchableOpacity>
+      </View>
+      <View style={styles.switchRow}>
+        <Text style={styles.rowName}>Require identity verification (KYC) to join</Text>
+        <Switch value={requireKyc} onValueChange={setRequireKyc} trackColor={{ true: COLORS.accent }} />
+      </View>
+      <View style={styles.switchRow}>
+        <Text style={styles.rowName}>Require 2 accepted guarantors to join</Text>
+        <Switch value={requireGuarantors} onValueChange={setRequireGuarantors} trackColor={{ true: COLORS.accent }} />
       </View>
       <TouchableOpacity style={[styles.approveBtn, { marginTop: 14 }]} onPress={save} disabled={saving}><Text style={styles.approveBtnText}>{saving ? "Saving..." : "Save settings"}</Text></TouchableOpacity>
 
@@ -338,6 +348,7 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, marginBottom: 10, color: COLORS.ink },
   multiline: { minHeight: 70, textAlignVertical: "top" },
   label: { fontSize: 12.5, color: COLORS.sub, marginBottom: 4 },
+  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12, gap: 12 },
   statCard: { backgroundColor: COLORS.accent, borderRadius: 10, padding: 14, marginBottom: 10 },
   statLabel: { color: "rgba(11,31,58,0.75)", fontSize: 11, textTransform: "uppercase" },
   statValue: { color: COLORS.accentInk, fontSize: 22, fontWeight: "800", marginTop: 4 },

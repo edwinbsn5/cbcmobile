@@ -72,7 +72,13 @@ export default function ChamaDetailScreen({ route, navigation }) {
       );
       load();
     } catch (e) {
-      Alert.alert("Couldn't join", e.response?.data?.error || e.message);
+      if (e.response?.data?.requiresKyc) {
+        Alert.alert("Identity verification required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Verify now", onPress: () => navigation.navigate("KYC") }]);
+      } else if (e.response?.data?.requiresGuarantors) {
+        Alert.alert("Guarantors required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Add guarantors", onPress: () => navigation.navigate("Guarantors") }]);
+      } else {
+        Alert.alert("Couldn't join", e.response?.data?.error || e.message);
+      }
     }
   }
 
@@ -153,7 +159,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
           {tab === "ledger" && <LedgerTab chamaId={chamaId} isMember={isMember} />}
           {tab === "payouts" && <PayoutsTab chamaId={chamaId} chama={chama} isMember={isMember} userId={user?.id} />}
           {tab === "feed" && <FeedTab chamaId={chamaId} isMember={isMember} userId={user?.id} />}
-          {tab === "members" && <MembersTab chamaId={chamaId} isMember={isMember} chama={chama} />}
+          {tab === "members" && <MembersTab chamaId={chamaId} isMember={isMember} chama={chama} myUserId={user?.id} />}
         </View>
       </ScrollView>
 
@@ -223,12 +229,15 @@ function LedgerTab({ chamaId, isMember }) {
 function PayoutsTab({ chamaId, chama, isMember, userId }) {
   const [rotation, setRotation] = useState(null);
   const [payouts, setPayouts] = useState([]);
+  const [pendingPayouts, setPendingPayouts] = useState([]);
   const [withdrawVisible, setWithdrawVisible] = useState(false);
+  const [flagTarget, setFlagTarget] = useState(null);
 
   const load = useCallback(() => {
     if (!isMember) return;
     if (chama.payoutModel === "merry_go_round") {
       client.get(`/chama/${chamaId}/rotation`).then((r) => setRotation(r.data)).catch(() => setRotation([]));
+      client.get(`/chama/${chamaId}/payouts/pending`).then((r) => setPendingPayouts(r.data)).catch(() => setPendingPayouts([]));
     }
     client.get(`/chama/${chamaId}/payouts`).then((r) => setPayouts(r.data)).catch(() => setPayouts([]));
   }, [chamaId, isMember, chama.payoutModel]);
@@ -241,6 +250,28 @@ function PayoutsTab({ chamaId, chama, isMember, userId }) {
     const nextUp = rotation.filter((s) => s.cycle === chama.currentCycle && !s.paidAt).sort((a, b) => a.position - b.position)[0];
     return (
       <View>
+        {!!pendingPayouts.length && (
+          <View style={{ marginBottom: 16 }}>
+            <Text style={styles.tabHint}>Scheduled payouts — you can flag one within its cooling-off window</Text>
+            {pendingPayouts.map((p) => (
+              <View key={p.id} style={styles.pendingPayoutCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.ledgerName}>{p.recipient?.name} — {formatKES(p.amount)}</Text>
+                  <Text style={styles.ledgerMeta}>
+                    {p.status === "flagged" ? "Flagged — awaiting admin review" : `Executes ${new Date(p.executeAt).toLocaleString()}`}
+                  </Text>
+                </View>
+                {p.status === "scheduled" && (
+                  <TouchableOpacity style={styles.flagButton} onPress={() => setFlagTarget(p)}>
+                    <Ionicons name="flag-outline" size={14} color="#D32F2F" />
+                    <Text style={styles.flagButtonText}>Flag</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+        <FlagPayoutModal chamaId={chamaId} pending={flagTarget} onClose={() => setFlagTarget(null)} onDone={() => { setFlagTarget(null); load(); }} />
         <Text style={styles.tabHint}>Rotation order for cycle {chama.currentCycle}</Text>
         {nextUp && <Text style={styles.nextUpBanner}>Next up: {nextUp.user?.name}</Text>}
         {rotation.filter((s) => s.cycle === chama.currentCycle).sort((a, b) => a.position - b.position).map((s) => (
@@ -293,6 +324,39 @@ function WithdrawalList({ baseUrl }) {
   );
 }
 
+function FlagPayoutModal({ chamaId, pending, onClose, onDone }) {
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      await client.post(`/chama/${chamaId}/payouts/pending/${pending.id}/flag`, { reason: reason.trim() || undefined });
+      setReason("");
+      onDone();
+    } catch (e) {
+      Alert.alert("Couldn't flag", e.response?.data?.error || e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={!!pending} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Flag this payout</Text>
+        <Text style={styles.tabHint}>This pauses the payout until an admin reviews it. Say what looks wrong.</Text>
+        <TextInput style={[styles.input, styles.multiline]} placeholder="What looks wrong?" value={reason} onChangeText={setReason} multiline />
+        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: "#D32F2F" }]} onPress={submit} disabled={submitting}>
+          <Text style={styles.primaryButtonText}>{submitting ? "Flagging..." : "Flag payout"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
 function WithdrawalRequestModal({ visible, onClose, baseUrl, onDone }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
@@ -330,13 +394,16 @@ function WithdrawalRequestModal({ visible, onClose, baseUrl, onDone }) {
   );
 }
 
-function MembersTab({ chamaId, isMember, chama }) {
+function MembersTab({ chamaId, isMember, chama, myUserId }) {
   const [members, setMembers] = useState(null);
   const [error, setError] = useState(null);
-  useFocusEffect(useCallback(() => {
+  const [reportTarget, setReportTarget] = useState(null);
+
+  const load = useCallback(() => {
     if (!isMember) return;
     client.get(`/chama/${chamaId}/members`).then((r) => setMembers(r.data)).catch((e) => setError(e.response?.data?.error || "Couldn't load members"));
-  }, [chamaId, isMember]));
+  }, [chamaId, isMember]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view members.</Text>;
   if (error) return <Text style={styles.gatedText}>{error}</Text>;
@@ -347,12 +414,56 @@ function MembersTab({ chamaId, isMember, chama }) {
         <View key={m.id} style={styles.memberRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.ledgerName}>{m.user?.name}{m.userId === chama.creatorId ? " (Creator)" : ""}</Text>
-            <Text style={styles.ledgerMeta}>{m.role === "treasurer" ? "Treasurer" : m.role === "admin" ? "Admin" : "Member"}</Text>
+            <Text style={styles.ledgerMeta}>{m.role === "treasurer" ? "Treasurer" : m.role === "admin" ? "Admin" : "Member"} · Trust {m.trust?.score ?? "—"}{m.trust?.kycVerified ? " · KYC ✓" : ""}</Text>
           </View>
+          {m.alreadyPaidOutThisCycle && <Text style={styles.defaulterPill}>Already paid this cycle</Text>}
           {m.defaulter?.isDefaulter && <Text style={styles.defaulterPill}>Behind</Text>}
+          {m.userId !== myUserId && (
+            <TouchableOpacity style={styles.reportButton} onPress={() => setReportTarget(m)}>
+              <Ionicons name="alert-circle-outline" size={16} color="#D32F2F" />
+            </TouchableOpacity>
+          )}
         </View>
       ))}
+      <ReportFraudModal groupPath={`/chama/${chamaId}`} target={reportTarget} onClose={() => setReportTarget(null)} onDone={() => setReportTarget(null)} />
     </View>
+  );
+}
+
+function ReportFraudModal({ groupPath, target, onClose, onDone }) {
+  const [reason, setReason] = useState("");
+  const [details, setDetails] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    if (!reason.trim()) return Alert.alert("Reason required", "Briefly describe what happened");
+    setSubmitting(true);
+    try {
+      await client.post(`${groupPath}/fraud-reports`, { reportedUserId: target.userId, reason: reason.trim(), details: details.trim() || undefined });
+      Alert.alert("Report filed", "This group's funds are now frozen pending a platform review. Thank you for flagging this.");
+      setReason(""); setDetails("");
+      onDone();
+    } catch (e) {
+      Alert.alert("Couldn't file report", e.response?.data?.error || e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={!!target} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Report {target?.user?.name}</Text>
+        <Text style={styles.tabHint}>This freezes the group's funds and starts a platform investigation. Only report genuine fraud/theft concerns.</Text>
+        <TextInput style={styles.input} placeholder="Reason (short)" value={reason} onChangeText={setReason} />
+        <TextInput style={[styles.input, styles.multiline]} placeholder="Additional details (optional)" value={details} onChangeText={setDetails} multiline />
+        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: "#D32F2F" }]} onPress={submit} disabled={submitting}>
+          <Text style={styles.primaryButtonText}>{submitting ? "Filing..." : "File report"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
   );
 }
 
@@ -514,6 +625,9 @@ const styles = StyleSheet.create({
   ledgerMeta: { color: COLORS.sub, fontSize: 11.5, marginTop: 2 },
   ledgerAmount: { color: COLORS.accent, fontWeight: "800", fontSize: 13.5 },
   nextUpBanner: { backgroundColor: COLORS.accent, color: COLORS.accentInk, padding: 10, borderRadius: 8, fontWeight: "700", marginBottom: 10, overflow: "hidden" },
+  pendingPayoutCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFF3CD", borderRadius: 8, padding: 12, marginBottom: 8 },
+  flagButton: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FBE7E7", borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 },
+  flagButtonText: { color: "#D32F2F", fontWeight: "700", fontSize: 11.5 },
   rotationRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8 },
   rotationPosition: { width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
   rotationPositionText: { fontWeight: "800", color: COLORS.ink, fontSize: 12 },
@@ -523,7 +637,8 @@ const styles = StyleSheet.create({
   statusPaid: { color: "#2E7D32" },
   statusRejected: { color: "#D32F2F" },
   memberRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8 },
-  defaulterPill: { backgroundColor: "#FFF3CD", color: "#8A6D00", fontSize: 11, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  defaulterPill: { backgroundColor: "#FFF3CD", color: "#8A6D00", fontSize: 11, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginLeft: 6 },
+  reportButton: { padding: 6, marginLeft: 6 },
   composer: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 14 },
   postCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, marginBottom: 10 },
   postMeta: { color: COLORS.sub, fontSize: 11, marginBottom: 8 },
