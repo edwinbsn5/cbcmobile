@@ -92,8 +92,8 @@ android {
         applicationId 'the.campusbiashara.club'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 12
-        versionName "1.1.7"
+        versionCode 15
+        versionName "1.2.0"
     }
     signingConfigs {
         debug {
@@ -124,6 +124,18 @@ android {
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+}
+
+// expo-image pulls in Glide's avif-integration:4.16.0, which bundles
+// org.aomedia.avif.android:avif 0.11.1 — built without 16 KB page-size
+// support and flagged by Play Console's App bundle explorer. Glide's own
+// fix (bumptech/glide#5433) only ships starting with Glide 5.x, which
+// expo-image hasn't migrated to yet, so force the same fixed native
+// artifact version Glide's fix uses without pulling all of Glide 5.
+configurations.all {
+    resolutionStrategy {
+        force 'org.aomedia.avif.android:avif:1.1.1.14d8e3c4'
     }
 }
 
