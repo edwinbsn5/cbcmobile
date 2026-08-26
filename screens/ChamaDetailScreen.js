@@ -240,30 +240,42 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter }) {
         </View>
       )}
 
-      {isMember && chama.contributionType === "fixed_recurring" && defaulter?.nextDeadlineAt && (
+      {isMember && chama.contributionType === "fixed_recurring" && defaulter?.upcomingDeadlineAt && (
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Your next contribution</Text>
-          <Text style={styles.infoValue}>{formatKES(defaulter.payableNow)} by {formatDate(defaulter.nextDeadlineAt)}</Text>
+          <Text style={styles.infoValue}>{formatKES(defaulter.upcomingAmount)} by {formatDate(defaulter.upcomingDeadlineAt)}</Text>
         </View>
       )}
 
-      {isMember && myActiveLoan && (
+      {isMember && chama.payoutModel === "table_banking" && (
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Your unpaid loan</Text>
-          <Text style={styles.infoValue}>{formatKES(myActiveLoan.remaining)} left of {formatKES(myActiveLoan.owed)} — due {formatDate(myActiveLoan.dueAt)}</Text>
+          {!loanInfo ? (
+            <ActivityIndicator size="small" color={COLORS.accent} />
+          ) : myActiveLoan ? (
+            <Text style={styles.infoValue}>{formatKES(myActiveLoan.remaining)} left of {formatKES(myActiveLoan.owed)} — due {formatDate(myActiveLoan.dueAt)}</Text>
+          ) : (
+            <Text style={styles.infoValue}>None right now</Text>
+          )}
         </View>
       )}
 
-      {isMember && !!guaranteeing.length && (
+      {isMember && chama.payoutModel === "table_banking" && (
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>You're a guarantor for</Text>
-          <View style={{ alignItems: "flex-end" }}>
-            {guaranteeing.map((l) => (
-              <Text key={l.id} style={styles.infoValue}>
-                {l.borrower?.name}: {formatKES(l.principal)}{l.status === "active" ? ` — due ${formatDate(l.dueAt)}` : " — awaiting admin approval"}
-              </Text>
-            ))}
-          </View>
+          {!loanInfo ? (
+            <ActivityIndicator size="small" color={COLORS.accent} />
+          ) : guaranteeing.length ? (
+            <View style={{ alignItems: "flex-end" }}>
+              {guaranteeing.map((l) => (
+                <Text key={l.id} style={styles.infoValue}>
+                  {l.borrower?.name}: {formatKES(l.principal)}{l.status === "active" ? ` — due ${formatDate(l.dueAt)}` : " — awaiting admin approval"}
+                </Text>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.infoValue}>Nobody right now</Text>
+          )}
         </View>
       )}
 
