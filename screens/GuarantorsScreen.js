@@ -12,10 +12,18 @@ export default function GuarantorsScreen() {
   const [relationship, setRelationship] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [loanRequests, setLoanRequests] = useState([]);
+
   const load = useCallback(() => {
     client.get("/guarantors/mine").then((r) => setData(r.data)).catch((e) => Alert.alert("Couldn't load", e.response?.data?.error || e.message)).finally(() => setLoading(false));
+    client.get("/guarantors/loans/mine").then((r) => setLoanRequests(r.data)).catch(() => setLoanRequests([]));
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function respondToLoanRequest(id, action) {
+    try { await client.post(`/guarantors/loans/${id}/${action}`); load(); }
+    catch (e) { Alert.alert("Couldn't respond", e.response?.data?.error || e.message); }
+  }
 
   async function sendRequest() {
     if (!username.trim()) return Alert.alert("Username required", "Enter their platform username");
@@ -66,6 +74,28 @@ export default function GuarantorsScreen() {
               <View style={styles.rowActions}>
                 <TouchableOpacity style={styles.approveBtn} onPress={() => respond(r.id, "accept")}><Text style={styles.approveBtnText}>Accept</Text></TouchableOpacity>
                 <TouchableOpacity style={styles.rejectBtn} onPress={() => respond(r.id, "decline")}><Text style={styles.rejectBtnText}>Decline</Text></TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {!!loanRequests.length && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Loan guarantor requests</Text>
+          <Text style={styles.intro}>
+            Accepting locks you in for this loan — any of your other pending loan-guarantor requests get auto-cancelled, and you can't guarantee
+            another loan (or take one out yourself) until this one's fully repaid.
+          </Text>
+          {loanRequests.map((r) => (
+            <View key={r.id} style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowName}>{r.borrower?.name} — {r.loan ? `KES ${r.loan.principal.toLocaleString()}` : ""}</Text>
+                <Text style={styles.rowSub}>{r.chama?.name}</Text>
+              </View>
+              <View style={styles.rowActions}>
+                <TouchableOpacity style={styles.approveBtn} onPress={() => respondToLoanRequest(r.id, "accept")}><Text style={styles.approveBtnText}>Accept</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.rejectBtn} onPress={() => respondToLoanRequest(r.id, "decline")}><Text style={styles.rejectBtnText}>Decline</Text></TouchableOpacity>
               </View>
             </View>
           ))}

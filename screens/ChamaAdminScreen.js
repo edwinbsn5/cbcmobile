@@ -398,8 +398,12 @@ function LoansTab({ chamaId, chama }) {
       {pending.map((l) => (
         <View key={l.id} style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.rowName}>{l.borrower?.name} — {formatKES(l.principal)}</Text>
+            <Text style={styles.rowName}>
+              {l.borrower?.name} — {formatKES(l.principal)}
+              {l.missedLastTime && <Text style={styles.priorityBadge}>  PRIORITY</Text>}
+            </Text>
             <Text style={styles.rowSub}>{l.reason || "No reason given"} · would owe {formatKES(l.principal + Math.round(l.principal * (chama.loanInterestRate / 100)))} back</Text>
+            {l.missedLastTime && <Text style={styles.rowSub}>Missed out last time purely for lack of pool funds</Text>}
           </View>
           <View style={styles.rowActions}>
             <TouchableOpacity style={styles.approveBtn} onPress={() => decide(l.id, "approve")}><Text style={styles.approveBtnText}>Approve</Text></TouchableOpacity>
@@ -682,6 +686,7 @@ const styles = StyleSheet.create({
   memberCard: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8 },
   rowName: { color: COLORS.ink, fontWeight: "700", fontSize: 13 },
   rowSub: { color: COLORS.sub, fontSize: 11.5, marginTop: 2 },
+  priorityBadge: { color: "#B8860B", fontWeight: "800", fontSize: 10.5 },
   rowActions: { flexDirection: "row", gap: 8 },
   approveBtn: { backgroundColor: COLORS.accent, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 },
   approveBtnText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 12 },

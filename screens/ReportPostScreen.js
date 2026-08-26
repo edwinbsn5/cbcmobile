@@ -6,7 +6,7 @@ import REPORT_REASONS from "../data/reportReasons";
 import { COLORS } from "../theme";
 
 export default function ReportPostScreen({ route, navigation }) {
-  const { postId, groupId, pageId, submissionId } = route.params;
+  const { postId, groupId, pageId, submissionId, collabGroupKind, collabGroupId } = route.params;
   const [reason, setReason] = useState(null);
   const [details, setDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -21,6 +21,8 @@ export default function ReportPostScreen({ route, navigation }) {
         ? `/pages/${pageId}/feed/${postId}/report`
         : groupId
         ? `/groups/${groupId}/posts/${postId}/report`
+        : collabGroupKind
+        ? `/${collabGroupKind === "chama" ? "chama" : "projects"}/${collabGroupId}/posts/${postId}/report`
         : `/feed/${postId}/report`;
       await client.post(path, { reason, details: details.trim() || undefined });
       Alert.alert("Report submitted", `Thanks — our team will review this ${submissionId ? "video" : "post"}.`);

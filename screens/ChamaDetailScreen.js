@@ -8,6 +8,8 @@ import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import ReactionBar from "../components/ReactionBar";
 import LinkifiedText from "../components/LinkifiedText";
+import PostCard from "../components/PostCard";
+import { useSaved } from "../hooks/useSaved";
 import { COLORS } from "../theme";
 
 const SCAM_TIPS = [
@@ -362,46 +364,95 @@ function LoansTab({ chamaId, chama }) {
   const [all, setAll] = useState([]);
   const [requestVisible, setRequestVisible] = useState(false);
   const [repayTarget, setRepayTarget] = useState(null);
+  const [guarantorLoan, setGuarantorLoan] = useState(null);
 
   const load = useCallback(() => {
-    client.get(`/chama/${chamaId}/loans/mine`).then((r) => setMine(r.data)).catch(() => setMine({ loans: [], eligibility: { maxEligible: 0, alreadyOwed: 0 } }));
+    client.get(`/chama/${chamaId}/loans/mine`).then((r) => setMine(r.data)).catch(() => setMine({ loans: [], eligibility: { maxEligible: 0, alreadyOwed: 0 }, myGuarantorViability: { viable: true, reason: null }, requiredGuarantors: 2 }));
     client.get(`/chama/${chamaId}/loans`).then((r) => setAll(r.data)).catch(() => setAll([]));
   }, [chamaId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   if (!mine) return <ActivityIndicator color={COLORS.accent} />;
-  const canBorrow = mine.eligibility.maxEligible - mine.eligibility.alreadyOwed;
+  // A member's eligibility (their contributions × the multiplier) is only
+  // half the ceiling — they also can't borrow more than the chama actually
+  // has, whichever is smaller. The backend re-checks this too (the real
+  // safety net), but showing/allowing a bigger number here just sets the
+  // member up for a confusing rejection.
+  const eligibleCap = mine.eligibility.maxEligible - mine.eligibility.alreadyOwed;
+  const canBorrow = Math.max(0, Math.min(eligibleCap, chama.poolBalance));
+  const hasOpenApplication = mine.loans.some((l) => ["pending_guarantors", "requested"].includes(l.status));
+
+  function statusLabel(l) {
+    if (l.status === "active") return `${formatKES(l.remaining)} left of ${formatKES(l.owed)}${l.isOverdue ? " · OVERDUE" : ""}`;
+    if (l.status === "requested") return "Both guarantors accepted — awaiting admin approval";
+    if (l.status === "pending_guarantors") {
+      const accepted = l.guarantors.filter((g) => g.status === "accepted").length;
+      return `Awaiting guarantors (${accepted}/${mine.requiredGuarantors} accepted) — tap to manage`;
+    }
+    if (l.status === "rejected") return l.rejectionReason === "insufficient_pool" ? "Declined — not enough in the pool at the time" : "Declined by admin";
+    if (l.status === "cancelled") return "Cancelled";
+    return l.reason || "";
+  }
 
   return (
     <View>
       <Text style={styles.tabHint}>
         Pool balance: {formatKES(chama.poolBalance)} · {chama.loanInterestRate}% interest · {chama.loanTermWeeks}-week term
       </Text>
-      <Text style={styles.tabHint}>You can borrow up to {formatKES(Math.max(0, canBorrow))} right now.</Text>
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => setRequestVisible(true)}>
-        <Text style={styles.secondaryButtonText}>Request a loan</Text>
-      </TouchableOpacity>
-      <LoanRequestModal visible={requestVisible} onClose={() => setRequestVisible(false)} chamaId={chamaId} onDone={() => { setRequestVisible(false); load(); }} />
+      <Text style={styles.tabHint}>You can borrow up to {formatKES(canBorrow)} right now.</Text>
+      <View style={[styles.guarantorStatusPill, !mine.myGuarantorViability.viable && styles.guarantorStatusPillWarn]}>
+        <Ionicons name={mine.myGuarantorViability.viable ? "checkmark-circle-outline" : "alert-circle-outline"} size={15} color={mine.myGuarantorViability.viable ? "#2E7D32" : "#8A6D00"} />
+        <Text style={styles.guarantorStatusText}>
+          {mine.myGuarantorViability.viable ? "You're currently a viable guarantor for others in this chama" : `Not currently a viable guarantor: ${mine.myGuarantorViability.reason}`}
+        </Text>
+      </View>
+      {hasOpenApplication ? (
+        <Text style={styles.tabHint}>You already have a loan application in progress — see below.</Text>
+      ) : (
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => setRequestVisible(true)}>
+          <Text style={styles.secondaryButtonText}>Request a loan</Text>
+        </TouchableOpacity>
+      )}
+      <LoanRequestModal
+        visible={requestVisible}
+        onClose={() => setRequestVisible(false)}
+        chamaId={chamaId}
+        maxAmount={canBorrow}
+        onCreated={(loan) => { setRequestVisible(false); load(); setGuarantorLoan(loan); }}
+      />
       <LoanRepayModal loan={repayTarget} chamaId={chamaId} onClose={() => setRepayTarget(null)} onDone={() => { setRepayTarget(null); load(); }} />
+      <GuarantorPickerModal
+        loan={guarantorLoan}
+        chamaId={chamaId}
+        requiredGuarantors={mine.requiredGuarantors}
+        onClose={() => setGuarantorLoan(null)}
+        onDone={() => { setGuarantorLoan(null); load(); }}
+      />
 
       <Text style={[styles.tabHint, { marginTop: 16, fontWeight: "700" }]}>Your loans</Text>
       {mine.loans.map((l) => (
-        <View key={l.id} style={styles.ledgerRow}>
+        <TouchableOpacity
+          key={l.id}
+          style={styles.ledgerRow}
+          disabled={l.status !== "pending_guarantors"}
+          onPress={() => setGuarantorLoan(l)}
+        >
           <View style={{ flex: 1 }}>
-            <Text style={styles.ledgerName}>{formatKES(l.principal)} — {l.status}</Text>
-            <Text style={styles.ledgerMeta}>
-              {l.status === "active" ? `${formatKES(l.remaining)} left of ${formatKES(l.owed)}${l.isOverdue ? " · OVERDUE" : ""}` : l.status === "requested" ? "Awaiting admin approval" : l.reason || ""}
-            </Text>
+            <Text style={styles.ledgerName}>{formatKES(l.principal)} — {l.status.replace("_", " ")}</Text>
+            <Text style={styles.ledgerMeta}>{statusLabel(l)}</Text>
           </View>
           {l.status === "active" && <TouchableOpacity style={styles.smallActionBtn} onPress={() => setRepayTarget(l)}><Text style={styles.smallActionBtnText}>Repay</Text></TouchableOpacity>}
-        </View>
+        </TouchableOpacity>
       ))}
       {!mine.loans.length && <Text style={styles.gatedText}>You haven't borrowed anything yet.</Text>}
 
       <Text style={[styles.tabHint, { marginTop: 16, fontWeight: "700" }]}>All loans in this chama</Text>
       {all.map((l) => (
         <View key={l.id} style={styles.ledgerRow}>
-          <Text style={styles.ledgerName}>{l.borrower?.name}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.ledgerName}>{l.borrower?.name}</Text>
+            <Text style={styles.ledgerMeta}>{l.status.replace("_", " ")}{l.missedLastTime && l.status === "requested" ? " · priority" : ""}</Text>
+          </View>
           <Text style={styles.ledgerAmount}>{formatKES(l.principal)}</Text>
         </View>
       ))}
@@ -410,7 +461,7 @@ function LoansTab({ chamaId, chama }) {
   );
 }
 
-function LoanRequestModal({ visible, onClose, chamaId, onDone }) {
+function LoanRequestModal({ visible, onClose, chamaId, maxAmount, onCreated }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -418,12 +469,12 @@ function LoanRequestModal({ visible, onClose, chamaId, onDone }) {
   async function submit() {
     const amt = parseInt(amount, 10);
     if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
+    if (amt > maxAmount) return Alert.alert("Amount too high", `You can borrow up to ${formatKES(maxAmount)} right now.`);
     setSubmitting(true);
     try {
-      await client.post(`/chama/${chamaId}/loans`, { amount: amt, reason: reason.trim() || undefined });
-      Alert.alert("Loan requested", "Admins will review your request.");
+      const { data } = await client.post(`/chama/${chamaId}/loans`, { amount: amt, reason: reason.trim() || undefined });
       setAmount(""); setReason("");
-      onDone();
+      onCreated(data.loan);
     } catch (e) {
       Alert.alert("Couldn't request loan", e.response?.data?.error || e.message);
     } finally {
@@ -437,11 +488,121 @@ function LoanRequestModal({ visible, onClose, chamaId, onDone }) {
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
         <Text style={styles.sheetTitle}>Request a loan</Text>
+        <Text style={styles.tabHint}>You can borrow up to {formatKES(maxAmount)} right now.</Text>
+        <Text style={styles.tabHint}>After this, you'll need 2 members to accept being your guarantors before it's sent to admins.</Text>
         <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
         <TextInput style={styles.input} placeholder="Reason (optional)" value={reason} onChangeText={setReason} />
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
-          <Text style={styles.primaryButtonText}>{submitting ? "Submitting..." : "Submit request"}</Text>
+          <Text style={styles.primaryButtonText}>{submitting ? "Submitting..." : "Next: choose guarantors"}</Text>
         </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
+// Shown right after a loan application is created (status 'pending_guarantors')
+// and re-openable any time by tapping that loan in "Your loans" — lets the
+// borrower pick up to REQUIRED_GUARANTORS members, see accept/decline status
+// live, replace a declined slot, or cancel the whole application.
+function GuarantorPickerModal({ loan, chamaId, requiredGuarantors, onClose, onDone }) {
+  const [guarantorRows, setGuarantorRows] = useState([]);
+  const [candidates, setCandidates] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
+    if (!loan) return;
+    client.get(`/chama/${chamaId}/loans/${loan.id}/guarantors`).then((r) => setGuarantorRows(r.data)).catch(() => setGuarantorRows([]));
+    client.get(`/chama/${chamaId}/loans/guarantor-candidates`).then((r) => setCandidates(r.data)).catch(() => setCandidates([]));
+  }, [chamaId, loan]);
+  React.useEffect(() => { if (loan) load(); }, [loan, load]);
+
+  if (!loan) return null;
+  const openSlots = guarantorRows.filter((g) => ["pending", "accepted"].includes(g.status)).length;
+  const alreadyAskedIds = new Set(guarantorRows.filter((g) => ["pending", "accepted"].includes(g.status)).map((g) => g.guarantorUserId));
+  const pickable = (candidates || []).filter((c) => !alreadyAskedIds.has(c.id));
+
+  async function askGuarantor(userId) {
+    setBusy(true);
+    try {
+      await client.post(`/chama/${chamaId}/loans/${loan.id}/guarantors`, { guarantorUserId: userId });
+      setPickerOpen(false);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't send request", e.response?.data?.error || e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function cancelApplication() {
+    Alert.alert("Cancel this loan application?", "Any pending guarantor requests will be withdrawn.", [
+      { text: "Keep it", style: "cancel" },
+      {
+        text: "Cancel application", style: "destructive",
+        onPress: async () => {
+          try {
+            await client.post(`/chama/${chamaId}/loans/${loan.id}/cancel`);
+            onDone();
+          } catch (e) {
+            Alert.alert("Couldn't cancel", e.response?.data?.error || e.message);
+          }
+        },
+      },
+    ]);
+  }
+
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Guarantors for your {formatKES(loan.principal)} loan</Text>
+        {loan.status !== "pending_guarantors" ? (
+          <Text style={styles.tabHint}>{loan.status === "requested" ? "Both guarantors accepted — this is now with admins." : `This application is ${loan.status}.`}</Text>
+        ) : (
+          <>
+            <Text style={styles.tabHint}>Needs {requiredGuarantors} accepted guarantors before it's sent to admins.</Text>
+            {guarantorRows.map((g) => (
+              <View key={g.id} style={styles.ledgerRow}>
+                <Text style={styles.ledgerName}>{g.guarantor?.name}</Text>
+                <Text style={[styles.statusBadgeSmall, g.status === "accepted" && styles.statusAcceptedSmall, g.status === "declined" && styles.statusDeclinedSmall, g.status === "cancelled" && styles.statusDeclinedSmall]}>
+                  {g.status}
+                </Text>
+              </View>
+            ))}
+            {!guarantorRows.filter((g) => ["pending", "accepted"].includes(g.status)).length && (
+              <Text style={styles.gatedText}>No guarantors asked yet.</Text>
+            )}
+
+            {openSlots < requiredGuarantors && (
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => setPickerOpen(true)}>
+                <Text style={styles.secondaryButtonText}>Ask a guarantor ({openSlots}/{requiredGuarantors} slots used)</Text>
+              </TouchableOpacity>
+            )}
+
+            {pickerOpen && (
+              <View style={styles.guarantorPickList}>
+                {candidates === null ? (
+                  <ActivityIndicator color={COLORS.accent} />
+                ) : pickable.length ? (
+                  pickable.map((c) => (
+                    <TouchableOpacity key={c.id} style={styles.ledgerRow} disabled={busy} onPress={() => askGuarantor(c.id)}>
+                      <Text style={styles.ledgerName}>{c.name}</Text>
+                      <Text style={styles.smallActionBtnText}>Ask</Text>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <Text style={styles.gatedText}>No other viable guarantors available right now.</Text>
+                )}
+              </View>
+            )}
+
+            <TouchableOpacity onPress={cancelApplication} style={{ marginTop: 14 }}>
+              <Text style={styles.cancelLinkText}>Cancel this loan application</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </Modal>
   );
@@ -874,12 +1035,13 @@ function FeedTab({ chamaId, isMember, userId }) {
   const [posts, setPosts] = useState(null);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
+  const { isSaved, toggleSave, loadSaved } = useSaved();
 
   const load = useCallback(() => {
     if (!isMember) return;
     client.get(`/chama/${chamaId}/posts`).then((r) => setPosts(r.data)).catch(() => setPosts([]));
   }, [chamaId, isMember]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(useCallback(() => { load(); loadSaved(); }, [load, loadSaved]));
 
   async function submitPost() {
     if (!text.trim()) return;
@@ -895,12 +1057,21 @@ function FeedTab({ chamaId, isMember, userId }) {
     }
   }
 
-  async function react(post, reaction) {
+  async function react(postId, reaction) {
     try {
-      const { data } = await client.post(`/chama/${chamaId}/posts/${post.id}/react`, { reaction });
-      setPosts((prev) => prev.map((p) => (p.id === post.id ? data : p)));
+      const { data } = await client.post(`/chama/${chamaId}/posts/${postId}/react`, { reaction });
+      setPosts((prev) => prev.map((p) => (p.id === postId ? data : p)));
     } catch (e) {
       Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
+  }
+
+  async function deletePost(postId) {
+    try {
+      await client.delete(`/chama/${chamaId}/posts/${postId}`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
     }
   }
 
@@ -915,12 +1086,15 @@ function FeedTab({ chamaId, isMember, userId }) {
         </TouchableOpacity>
       </View>
       {posts.map((p) => (
-        <View key={p.id} style={styles.postCard}>
-          <Text style={styles.ledgerName}>{p.author?.name}</Text>
-          <Text style={styles.postMeta}>{timeAgo(p.createdAt)} ago</Text>
-          <LinkifiedText text={p.content} style={styles.postContent} />
-          <ReactionBar reactions={p.reactions} myUserId={userId} onReact={(r) => react(p, r)} />
-        </View>
+        <PostCard
+          key={p.id}
+          post={p}
+          onReact={react}
+          isSaved={isSaved("post", p.id)}
+          onToggleSave={() => toggleSave("post", p.id)}
+          onDelete={deletePost}
+          onChanged={load}
+        />
       ))}
       {!posts.length && <Text style={styles.gatedText}>No discussions yet — be the first to post.</Text>}
     </View>
@@ -1005,6 +1179,14 @@ const styles = StyleSheet.create({
   tabBody: { padding: 14 },
   gatedText: { color: COLORS.sub, textAlign: "center", marginTop: 20 },
   tabHint: { color: COLORS.sub, fontSize: 12, marginBottom: 8 },
+  guarantorStatusPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#E8F5E9", borderRadius: 8, padding: 8, marginBottom: 8 },
+  guarantorStatusPillWarn: { backgroundColor: "#FFF3CD" },
+  guarantorStatusText: { color: COLORS.ink, fontSize: 11.5, flex: 1 },
+  statusBadgeSmall: { fontSize: 11, fontWeight: "700", color: "#8A6D00", textTransform: "uppercase" },
+  statusAcceptedSmall: { color: "#2E7D32" },
+  statusDeclinedSmall: { color: "#D32F2F" },
+  guarantorPickList: { marginTop: 8, maxHeight: 220 },
+  cancelLinkText: { color: "#D32F2F", fontWeight: "700", fontSize: 12.5, textAlign: "center" },
   statCard: { backgroundColor: COLORS.accent, borderRadius: 10, padding: 14, marginBottom: 10 },
   statLabel: { color: "rgba(11,31,58,0.75)", fontSize: 11, textTransform: "uppercase" },
   statValue: { color: COLORS.accentInk, fontSize: 22, fontWeight: "800", marginTop: 4 },

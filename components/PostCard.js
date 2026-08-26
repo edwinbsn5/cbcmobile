@@ -56,6 +56,8 @@ export default function PostCard({
     ? `/pages/${post.pageId}/feed/${post.id}/comments`
     : post.groupId
     ? `/groups/${post.groupId}/posts/${post.id}/comments`
+    : post.collabGroupKind
+    ? `/${post.collabGroupKind === "chama" ? "chama" : "projects"}/${post.collabGroupId}/posts/${post.id}/comments`
     : `/feed/${post.id}/comments`;
 
   async function handleUnfollow() {
@@ -142,7 +144,15 @@ export default function PostCard({
         authorFirstName={post.author?.name?.split(" ")[0] || "user"}
         onEdit={() => navigation.navigate("EditPost", { post })}
         onDelete={handleDelete}
-        onReport={() => navigation.navigate("ReportPost", { postId: post.id, groupId: post.groupId || undefined, pageId: post.pageId || undefined })}
+        onReport={() =>
+          navigation.navigate("ReportPost", {
+            postId: post.id,
+            groupId: post.groupId || undefined,
+            pageId: post.pageId || undefined,
+            collabGroupKind: post.collabGroupKind || undefined,
+            collabGroupId: post.collabGroupId || undefined,
+          })
+        }
         onUnfollow={isGroupIdentity || isPageIdentity ? undefined : handleUnfollow}
         onBlock={isGroupIdentity || isPageIdentity ? undefined : handleBlock}
       />
@@ -191,7 +201,7 @@ export default function PostCard({
           <Text style={styles.pillText}>{formatCount(post.commentCount || 0)}</Text>
         </TouchableOpacity>
 
-        {!post.groupId && !post.pageId ? (
+        {!post.groupId && !post.pageId && !post.collabGroupKind ? (
           <TouchableOpacity
             style={[styles.pill, isReshared && styles.pillActive]}
             onPress={() => {
@@ -228,7 +238,7 @@ export default function PostCard({
         )}
       </View>
 
-      {post.userId === user?.id && !post.groupId && !post.pageId && (
+      {post.userId === user?.id && !post.groupId && !post.pageId && !post.collabGroupKind && (
         <TouchableOpacity style={styles.boostRow} onPress={() => navigation.navigate("BoostPost", { post })}>
           <Text style={styles.boostText}>📣 Boost this post</Text>
         </TouchableOpacity>

@@ -7,6 +7,8 @@ import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import ReactionBar from "../components/ReactionBar";
 import LinkifiedText from "../components/LinkifiedText";
+import PostCard from "../components/PostCard";
+import { useSaved } from "../hooks/useSaved";
 import { COLORS } from "../theme";
 
 function formatKES(n) { return `KES ${Math.round(n || 0).toLocaleString()}`; }
@@ -196,9 +198,10 @@ function FeedTab({ projectId, isMember, userId }) {
   const [posts, setPosts] = useState(null);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
+  const { isSaved, toggleSave, loadSaved } = useSaved();
 
   const load = useCallback(() => { if (isMember) client.get(`/projects/${projectId}/posts`).then((r) => setPosts(r.data)).catch(() => setPosts([])); }, [projectId, isMember]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(useCallback(() => { load(); loadSaved(); }, [load, loadSaved]));
 
   async function submitPost() {
     if (!text.trim()) return;
@@ -208,9 +211,14 @@ function FeedTab({ projectId, isMember, userId }) {
     finally { setPosting(false); }
   }
 
-  async function react(post, reaction) {
-    try { const { data } = await client.post(`/projects/${projectId}/posts/${post.id}/react`, { reaction }); setPosts((prev) => prev.map((p) => (p.id === post.id ? data : p))); }
+  async function react(postId, reaction) {
+    try { const { data } = await client.post(`/projects/${projectId}/posts/${postId}/react`, { reaction }); setPosts((prev) => prev.map((p) => (p.id === postId ? data : p))); }
     catch (e) { Alert.alert("Couldn't react", e.response?.data?.error || e.message); }
+  }
+
+  async function deletePost(postId) {
+    try { await client.delete(`/projects/${projectId}/posts/${postId}`); load(); }
+    catch (e) { Alert.alert("Couldn't delete post", e.response?.data?.error || e.message); }
   }
 
   if (!isMember) return <Text style={styles.gatedText}>Join this project to view the discussion feed.</Text>;
@@ -222,12 +230,15 @@ function FeedTab({ projectId, isMember, userId }) {
         <TouchableOpacity style={styles.secondaryButton} onPress={submitPost} disabled={posting}><Text style={styles.secondaryButtonText}>{posting ? "Posting..." : "Post"}</Text></TouchableOpacity>
       </View>
       {posts.map((p) => (
-        <View key={p.id} style={styles.postCard}>
-          <Text style={styles.ledgerName}>{p.author?.name}</Text>
-          <Text style={styles.postMeta}>{timeAgo(p.createdAt)} ago</Text>
-          <LinkifiedText text={p.content} style={styles.postContent} />
-          <ReactionBar reactions={p.reactions} myUserId={userId} onReact={(r) => react(p, r)} />
-        </View>
+        <PostCard
+          key={p.id}
+          post={p}
+          onReact={react}
+          isSaved={isSaved("post", p.id)}
+          onToggleSave={() => toggleSave("post", p.id)}
+          onDelete={deletePost}
+          onChanged={load}
+        />
       ))}
       {!posts.length && <Text style={styles.gatedText}>No updates yet.</Text>}
     </View>

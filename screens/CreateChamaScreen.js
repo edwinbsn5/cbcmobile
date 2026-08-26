@@ -49,6 +49,15 @@ export default function CreateChamaScreen({ navigation }) {
     setSubCounty("");
   }
 
+  // Table banking lends against members' contribution history, so it needs
+  // a predictable recurring cadence — switching to it forces (and locks)
+  // fixed recurring contributions, same rule routes/chama.js enforces
+  // server-side.
+  function handlePayoutModelChange(model) {
+    setPayoutModel(model);
+    if (model === "table_banking") setContributionType("fixed_recurring");
+  }
+
   async function handlePickCover() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return Alert.alert("Permission needed", "Allow photo library access to pick a cover photo");
@@ -142,9 +151,16 @@ export default function CreateChamaScreen({ navigation }) {
 
         <Text style={styles.sectionTitle}>Contribution type</Text>
         <OptionRow
-          options={[{ value: "fixed_recurring", label: "Fixed recurring" }, { value: "goal_based", label: "Goal-based" }]}
+          options={
+            payoutModel === "table_banking"
+              ? [{ value: "fixed_recurring", label: "Fixed recurring" }]
+              : [{ value: "fixed_recurring", label: "Fixed recurring" }, { value: "goal_based", label: "Goal-based" }]
+          }
           value={contributionType} onChange={setContributionType}
         />
+        {payoutModel === "table_banking" && (
+          <Text style={styles.hint}>Table banking requires a fixed weekly or monthly contribution to fund the loan pool.</Text>
+        )}
         {contributionType === "fixed_recurring" ? (
           <>
             <Text style={styles.label}>Contribution amount (KES)</Text>
@@ -164,7 +180,7 @@ export default function CreateChamaScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Payout model</Text>
         <OptionRow
           options={[{ value: "merry_go_round", label: "Merry-go-round" }, { value: "pooled_savings", label: "Pooled savings" }, { value: "table_banking", label: "Table banking" }]}
-          value={payoutModel} onChange={setPayoutModel}
+          value={payoutModel} onChange={handlePayoutModelChange}
         />
         <Text style={styles.hint}>
           {payoutModel === "merry_go_round"
