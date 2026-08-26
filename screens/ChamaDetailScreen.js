@@ -184,7 +184,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
         </View>
 
         <View style={styles.tabBody}>
-          {tab === "overview" && <OverviewTab chama={chama} myTotal={myTotal} isMember={isMember} />}
+          {tab === "overview" && <OverviewTab chama={chama} chamaId={chamaId} myTotal={myTotal} isMember={isMember} defaulter={defaulter} />}
           {tab === "feed" && <FeedTab chamaId={chamaId} isMember={isMember} userId={user?.id} />}
           {tab === "ledger" && <LedgerTab chamaId={chamaId} isMember={isMember} chama={chama} />}
           {tab === "payouts" && <PayoutsTab chamaId={chamaId} chama={chama} isMember={isMember} userId={user?.id} />}
@@ -206,15 +206,67 @@ export default function ChamaDetailScreen({ route, navigation }) {
   );
 }
 
-function OverviewTab({ chama, myTotal, isMember }) {
+function formatDate(ts) {
+  return ts ? new Date(ts).toLocaleDateString() : "—";
+}
+
+function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter }) {
+  const [loanInfo, setLoanInfo] = useState(null);
+
+  useFocusEffect(useCallback(() => {
+    if (!isMember || chama.payoutModel !== "table_banking") return;
+    client.get(`/chama/${chamaId}/loans/mine`).then((r) => setLoanInfo(r.data)).catch(() => setLoanInfo(null));
+  }, [chamaId, isMember, chama.payoutModel]));
+
+  const myActiveLoan = loanInfo?.loans.find((l) => l.status === "active");
+  const guaranteeing = loanInfo?.guaranteeing || [];
+
   return (
     <View>
+      <View style={styles.cautionBanner}>
+        <Ionicons name="shield-checkmark-outline" size={18} color="#8A6D00" />
+        <Text style={styles.cautionText}>
+          Don't send money to a stranger without doing some due diligence (uchunguzi kidogo). Make sure you attend physical meetings of the
+          chama, meet the other members, and get to know one another.{"\n\n"}
+          If this chama is not in your county/sub-county, LEAVE. Don't risk getting conned.{"\n\n"}
+          And lastly, if a project/chama involves large sums of money, please protect yourself and involve legal practitioners.
+        </Text>
+      </View>
+
       {isMember && (
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Your total contributions</Text>
           <Text style={styles.statValue}>{formatKES(myTotal)}</Text>
         </View>
       )}
+
+      {isMember && chama.contributionType === "fixed_recurring" && defaulter?.nextDeadlineAt && (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoLabel}>Your next contribution</Text>
+          <Text style={styles.infoValue}>{formatKES(defaulter.payableNow)} by {formatDate(defaulter.nextDeadlineAt)}</Text>
+        </View>
+      )}
+
+      {isMember && myActiveLoan && (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoLabel}>Your unpaid loan</Text>
+          <Text style={styles.infoValue}>{formatKES(myActiveLoan.remaining)} left of {formatKES(myActiveLoan.owed)} — due {formatDate(myActiveLoan.dueAt)}</Text>
+        </View>
+      )}
+
+      {isMember && !!guaranteeing.length && (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoLabel}>You're a guarantor for</Text>
+          <View style={{ alignItems: "flex-end" }}>
+            {guaranteeing.map((l) => (
+              <Text key={l.id} style={styles.infoValue}>
+                {l.borrower?.name}: {formatKES(l.principal)}{l.status === "active" ? ` — due ${formatDate(l.dueAt)}` : " — awaiting admin approval"}
+              </Text>
+            ))}
+          </View>
+        </View>
+      )}
+
       <View style={styles.infoCard}>
         <Text style={styles.infoLabel}>Join policy</Text>
         <Text style={styles.infoValue}>{chama.joinPolicy === "open" ? "Open until positions fill" : "Requires admin approval"}</Text>
@@ -1171,6 +1223,8 @@ const styles = StyleSheet.create({
   defaulterText: { color: "#8A6D00", fontSize: 12, flex: 1 },
   frozenBanner: { flexDirection: "row", gap: 8, alignItems: "center", backgroundColor: "#FBE7E7", borderRadius: 8, padding: 10, marginTop: 8 },
   frozenText: { color: "#C4433C", fontSize: 12, flex: 1 },
+  cautionBanner: { flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginBottom: 12 },
+  cautionText: { color: "#6B5300", fontSize: 12, lineHeight: 18, flex: 1 },
   tabRow: { flexDirection: "row", backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border },
   tab: { flex: 1, paddingVertical: 12, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabActive: { borderBottomColor: COLORS.accent },
