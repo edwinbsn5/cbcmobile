@@ -5,6 +5,8 @@ import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
+import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { COLORS } from "../theme";
 
 function OptionRow({ label, options, value, onChange }) {
@@ -28,12 +30,24 @@ export default function CreateChamaScreen({ navigation }) {
   const [contributionType, setContributionType] = useState("fixed_recurring");
   const [contributionAmount, setContributionAmount] = useState("");
   const [contributionFrequency, setContributionFrequency] = useState("weekly");
+  const [contributionLateFeeRate, setContributionLateFeeRate] = useState("10");
   const [goalAmount, setGoalAmount] = useState("");
   const [payoutModel, setPayoutModel] = useState("merry_go_round");
+  const [loanInterestRate, setLoanInterestRate] = useState("10");
+  const [loanMaxMultiplier, setLoanMaxMultiplier] = useState("3");
+  const [loanTermWeeks, setLoanTermWeeks] = useState("4");
+  const [latePenaltyRate, setLatePenaltyRate] = useState("5");
   const [joinPolicy, setJoinPolicy] = useState("approval");
   const [membersVisible, setMembersVisible] = useState(true);
+  const [county, setCounty] = useState("");
+  const [subCounty, setSubCounty] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+  }
 
   async function handlePickCover() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -52,9 +66,19 @@ export default function CreateChamaScreen({ navigation }) {
     if (contributionType === "fixed_recurring" && (!parseInt(contributionAmount, 10) || parseInt(contributionAmount, 10) <= 0)) {
       return Alert.alert("Invalid amount", "Enter a contribution amount in KES");
     }
+    if (contributionType === "fixed_recurring" && (contributionLateFeeRate === "" || isNaN(parseFloat(contributionLateFeeRate)) || parseFloat(contributionLateFeeRate) < 0)) {
+      return Alert.alert("Invalid late fee", "Enter a late fee percentage (0 or more)");
+    }
     if (contributionType === "goal_based" && (!parseInt(goalAmount, 10) || parseInt(goalAmount, 10) <= 0)) {
       return Alert.alert("Invalid goal", "Enter a savings goal in KES");
     }
+    if (payoutModel === "table_banking") {
+      if (loanInterestRate === "" || isNaN(parseFloat(loanInterestRate)) || parseFloat(loanInterestRate) < 0) return Alert.alert("Invalid interest rate", "Enter a loan interest percentage (0 or more)");
+      if (!parseFloat(loanMaxMultiplier) || parseFloat(loanMaxMultiplier) <= 0) return Alert.alert("Invalid multiplier", "Enter how many times a member's savings they can borrow");
+      if (!parseInt(loanTermWeeks, 10) || parseInt(loanTermWeeks, 10) <= 0) return Alert.alert("Invalid term", "Enter a loan repayment term in weeks");
+      if (latePenaltyRate === "" || isNaN(parseFloat(latePenaltyRate)) || parseFloat(latePenaltyRate) < 0) return Alert.alert("Invalid penalty", "Enter a late-penalty percentage (0 or more)");
+    }
+    if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county your Chama meets in");
 
     setSubmitting(true);
     try {
@@ -72,20 +96,19 @@ export default function CreateChamaScreen({ navigation }) {
         name: name.trim(), description: description.trim(), coverUrl, maxMembers: max,
         contributionType, contributionAmount: contributionType === "fixed_recurring" ? parseInt(contributionAmount, 10) : undefined,
         contributionFrequency: contributionType === "fixed_recurring" ? contributionFrequency : undefined,
+        contributionLateFeeRate: contributionType === "fixed_recurring" ? parseFloat(contributionLateFeeRate) : undefined,
         goalAmount: contributionType === "goal_based" ? parseInt(goalAmount, 10) : undefined,
         payoutModel, joinPolicy, membersVisibleToMembers: membersVisible,
+        loanInterestRate: payoutModel === "table_banking" ? parseFloat(loanInterestRate) : undefined,
+        loanMaxMultiplier: payoutModel === "table_banking" ? parseFloat(loanMaxMultiplier) : undefined,
+        loanTermWeeks: payoutModel === "table_banking" ? parseInt(loanTermWeeks, 10) : undefined,
+        latePenaltyRate: payoutModel === "table_banking" ? parseFloat(latePenaltyRate) : undefined,
+        county, subCounty,
       });
       Alert.alert("Chama created!", "You're the admin — start inviting members.");
       navigation.replace("ChamaDetail", { chamaId: data.id });
     } catch (e) {
-      if (e.response?.data?.requiresKyc) {
-        Alert.alert("Identity verification required", e.response.data.error, [
-          { text: "Not now", style: "cancel" },
-          { text: "Verify now", onPress: () => navigation.navigate("KYC") },
-        ]);
-      } else {
-        Alert.alert("Couldn't create Chama", e.response?.data?.error || e.message);
-      }
+      Alert.alert("Couldn't create Chama", e.response?.data?.error || e.message);
     } finally {
       setUploading(false);
       setSubmitting(false);
@@ -128,6 +151,8 @@ export default function CreateChamaScreen({ navigation }) {
             <TextInput style={styles.input} value={contributionAmount} onChangeText={setContributionAmount} keyboardType="number-pad" placeholder="500" />
             <Text style={styles.label}>Frequency</Text>
             <OptionRow options={[{ value: "weekly", label: "Weekly" }, { value: "monthly", label: "Monthly" }]} value={contributionFrequency} onChange={setContributionFrequency} />
+            <Text style={styles.label}>Late fee (% of the missed contribution, charged once past deadline)</Text>
+            <TextInput style={styles.input} value={contributionLateFeeRate} onChangeText={setContributionLateFeeRate} keyboardType="decimal-pad" placeholder="10" />
           </>
         ) : (
           <>
@@ -138,14 +163,28 @@ export default function CreateChamaScreen({ navigation }) {
 
         <Text style={styles.sectionTitle}>Payout model</Text>
         <OptionRow
-          options={[{ value: "merry_go_round", label: "Merry-go-round" }, { value: "pooled_savings", label: "Pooled savings" }]}
+          options={[{ value: "merry_go_round", label: "Merry-go-round" }, { value: "pooled_savings", label: "Pooled savings" }, { value: "table_banking", label: "Table banking" }]}
           value={payoutModel} onChange={setPayoutModel}
         />
         <Text style={styles.hint}>
           {payoutModel === "merry_go_round"
             ? "Funds rotate — one member receives the payout each cycle."
-            : "Funds stay pooled — members can request withdrawals with admin approval."}
+            : payoutModel === "pooled_savings"
+            ? "Funds stay pooled — members can request withdrawals with admin approval."
+            : "Funds stay pooled and members can borrow against them, with interest and a repayment term you set below."}
         </Text>
+        {payoutModel === "table_banking" && (
+          <>
+            <Text style={styles.label}>Loan interest rate (% of the amount borrowed)</Text>
+            <TextInput style={styles.input} value={loanInterestRate} onChangeText={setLoanInterestRate} keyboardType="decimal-pad" placeholder="10" />
+            <Text style={styles.label}>Max loan size (× a member's total contributions)</Text>
+            <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" placeholder="3" />
+            <Text style={styles.label}>Repayment term (weeks)</Text>
+            <TextInput style={styles.input} value={loanTermWeeks} onChangeText={setLoanTermWeeks} keyboardType="number-pad" placeholder="4" />
+            <Text style={styles.label}>Late penalty (% of the outstanding balance, charged once overdue)</Text>
+            <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" placeholder="5" />
+          </>
+        )}
 
         <Text style={styles.sectionTitle}>Joining</Text>
         <OptionRow options={[{ value: "approval", label: "Requires approval" }, { value: "open", label: "Open until full" }]} value={joinPolicy} onChange={setJoinPolicy} />
@@ -154,6 +193,12 @@ export default function CreateChamaScreen({ navigation }) {
           <Text style={styles.switchLabel}>Members can see who else is in the Chama</Text>
           <Switch value={membersVisible} onValueChange={setMembersVisible} trackColor={{ true: COLORS.accent }} />
         </View>
+
+        <Text style={styles.sectionTitle}>Where does this Chama meet?</Text>
+        <Text style={styles.label}>County</Text>
+        <CountyPicker value={county} onChange={handleCountyChange} />
+        <Text style={styles.label}>Sub-county</Text>
+        <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
 
         <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting}>
           {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : <Text style={styles.buttonText}>{uploading ? "Uploading cover..." : "Create Chama"}</Text>}

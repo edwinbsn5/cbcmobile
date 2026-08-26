@@ -99,8 +99,8 @@ export default function ProjectDetailScreen({ route, navigation }) {
             <View style={styles.actionRow}>
               {project.requiresCapital && (
                 <TouchableOpacity style={styles.primaryButtonFlex} onPress={() => setContributeVisible(true)}>
-                  <Ionicons name="add-circle-outline" size={16} color={COLORS.accentInk} />
-                  <Text style={styles.primaryButtonText}>Contribute</Text>
+                  <Ionicons name="checkmark-circle-outline" size={16} color={COLORS.accentInk} />
+                  <Text style={styles.primaryButtonText}>Mark as contributed</Text>
                 </TouchableOpacity>
               )}
               {isAdmin && (
@@ -441,13 +441,15 @@ function FinanceTab({ projectId, isMember }) {
   if (!contributions) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
+      <Text style={styles.tabHint}>Self-reported by members — capital is handed over physically, not through the app.</Text>
       {contributions.map((c) => (
         <View key={c.id} style={styles.ledgerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.ledgerName}>{c.user?.name}</Text>
-            <Text style={styles.ledgerMeta}>{c.method} · {new Date(c.createdAt).toLocaleDateString()}</Text>
+            <Text style={styles.ledgerMeta}>{c.method === "cash_manual" ? "Recorded by admin" : "Self-reported"} · {new Date(c.createdAt).toLocaleDateString()}</Text>
           </View>
-          <Text style={styles.ledgerAmount}>{formatKES(c.amount)}</Text>
+          <Text style={[styles.ledgerAmount, c.status === "not_contributed" && styles.ledgerAmountVoided]}>{formatKES(c.amount)}</Text>
+          {c.status === "not_contributed" && <Text style={styles.notContributedBadge}>Not received</Text>}
         </View>
       ))}
       {!contributions.length && <Text style={styles.gatedText}>No contributions recorded yet.</Text>}
@@ -456,9 +458,8 @@ function FinanceTab({ projectId, isMember }) {
 }
 
 function ContributeModal({ visible, onClose, projectId, onDone }) {
-  const [method, setMethod] = useState("wallet");
   const [amount, setAmount] = useState("");
-  const [phone, setPhone] = useState("2547");
+  const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
@@ -466,18 +467,11 @@ function ContributeModal({ visible, onClose, projectId, onDone }) {
     if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
     setSubmitting(true);
     try {
-      if (method === "wallet") {
-        await client.post(`/projects/${projectId}/contributions/wallet`, { amount: amt });
-        Alert.alert("Contribution recorded", `${formatKES(amt)} contributed from your wallet.`);
-        setAmount(""); onDone();
-      } else {
-        if (!/^2547\d{8}$/.test(phone)) return Alert.alert("Invalid phone", "Use format 2547XXXXXXXX");
-        const { data } = await client.post(`/projects/${projectId}/contributions/mpesa`, { phone, amount: amt });
-        Alert.alert("Check your phone", data.message);
-        setAmount(""); onDone();
-      }
+      await client.post(`/projects/${projectId}/contributions/mark`, { amount: amt, note: note.trim() || undefined });
+      Alert.alert("Marked as contributed", `${formatKES(amt)} recorded. An admin can correct this if the cash wasn't actually received.`);
+      setAmount(""); setNote(""); onDone();
     } catch (e) {
-      Alert.alert("Contribution failed", e.response?.data?.error || e.message);
+      Alert.alert("Couldn't record", e.response?.data?.error || e.message);
     } finally {
       setSubmitting(false);
     }
@@ -488,15 +482,12 @@ function ContributeModal({ visible, onClose, projectId, onDone }) {
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Contribute capital</Text>
-        <View style={styles.optionRow}>
-          <TouchableOpacity style={[styles.optionChip, method === "wallet" && styles.optionChipActive]} onPress={() => setMethod("wallet")}><Text style={[styles.optionChipText, method === "wallet" && styles.optionChipTextActive]}>Wallet balance</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.optionChip, method === "mpesa" && styles.optionChipActive]} onPress={() => setMethod("mpesa")}><Text style={[styles.optionChipText, method === "mpesa" && styles.optionChipTextActive]}>M-Pesa</Text></TouchableOpacity>
-        </View>
-        {method === "mpesa" && <TextInput style={styles.input} placeholder="Phone (2547XXXXXXXX)" keyboardType="number-pad" value={phone} onChangeText={setPhone} />}
+        <Text style={styles.sheetTitle}>Mark as contributed</Text>
+        <Text style={styles.tabHint}>This just logs it to the project ledger — capital is handed over physically, not through the app.</Text>
         <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
+        <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
-          <Text style={styles.primaryButtonText}>{submitting ? "Processing..." : "Contribute"}</Text>
+          <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Mark as contributed"}</Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -544,6 +535,8 @@ const styles = StyleSheet.create({
   ledgerName: { color: COLORS.ink, fontWeight: "700", fontSize: 13.5 },
   ledgerMeta: { color: COLORS.sub, fontSize: 11.5, marginTop: 2 },
   ledgerAmount: { color: COLORS.accent, fontWeight: "800", fontSize: 13.5 },
+  ledgerAmountVoided: { color: COLORS.sub, textDecorationLine: "line-through" },
+  notContributedBadge: { color: "#D32F2F", fontWeight: "700", fontSize: 10.5, marginLeft: 8 },
   memberRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8 },
   rowActions: { flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" },
   smallBtn: { borderWidth: 1, borderColor: COLORS.accent, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6 },

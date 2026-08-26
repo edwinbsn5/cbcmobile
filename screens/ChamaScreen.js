@@ -1,15 +1,30 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Alert } from "react-native";
 import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import client from "../api/client";
+import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { COLORS } from "../theme";
+
+const COUNTY_STORAGE_KEY = "chamaBrowseCounty";
 
 const FILTERS = [
   { key: "", label: "Explore" },
   { key: "joined", label: "Joined" },
   { key: "managed", label: "Managed" },
+  { key: "achievements", label: "Achievements" },
+  { key: "wall_of_shame", label: "Wall of Shame" },
+];
+
+const SCAM_TIPS = [
+  "Never send contributions or loan repayments to a member's personal M-Pesa \"to save time\" — pay at the group meeting, in front of others.",
+  "Get a receipt or written note for every contribution and repayment, even in a WhatsApp group chat.",
+  "Be wary of anyone pushing to skip the admin/treasurer or bypass the group's usual process \"just this once.\"",
+  "If you're an admin or treasurer: record every contribution and payout promptly — being slow to update the ledger looks the same as hiding something.",
+  "Vouch for people you actually know before inviting them — a chama spreads fastest through trust, and so does fraud.",
 ];
 
 export default function ChamaScreen({ navigation }) {
@@ -17,32 +32,87 @@ export default function ChamaScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [county, setCounty] = useState("");
+  const [loadedCounty, setLoadedCounty] = useState(false);
+  const [subCounty, setSubCounty] = useState("");
+
+  // The chosen county is saved and pre-selected on every future visit — no
+  // need to pick it again unless the user wants to browse a different one.
+  useEffect(() => {
+    AsyncStorage.getItem(COUNTY_STORAGE_KEY).then((saved) => {
+      if (saved) setCounty(saved);
+      setLoadedCounty(true);
+    });
+  }, []);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+    AsyncStorage.setItem(COUNTY_STORAGE_KEY, c).catch(() => {});
+  }
+
+  const isFeedFilter = filter === "achievements" || filter === "wall_of_shame";
+
+  // Achievements/Wall of Shame/chama-list responses have different shapes —
+  // clear stale data immediately on filter switch so renderItem never sees
+  // last filter's items through this filter's card layout for a frame.
+  useEffect(() => { setChamas([]); }, [filter]);
 
   const load = useCallback(() => {
+    if (filter === "achievements") {
+      client.get("/chama/achievements").then((r) => setChamas(r.data)).catch((e) => Alert.alert("Couldn't load achievements", e.response?.data?.error || e.message)).finally(() => setLoading(false));
+      return;
+    }
+    if (filter === "wall_of_shame") {
+      client.get("/chama/wall-of-shame").then((r) => setChamas(r.data)).catch((e) => Alert.alert("Couldn't load Wall of Shame", e.response?.data?.error || e.message)).finally(() => setLoading(false));
+      return;
+    }
+    if (!county) {
+      setChamas([]);
+      setLoading(false);
+      return;
+    }
     client
-      .get("/chama", { params: { filter: filter || undefined, search: search || undefined } })
+      .get("/chama", { params: { filter: filter || undefined, search: search || undefined, county, subCounty: subCounty || undefined } })
       .then((r) => setChamas(r.data))
       .catch((e) => Alert.alert("Couldn't load Chamas", e.response?.data?.error || e.message))
       .finally(() => setLoading(false));
-  }, [filter, search]);
+  }, [filter, search, county, subCounty]);
 
   useFocusEffect(useCallback(() => { setLoading(true); load(); }, [load]));
 
-  return (
-    <FlatList
-      style={styles.container}
-      data={chamas}
-      keyExtractor={(c) => c.id}
-      ListHeaderComponent={
-        <View>
-          <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate("CreateChama")}>
-            <Text style={styles.createButtonText}>+ Start a Chama</Text>
-          </TouchableOpacity>
+  const header = (
+    <View>
+      <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate("CreateChama")}>
+        <Text style={styles.createButtonText}>+ Start a Chama</Text>
+      </TouchableOpacity>
 
-          <View style={styles.hero}>
-            <Text style={styles.heroBadge}>✦ Chama & Savings ✦</Text>
-            <Text style={styles.heroTitle}>Save together, grow together</Text>
-            <Text style={styles.heroSubtitle}>Table banking and rotating savings groups, run transparently.</Text>
+      <View style={styles.hero}>
+        <Text style={styles.heroBadge}>✦ Chama & Savings ✦</Text>
+        <Text style={styles.heroTitle}>Save together, grow together</Text>
+        <Text style={styles.heroSubtitle}>Table banking and rotating savings groups, run transparently.</Text>
+      </View>
+
+      {!isFeedFilter && (
+        <>
+          <View style={styles.locationBox}>
+            <View style={styles.locationRow}>
+              <Text style={styles.locationLabel}>County: Find Chamas Meeting Near You</Text>
+              {!!county && (
+                <TouchableOpacity onPress={() => handleCountyChange("")}>
+                  <Text style={styles.locationClear}>Clear</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <CountyPicker value={county} onChange={handleCountyChange} placeholder="Select your county" />
+            {!!county && (
+              <View style={{ marginTop: 8 }}>
+                <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} placeholder="Any sub-county" />
+              </View>
+            )}
+            {!county && loadedCounty && (
+              <Text style={styles.locationWarning}>Select a county above before browsing</Text>
+            )}
           </View>
 
           <View style={styles.searchRow}>
@@ -56,17 +126,84 @@ export default function ChamaScreen({ navigation }) {
               returnKeyType="search"
             />
           </View>
+        </>
+      )}
 
-          <View style={styles.filterRow}>
-            {FILTERS.map((f) => (
-              <TouchableOpacity key={f.key} style={[styles.filterChip, filter === f.key && styles.filterChipActive]} onPress={() => setFilter(f.key)}>
-                <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>{f.label}</Text>
-              </TouchableOpacity>
-            ))}
+      <View style={styles.filterRow}>
+        {FILTERS.map((f) => (
+          <TouchableOpacity key={f.key} style={[styles.filterChip, filter === f.key && styles.filterChipActive]} onPress={() => setFilter(f.key)}>
+            <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>{f.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {filter === "wall_of_shame" && (
+        <View style={styles.tipsCard}>
+          <View style={styles.tipsHeaderRow}>
+            <Ionicons name="shield-checkmark-outline" size={16} color="#8A6D00" />
+            <Text style={styles.tipsTitle}>Avoid getting scammed — or posted here</Text>
           </View>
+          {SCAM_TIPS.map((tip, i) => (
+            <View key={i} style={styles.tipRow}>
+              <Text style={styles.tipBullet}>•</Text>
+              <Text style={styles.tipText}>{tip}</Text>
+            </View>
+          ))}
         </View>
+      )}
+    </View>
+  );
+
+  if (filter === "achievements") {
+    return (
+      <FlatList
+        style={styles.container}
+        data={chamas}
+        keyExtractor={(a) => a.id}
+        ListHeaderComponent={header}
+        ListEmptyComponent={loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : <Text style={styles.empty}>No public achievements shared yet</Text>}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.feedCard} onPress={() => navigation.navigate("ChamaDetail", { chamaId: item.chama?.id })}>
+            <Text style={styles.feedName}>{item.user?.name}</Text>
+            <Text style={styles.feedMeta}>{item.chama?.name} · {new Date(item.createdAt).toLocaleDateString()}</Text>
+            <Text style={styles.feedContent}>{item.content}</Text>
+            {!!item.photoUrl && <Image source={{ uri: item.photoUrl }} style={styles.feedPhoto} contentFit="cover" />}
+          </TouchableOpacity>
+        )}
+      />
+    );
+  }
+
+  if (filter === "wall_of_shame") {
+    return (
+      <FlatList
+        style={styles.container}
+        data={chamas}
+        keyExtractor={(v) => v.id}
+        ListHeaderComponent={header}
+        ListEmptyComponent={loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : <Text style={styles.empty}>No one's been voted onto the Wall of Shame yet</Text>}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.shameCard} onPress={() => navigation.navigate("ChamaDetail", { chamaId: item.chama?.id })}>
+            <Text style={styles.feedName}>{item.target?.name}</Text>
+            <Text style={styles.feedMeta}>Flagged by {item.chama?.name} members · {new Date(item.decidedAt).toLocaleDateString()}</Text>
+            <Text style={styles.feedContent}>{item.reason}</Text>
+          </TouchableOpacity>
+        )}
+      />
+    );
+  }
+
+  return (
+    <FlatList
+      style={styles.container}
+      data={chamas}
+      keyExtractor={(c) => c.id}
+      ListHeaderComponent={header}
+      ListEmptyComponent={
+        loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : (
+          <Text style={styles.empty}>{!county ? "Select a county above to see Chamas" : "No Chamas found"}</Text>
+        )
       }
-      ListEmptyComponent={loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : <Text style={styles.empty}>No Chamas found</Text>}
       renderItem={({ item }) => (
         <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("ChamaDetail", { chamaId: item.id })}>
           <Image source={{ uri: item.coverUrl }} style={styles.cover} contentFit="cover" />
@@ -85,8 +222,14 @@ export default function ChamaScreen({ navigation }) {
               {item.contributionType === "fixed_recurring"
                 ? `KES ${item.contributionAmount?.toLocaleString()} / ${item.contributionFrequency}`
                 : `Goal: KES ${item.goalAmount?.toLocaleString()}`}
-              {" · "}{item.payoutModel === "merry_go_round" ? "Merry-go-round" : "Pooled savings"}
+              {" · "}{item.payoutModel === "merry_go_round" ? "Merry-go-round" : item.payoutModel === "table_banking" ? "Table banking" : "Pooled savings"}
             </Text>
+            {!!item.subCounty && (
+              <View style={styles.locationPill}>
+                <Ionicons name="location-outline" size={11} color={COLORS.sub} />
+                <Text style={styles.locationPillText}>{item.subCounty}, {item.county}</Text>
+              </View>
+            )}
           </View>
         </TouchableOpacity>
       )}
@@ -123,4 +266,23 @@ const styles = StyleSheet.create({
   pillFull: { backgroundColor: "#FBE7E7" },
   pillFullText: { color: "#D32F2F" },
   type: { color: COLORS.sub, fontSize: 12, marginTop: 8, fontWeight: "600" },
+  locationBox: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginHorizontal: 12, marginTop: 12 },
+  locationRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  locationLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub },
+  locationClear: { fontSize: 12, fontWeight: "700", color: COLORS.accent },
+  locationWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 8 },
+  locationPill: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
+  locationPillText: { color: COLORS.sub, fontSize: 11, fontWeight: "600" },
+  tipsCard: { backgroundColor: "#FFF3CD", borderRadius: 12, padding: 14, marginHorizontal: 12, marginTop: 12 },
+  tipsHeaderRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
+  tipsTitle: { color: "#8A6D00", fontWeight: "800", fontSize: 13 },
+  tipRow: { flexDirection: "row", gap: 6, marginTop: 6, alignItems: "flex-start" },
+  tipBullet: { color: "#8A6D00", fontSize: 13, lineHeight: 18 },
+  tipText: { color: "#8A6D00", fontSize: 12, lineHeight: 18, flex: 1 },
+  feedCard: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 10, padding: 14 },
+  shameCard: { backgroundColor: "#FBE7E7", margin: 10, borderRadius: 10, padding: 14 },
+  feedName: { color: COLORS.ink, fontSize: 15, fontWeight: "700" },
+  feedMeta: { color: COLORS.sub, fontSize: 11.5, marginTop: 2, marginBottom: 8 },
+  feedContent: { color: COLORS.ink, fontSize: 13.5, lineHeight: 19 },
+  feedPhoto: { width: "100%", height: 160, borderRadius: 8, marginTop: 10, backgroundColor: "#eee" },
 });

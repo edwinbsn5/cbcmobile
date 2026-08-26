@@ -2,6 +2,8 @@ import React, { useCallback, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, TextInput, Alert, Share, Switch } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
+import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { COLORS } from "../theme";
 
 function formatKES(n) { return `KES ${Math.round(n || 0).toLocaleString()}`; }
@@ -164,10 +166,14 @@ function ProgressTab({ projectId }) {
 
 function FinanceTab({ projectId, project, onChange }) {
   const [withdrawals, setWithdrawals] = useState(null);
+  const [contributions, setContributions] = useState(null);
   const [userId, setUserId] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const load = useCallback(() => { client.get(`/projects/${projectId}/withdrawals`).then((r) => setWithdrawals(r.data)).catch(() => setWithdrawals([])); }, [projectId]);
+  const load = useCallback(() => {
+    client.get(`/projects/${projectId}/withdrawals`).then((r) => setWithdrawals(r.data)).catch(() => setWithdrawals([]));
+    client.get(`/projects/${projectId}/contributions`).then((r) => setContributions(r.data)).catch(() => setContributions([]));
+  }, [projectId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function recordManual() {
@@ -180,6 +186,16 @@ function FinanceTab({ projectId, project, onChange }) {
       setAmount(""); setNote(""); onChange();
     } catch (e) {
       Alert.alert("Couldn't record", e.response?.data?.error || e.message);
+    }
+  }
+
+  async function toggleContributionStatus(contribution) {
+    const nextStatus = contribution.status === "contributed" ? "not_contributed" : "contributed";
+    try {
+      await client.patch(`/projects/${projectId}/contributions/${contribution.id}`, { status: nextStatus });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't update", e.response?.data?.error || e.message);
     }
   }
 
@@ -223,6 +239,24 @@ function FinanceTab({ projectId, project, onChange }) {
       ))}
       {!pending.length && <Text style={styles.empty}>Nothing pending</Text>}
 
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>All contributions</Text>
+      <Text style={styles.tabHint}>Self-reported by members. Correct one if the cash wasn't actually received.</Text>
+      {contributions === null && <ActivityIndicator color={COLORS.accent} />}
+      {contributions?.map((c) => (
+        <View key={c.id} style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowName}>{c.user?.name} — {formatKES(c.amount)}</Text>
+            <Text style={styles.rowSub}>{c.method === "cash_manual" ? "Recorded by admin" : "Self-reported"} · {new Date(c.createdAt).toLocaleDateString()}{c.status === "not_contributed" ? " · Not received" : ""}</Text>
+          </View>
+          <TouchableOpacity style={c.status === "contributed" ? styles.rejectBtn : styles.approveBtn} onPress={() => toggleContributionStatus(c)}>
+            <Text style={c.status === "contributed" ? styles.rejectBtnText : styles.approveBtnText}>
+              {c.status === "contributed" ? "Mark not received" : "Mark received"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+      {contributions?.length === 0 && <Text style={styles.empty}>No contributions recorded yet.</Text>}
+
       <TouchableOpacity style={[styles.smallBtn, { marginTop: 16 }]} onPress={exportReport}><Text style={styles.smallBtnText}>Export financial report (CSV)</Text></TouchableOpacity>
     </View>
   );
@@ -234,12 +268,20 @@ function SettingsTab({ projectId, project, onChange }) {
   const [visibility, setVisibility] = useState(project.visibility);
   const [requireKyc, setRequireKyc] = useState(project.requireKycToJoin);
   const [requireGuarantors, setRequireGuarantors] = useState(project.requireGuarantorsToJoin);
+  const [county, setCounty] = useState(project.county || "");
+  const [subCounty, setSubCounty] = useState(project.subCounty || "");
   const [saving, setSaving] = useState(false);
 
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+  }
+
   async function save() {
+    if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county this project is based in");
     setSaving(true);
     try {
-      const body = { description, visibility, requireKycToJoin: requireKyc, requireGuarantorsToJoin: requireGuarantors };
+      const body = { description, visibility, requireKycToJoin: requireKyc, requireGuarantorsToJoin: requireGuarantors, county, subCounty };
       const max = parseInt(maxMembers, 10);
       if (max && max !== project.maxMembers) body.maxMembers = max;
       await client.patch(`/projects/${projectId}`, body);
@@ -281,6 +323,10 @@ function SettingsTab({ projectId, project, onChange }) {
         <Text style={styles.rowName}>Require 2 accepted guarantors to join</Text>
         <Switch value={requireGuarantors} onValueChange={setRequireGuarantors} trackColor={{ true: COLORS.accent }} />
       </View>
+      <Text style={styles.label}>County</Text>
+      <CountyPicker value={county} onChange={handleCountyChange} />
+      <Text style={styles.label}>Sub-county</Text>
+      <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
       <TouchableOpacity style={[styles.approveBtn, { marginTop: 14 }]} onPress={save} disabled={saving}><Text style={styles.approveBtnText}>{saving ? "Saving..." : "Save settings"}</Text></TouchableOpacity>
 
       <TouchableOpacity style={[styles.smallBtn, { marginTop: 20, alignSelf: "flex-start" }]} onPress={togglePositions}>

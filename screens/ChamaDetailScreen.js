@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, FlatList, TextInput, Modal, TouchableWithoutFeedback, Alert } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, FlatList, TextInput, Modal, TouchableWithoutFeedback, Alert, Switch } from "react-native";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -8,6 +9,24 @@ import { useAuth } from "../context/AuthContext";
 import ReactionBar from "../components/ReactionBar";
 import LinkifiedText from "../components/LinkifiedText";
 import { COLORS } from "../theme";
+
+const SCAM_TIPS = [
+  "Never send contributions or loan repayments to a member's personal M-Pesa \"to save time\" — pay at the group meeting, in front of others.",
+  "Get a receipt or written note for every contribution and repayment, even in a WhatsApp group chat.",
+  "Be wary of anyone pushing to skip the admin/treasurer or bypass the group's usual process \"just this once.\"",
+  "If you're an admin or treasurer: record every contribution and payout promptly — being slow to update the ledger looks the same as hiding something.",
+  "Vouch for people you actually know before inviting them — a chama spreads fastest through trust, and so does fraud.",
+];
+
+async function pickPhoto() {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) { Alert.alert("Permission needed", "Allow photo library access to add a photo"); return null; }
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
+  if (result.canceled || !result.assets?.length) return null;
+  const asset = result.assets[0];
+  const mimeType = asset.mimeType || "image/jpeg";
+  return { uri: asset.uri, mimeType, fileName: asset.fileName || `photo.${mimeType.split("/")[1]}` };
+}
 
 function formatKES(n) { return `KES ${Math.round(n || 0).toLocaleString()}`; }
 function timeAgo(ts) {
@@ -21,10 +40,12 @@ function timeAgo(ts) {
 
 const TABS = [
   { key: "overview", label: "Overview" },
+  { key: "feed", label: "Discussions" },
   { key: "ledger", label: "Ledger" },
   { key: "payouts", label: "Payouts" },
-  { key: "feed", label: "Announcements" },
   { key: "members", label: "Members" },
+  { key: "achievements", label: "Achievements" },
+  { key: "wall_of_shame", label: "Wall of Shame" },
 ];
 
 export default function ChamaDetailScreen({ route, navigation }) {
@@ -35,6 +56,8 @@ export default function ChamaDetailScreen({ route, navigation }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [defaulter, setDefaulter] = useState(null);
   const [myTotal, setMyTotal] = useState(0);
+  const [owed, setOwed] = useState(0);
+  const [lateFeesOwed, setLateFeesOwed] = useState(0);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("overview");
   const [contributeVisible, setContributeVisible] = useState(false);
@@ -52,6 +75,8 @@ export default function ChamaDetailScreen({ route, navigation }) {
       if (mem.membership?.status === "active") {
         const { data: mine } = await client.get(`/chama/${chamaId}/contributions/mine`);
         setMyTotal(mine.total);
+        setOwed(mine.owed || 0);
+        setLateFeesOwed(mine.lateFeesOwed || 0);
       }
     } catch (e) {
       Alert.alert("Couldn't load Chama", e.response?.data?.error || e.message);
@@ -106,7 +131,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
             <View style={styles.metaChip}><Text style={styles.metaChipText}>
               {chama.contributionType === "fixed_recurring" ? `${formatKES(chama.contributionAmount)}/${chama.contributionFrequency}` : `Goal ${formatKES(chama.goalAmount)}`}
             </Text></View>
-            <View style={styles.metaChip}><Text style={styles.metaChipText}>{chama.payoutModel === "merry_go_round" ? "Merry-go-round" : "Pooled savings"}</Text></View>
+            <View style={styles.metaChip}><Text style={styles.metaChipText}>{chama.payoutModel === "merry_go_round" ? "Merry-go-round" : chama.payoutModel === "table_banking" ? "Table banking" : "Pooled savings"}</Text></View>
             <View style={styles.metaChip}><Text style={styles.metaChipText}>Pool: {formatKES(chama.poolBalance)}</Text></View>
           </View>
 
@@ -126,8 +151,8 @@ export default function ChamaDetailScreen({ route, navigation }) {
           {isMember && (
             <View style={styles.actionRow}>
               <TouchableOpacity style={styles.primaryButtonFlex} onPress={() => setContributeVisible(true)}>
-                <Ionicons name="add-circle-outline" size={16} color={COLORS.accentInk} />
-                <Text style={styles.primaryButtonText}>Contribute</Text>
+                <Ionicons name="checkmark-circle-outline" size={16} color={COLORS.accentInk} />
+                <Text style={styles.primaryButtonText}>Mark as contributed</Text>
               </TouchableOpacity>
               {isAdmin && (
                 <TouchableOpacity style={styles.secondaryButtonFlex} onPress={() => navigation.navigate("ChamaAdmin", { chamaId })}>
@@ -141,7 +166,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
           {defaulter?.isDefaulter && (
             <View style={styles.defaulterBanner}>
               <Ionicons name="warning-outline" size={16} color="#8A6D00" />
-              <Text style={styles.defaulterText}>You're behind on {defaulter.periodsDue - defaulter.periodsPaid} contribution(s). Contribute now to catch up.</Text>
+              <Text style={styles.defaulterText}>You owe {formatKES(defaulter.balance)}{defaulter.daysLate > 0 ? ` — ${defaulter.daysLate} day(s) past deadline` : ""}. Mark as contributed to catch up.</Text>
             </View>
           )}
         </View>
@@ -149,17 +174,21 @@ export default function ChamaDetailScreen({ route, navigation }) {
         <View style={styles.tabRow}>
           {TABS.map((t) => (
             <TouchableOpacity key={t.key} style={[styles.tab, tab === t.key && styles.tabActive]} onPress={() => setTab(t.key)}>
-              <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
+              <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>
+                {t.key === "payouts" ? (chama.payoutModel === "merry_go_round" ? "Payouts" : chama.payoutModel === "table_banking" ? "Loans" : "Withdrawals") : t.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={styles.tabBody}>
           {tab === "overview" && <OverviewTab chama={chama} myTotal={myTotal} isMember={isMember} />}
+          {tab === "feed" && <FeedTab chamaId={chamaId} isMember={isMember} userId={user?.id} />}
           {tab === "ledger" && <LedgerTab chamaId={chamaId} isMember={isMember} />}
           {tab === "payouts" && <PayoutsTab chamaId={chamaId} chama={chama} isMember={isMember} userId={user?.id} />}
-          {tab === "feed" && <FeedTab chamaId={chamaId} isMember={isMember} userId={user?.id} />}
           {tab === "members" && <MembersTab chamaId={chamaId} isMember={isMember} chama={chama} myUserId={user?.id} />}
+          {tab === "achievements" && <AchievementsTab chamaId={chamaId} isMember={isMember} />}
+          {tab === "wall_of_shame" && <WallOfShameTab chamaId={chamaId} isMember={isMember} />}
         </View>
       </ScrollView>
 
@@ -167,6 +196,8 @@ export default function ChamaDetailScreen({ route, navigation }) {
         visible={contributeVisible}
         onClose={() => setContributeVisible(false)}
         chamaId={chamaId}
+        owed={owed}
+        lateFeesOwed={lateFeesOwed}
         onDone={() => { setContributeVisible(false); load(); }}
       />
     </View>
@@ -211,14 +242,15 @@ function LedgerTab({ chamaId, isMember }) {
   if (!items) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
-      <Text style={styles.tabHint}>Every contribution, visible to all members.</Text>
+      <Text style={styles.tabHint}>Self-reported by members — contributions happen physically, not through the app.</Text>
       {items.map((c) => (
         <View key={c.id} style={styles.ledgerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.ledgerName}>{c.user?.name || "Member"}</Text>
-            <Text style={styles.ledgerMeta}>{c.method === "cash_manual" ? "Cash (recorded by admin)" : c.method.toUpperCase()} · {new Date(c.createdAt).toLocaleDateString()}</Text>
+            <Text style={styles.ledgerMeta}>{c.method === "cash_manual" ? "Recorded by admin" : "Self-reported"} · {new Date(c.createdAt).toLocaleDateString()}</Text>
           </View>
-          <Text style={styles.ledgerAmount}>{formatKES(c.amount)}</Text>
+          <Text style={[styles.ledgerAmount, c.status === "not_contributed" && styles.ledgerAmountVoided]}>{formatKES(c.amount)}</Text>
+          {c.status === "not_contributed" && <Text style={styles.notContributedBadge}>Not received</Text>}
         </View>
       ))}
       {!items.length && <Text style={styles.gatedText}>No contributions recorded yet.</Text>}
@@ -245,11 +277,16 @@ function PayoutsTab({ chamaId, chama, isMember, userId }) {
 
   if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view payouts.</Text>;
 
+  if (chama.payoutModel === "table_banking") return <LoansTab chamaId={chamaId} chama={chama} />;
+
   if (chama.payoutModel === "merry_go_round") {
     if (!rotation) return <ActivityIndicator color={COLORS.accent} />;
     const nextUp = rotation.filter((s) => s.cycle === chama.currentCycle && !s.paidAt).sort((a, b) => a.position - b.position)[0];
     return (
       <View>
+        {!!nextUp && !!chama.nextPayoutDueAt && (
+          <Text style={styles.tabHint}>Next in line: {nextUp.user?.name} — expected {new Date(chama.nextPayoutDueAt).toLocaleDateString()}</Text>
+        )}
         {!!pendingPayouts.length && (
           <View style={{ marginBottom: 16 }}>
             <Text style={styles.tabHint}>Scheduled payouts — you can flag one within its cooling-off window</Text>
@@ -301,6 +338,133 @@ function PayoutsTab({ chamaId, chama, isMember, userId }) {
       <WithdrawalRequestModal visible={withdrawVisible} onClose={() => setWithdrawVisible(false)} baseUrl={`/chama/${chamaId}`} onDone={() => { setWithdrawVisible(false); load(); }} />
       <WithdrawalList baseUrl={`/chama/${chamaId}`} />
     </View>
+  );
+}
+
+function LoansTab({ chamaId, chama }) {
+  const [mine, setMine] = useState(null);
+  const [all, setAll] = useState([]);
+  const [requestVisible, setRequestVisible] = useState(false);
+  const [repayTarget, setRepayTarget] = useState(null);
+
+  const load = useCallback(() => {
+    client.get(`/chama/${chamaId}/loans/mine`).then((r) => setMine(r.data)).catch(() => setMine({ loans: [], eligibility: { maxEligible: 0, alreadyOwed: 0 } }));
+    client.get(`/chama/${chamaId}/loans`).then((r) => setAll(r.data)).catch(() => setAll([]));
+  }, [chamaId]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  if (!mine) return <ActivityIndicator color={COLORS.accent} />;
+  const canBorrow = mine.eligibility.maxEligible - mine.eligibility.alreadyOwed;
+
+  return (
+    <View>
+      <Text style={styles.tabHint}>
+        Pool balance: {formatKES(chama.poolBalance)} · {chama.loanInterestRate}% interest · {chama.loanTermWeeks}-week term
+      </Text>
+      <Text style={styles.tabHint}>You can borrow up to {formatKES(Math.max(0, canBorrow))} right now.</Text>
+      <TouchableOpacity style={styles.secondaryButton} onPress={() => setRequestVisible(true)}>
+        <Text style={styles.secondaryButtonText}>Request a loan</Text>
+      </TouchableOpacity>
+      <LoanRequestModal visible={requestVisible} onClose={() => setRequestVisible(false)} chamaId={chamaId} onDone={() => { setRequestVisible(false); load(); }} />
+      <LoanRepayModal loan={repayTarget} chamaId={chamaId} onClose={() => setRepayTarget(null)} onDone={() => { setRepayTarget(null); load(); }} />
+
+      <Text style={[styles.tabHint, { marginTop: 16, fontWeight: "700" }]}>Your loans</Text>
+      {mine.loans.map((l) => (
+        <View key={l.id} style={styles.ledgerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.ledgerName}>{formatKES(l.principal)} — {l.status}</Text>
+            <Text style={styles.ledgerMeta}>
+              {l.status === "active" ? `${formatKES(l.remaining)} left of ${formatKES(l.owed)}${l.isOverdue ? " · OVERDUE" : ""}` : l.status === "requested" ? "Awaiting admin approval" : l.reason || ""}
+            </Text>
+          </View>
+          {l.status === "active" && <TouchableOpacity style={styles.smallActionBtn} onPress={() => setRepayTarget(l)}><Text style={styles.smallActionBtnText}>Repay</Text></TouchableOpacity>}
+        </View>
+      ))}
+      {!mine.loans.length && <Text style={styles.gatedText}>You haven't borrowed anything yet.</Text>}
+
+      <Text style={[styles.tabHint, { marginTop: 16, fontWeight: "700" }]}>All loans in this chama</Text>
+      {all.map((l) => (
+        <View key={l.id} style={styles.ledgerRow}>
+          <Text style={styles.ledgerName}>{l.borrower?.name}</Text>
+          <Text style={styles.ledgerAmount}>{formatKES(l.principal)}</Text>
+        </View>
+      ))}
+      {!all.length && <Text style={styles.gatedText}>No loans yet.</Text>}
+    </View>
+  );
+}
+
+function LoanRequestModal({ visible, onClose, chamaId, onDone }) {
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    const amt = parseInt(amount, 10);
+    if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
+    setSubmitting(true);
+    try {
+      await client.post(`/chama/${chamaId}/loans`, { amount: amt, reason: reason.trim() || undefined });
+      Alert.alert("Loan requested", "Admins will review your request.");
+      setAmount(""); setReason("");
+      onDone();
+    } catch (e) {
+      Alert.alert("Couldn't request loan", e.response?.data?.error || e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Request a loan</Text>
+        <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
+        <TextInput style={styles.input} placeholder="Reason (optional)" value={reason} onChangeText={setReason} />
+        <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
+          <Text style={styles.primaryButtonText}>{submitting ? "Submitting..." : "Submit request"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
+function LoanRepayModal({ loan, chamaId, onClose, onDone }) {
+  const [amount, setAmount] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  React.useEffect(() => { if (loan) setAmount(String(loan.remaining)); }, [loan]);
+
+  async function submit() {
+    const amt = parseInt(amount, 10);
+    if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
+    setSubmitting(true);
+    try {
+      await client.post(`/chama/${chamaId}/loans/${loan.id}/repayments/mark`, { amount: amt });
+      Alert.alert("Repayment recorded", `${formatKES(amt)} recorded against your loan.`);
+      onDone();
+    } catch (e) {
+      Alert.alert("Couldn't record repayment", e.response?.data?.error || e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={!!loan} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Repay loan</Text>
+        <Text style={styles.tabHint}>This just logs the repayment — hand the cash to your admin/treasurer directly.</Text>
+        <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
+        <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
+          <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Record repayment"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
   );
 }
 
@@ -398,18 +562,48 @@ function MembersTab({ chamaId, isMember, chama, myUserId }) {
   const [members, setMembers] = useState(null);
   const [error, setError] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
+  const [voteTarget, setVoteTarget] = useState(null);
+  const [openVotes, setOpenVotes] = useState([]);
 
   const load = useCallback(() => {
     if (!isMember) return;
     client.get(`/chama/${chamaId}/members`).then((r) => setMembers(r.data)).catch((e) => setError(e.response?.data?.error || "Couldn't load members"));
+    client.get(`/chama/${chamaId}/votes`).then((r) => setOpenVotes(r.data.filter((v) => v.status === "open"))).catch(() => setOpenVotes([]));
   }, [chamaId, isMember]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function castBallot(voteId, choice) {
+    try {
+      const { data } = await client.post(`/chama/${chamaId}/votes/${voteId}/ballot`, { choice });
+      Alert.alert("Vote cast", data.vote.status === "open" ? "Recorded." : `The vote ${data.vote.status}.`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't vote", e.response?.data?.error || e.message);
+    }
+  }
 
   if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view members.</Text>;
   if (error) return <Text style={styles.gatedText}>{error}</Text>;
   if (!members) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
+      {!!openVotes.length && (
+        <View style={{ marginBottom: 16 }}>
+          <Text style={[styles.tabHint, { fontWeight: "700" }]}>Open votes</Text>
+          {openVotes.map((v) => (
+            <View key={v.id} style={styles.voteCard}>
+              <Text style={styles.ledgerName}>{v.voteType === "remove" ? "Remove" : "Wall of Shame"}: {v.target?.name}</Text>
+              <Text style={styles.ledgerMeta}>{v.reason || "No reason given"} · {v.tally.yes}/{v.tally.required} yes needed · {v.tally.votedCount}/{v.tally.eligible} voted</Text>
+              {v.targetUserId !== myUserId && (
+                <View style={[styles.rowActions, { marginTop: 8 }]}>
+                  <TouchableOpacity style={styles.approveBtnSmall} onPress={() => castBallot(v.id, "yes")}><Text style={styles.approveBtnSmallText}>Vote yes</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.rejectBtnSmall} onPress={() => castBallot(v.id, "no")}><Text style={styles.rejectBtnSmallText}>Vote no</Text></TouchableOpacity>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
       {members.map((m) => (
         <View key={m.id} style={styles.memberRow}>
           <View style={{ flex: 1 }}>
@@ -417,7 +611,12 @@ function MembersTab({ chamaId, isMember, chama, myUserId }) {
             <Text style={styles.ledgerMeta}>{m.role === "treasurer" ? "Treasurer" : m.role === "admin" ? "Admin" : "Member"} · Trust {m.trust?.score ?? "—"}{m.trust?.kycVerified ? " · KYC ✓" : ""}</Text>
           </View>
           {m.alreadyPaidOutThisCycle && <Text style={styles.defaulterPill}>Already paid this cycle</Text>}
-          {m.defaulter?.isDefaulter && <Text style={styles.defaulterPill}>Behind</Text>}
+          {m.defaulter?.isDefaulter && <Text style={styles.defaulterPill}>{m.defaulter.daysLate}d late</Text>}
+          {m.defaulter?.isDefaulter && m.userId !== myUserId && (
+            <TouchableOpacity style={styles.reportButton} onPress={() => setVoteTarget(m)}>
+              <Ionicons name="people-outline" size={16} color="#8A6D00" />
+            </TouchableOpacity>
+          )}
           {m.userId !== myUserId && (
             <TouchableOpacity style={styles.reportButton} onPress={() => setReportTarget(m)}>
               <Ionicons name="alert-circle-outline" size={16} color="#D32F2F" />
@@ -426,6 +625,194 @@ function MembersTab({ chamaId, isMember, chama, myUserId }) {
         </View>
       ))}
       <ReportFraudModal groupPath={`/chama/${chamaId}`} target={reportTarget} onClose={() => setReportTarget(null)} onDone={() => setReportTarget(null)} />
+      <StartVoteModal chamaId={chamaId} target={voteTarget} onClose={() => setVoteTarget(null)} onDone={() => { setVoteTarget(null); load(); }} />
+    </View>
+  );
+}
+
+function StartVoteModal({ chamaId, target, onClose, onDone }) {
+  const [voteType, setVoteType] = useState("remove");
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    if (voteType === "wall_of_shame" && !reason.trim()) return Alert.alert("Reason required", "Say why you're flagging this member for fraud");
+    setSubmitting(true);
+    try {
+      await client.post(`/chama/${chamaId}/votes`, { targetUserId: target.userId, voteType, reason: reason.trim() || undefined });
+      Alert.alert("Vote started", "Other members can now cast their vote from this tab.");
+      setReason("");
+      onDone();
+    } catch (e) {
+      Alert.alert("Couldn't start vote", e.response?.data?.error || e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={!!target} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Start a vote on {target?.user?.name}</Text>
+        <Text style={styles.tabHint}>This isn't an admin decision — it passes only once more than half the other active members vote yes.</Text>
+        <View style={styles.optionRow}>
+          <TouchableOpacity style={[styles.optionChip, voteType === "remove" && styles.optionChipActive]} onPress={() => setVoteType("remove")}>
+            <Text style={[styles.optionChipText, voteType === "remove" && styles.optionChipTextActive]}>Remove from group</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.optionChip, voteType === "wall_of_shame" && styles.optionChipActive]} onPress={() => setVoteType("wall_of_shame")}>
+            <Text style={[styles.optionChipText, voteType === "wall_of_shame" && styles.optionChipTextActive]}>Flag for Wall of Shame</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.tabHint}>
+          {voteType === "remove"
+            ? "Ends their membership in this Chama if the vote passes."
+            : "If the vote passes, they're listed on this Chama's Wall of Shame and the public Wall of Shame tab on the homepage, and a report is filed for platform review."}
+        </Text>
+        <TextInput style={[styles.input, styles.multiline]} placeholder={voteType === "wall_of_shame" ? "Reason (required)" : "Reason (optional)"} value={reason} onChangeText={setReason} multiline />
+        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: "#D32F2F" }]} onPress={submit} disabled={submitting}>
+          <Text style={styles.primaryButtonText}>{submitting ? "Starting..." : "Start vote"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
+function AchievementsTab({ chamaId, isMember }) {
+  const [items, setItems] = useState(null);
+  const [postVisible, setPostVisible] = useState(false);
+
+  const load = useCallback(() => {
+    if (!isMember) return;
+    client.get(`/chama/${chamaId}/achievements`).then((r) => setItems(r.data)).catch(() => setItems([]));
+  }, [chamaId, isMember]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view achievements.</Text>;
+  if (!items) return <ActivityIndicator color={COLORS.accent} />;
+  return (
+    <View>
+      <Text style={styles.tabHint}>Celebrate what your contributions or payouts made possible — a new bike, a vacation, school fees paid off.</Text>
+      <TouchableOpacity style={styles.secondaryButton} onPress={() => setPostVisible(true)}>
+        <Text style={styles.secondaryButtonText}>Post an achievement</Text>
+      </TouchableOpacity>
+      <PostAchievementModal visible={postVisible} chamaId={chamaId} onClose={() => setPostVisible(false)} onDone={() => { setPostVisible(false); load(); }} />
+
+      {items.map((a) => (
+        <View key={a.id} style={styles.postCard}>
+          <View style={styles.achievementHeader}>
+            <Text style={styles.ledgerName}>{a.user?.name}</Text>
+            {a.isPublic ? (
+              <View style={styles.publicPill}><Ionicons name="globe-outline" size={10} color="#2E7D32" /><Text style={styles.publicPillText}>Public</Text></View>
+            ) : (
+              <View style={styles.privatePill}><Ionicons name="lock-closed-outline" size={10} color={COLORS.sub} /><Text style={styles.privatePillText}>Chama only</Text></View>
+            )}
+          </View>
+          <Text style={styles.postMeta}>{new Date(a.createdAt).toLocaleDateString()}</Text>
+          <Text style={styles.postContent}>{a.content}</Text>
+          {!!a.photoUrl && <Image source={{ uri: a.photoUrl }} style={styles.achievementPhoto} contentFit="cover" />}
+        </View>
+      ))}
+      {!items.length && <Text style={styles.gatedText}>No achievements posted yet — be the first!</Text>}
+    </View>
+  );
+}
+
+function PostAchievementModal({ visible, chamaId, onClose, onDone }) {
+  const [content, setContent] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const [isPublic, setIsPublic] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  async function submit() {
+    if (!content.trim()) return Alert.alert("Say something", "Describe what you achieved");
+    setSubmitting(true);
+    try {
+      let photoUrl;
+      if (photo) {
+        setUploading(true);
+        const form = new FormData();
+        form.append("file", { uri: photo.uri, name: photo.fileName, type: photo.mimeType });
+        const { data } = await client.post("/upload", form, { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 });
+        photoUrl = data.url;
+        setUploading(false);
+      }
+      await client.post(`/chama/${chamaId}/achievements`, { content: content.trim(), photoUrl, isPublic });
+      setContent(""); setPhoto(null);
+      onDone();
+    } catch (e) {
+      Alert.alert("Couldn't post", e.response?.data?.error || e.message);
+    } finally {
+      setUploading(false);
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Post an achievement</Text>
+        <TextInput style={[styles.input, styles.multiline]} placeholder="What did you do with it?" value={content} onChangeText={setContent} multiline />
+        {photo ? (
+          <View style={styles.achievementPhotoPreviewWrap}>
+            <Image source={{ uri: photo.uri }} style={styles.achievementPhotoPreview} contentFit="cover" />
+            <TouchableOpacity style={styles.photoRemoveButton} onPress={() => setPhoto(null)}><Ionicons name="close" size={16} color="#fff" /></TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.photoPicker} onPress={async () => setPhoto(await pickPhoto())}>
+            <Ionicons name="image-outline" size={20} color={COLORS.accent} />
+            <Text style={styles.photoPickerText}>Add a photo (optional)</Text>
+          </TouchableOpacity>
+        )}
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Show on the public Achievements tab (homepage)</Text>
+          <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: COLORS.accent }} />
+        </View>
+        <Text style={styles.tabHint}>{isPublic ? "Visible to everyone browsing Chamas." : "Only visible to this Chama's members."}</Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
+          <Text style={styles.primaryButtonText}>{submitting ? (uploading ? "Uploading photo..." : "Posting...") : "Post achievement"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
+function WallOfShameTab({ chamaId, isMember }) {
+  const [votes, setVotes] = useState(null);
+  useFocusEffect(useCallback(() => {
+    if (!isMember) return;
+    client.get(`/chama/${chamaId}/votes`).then((r) => setVotes(r.data.filter((v) => v.voteType === "wall_of_shame" && v.status === "passed"))).catch(() => setVotes([]));
+  }, [chamaId, isMember]));
+
+  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view its Wall of Shame.</Text>;
+  if (!votes) return <ActivityIndicator color={COLORS.accent} />;
+  return (
+    <View>
+      <View style={styles.tipsCard}>
+        <View style={styles.tipsHeaderRow}>
+          <Ionicons name="shield-checkmark-outline" size={16} color="#8A6D00" />
+          <Text style={styles.tipsTitle}>Avoid getting scammed — or posted here</Text>
+        </View>
+        {SCAM_TIPS.map((tip, i) => (
+          <View key={i} style={styles.tipRow}>
+            <Text style={styles.tipBullet}>•</Text>
+            <Text style={styles.tipText}>{tip}</Text>
+          </View>
+        ))}
+      </View>
+      <Text style={[styles.tabHint, { marginTop: 14 }]}>Members this Chama has voted (&gt;51%) to flag for fraud. Also visible on the homepage's public Wall of Shame tab.</Text>
+      {votes.map((v) => (
+        <View key={v.id} style={styles.shameRow}>
+          <Text style={styles.ledgerName}>{v.target?.name}</Text>
+          <Text style={styles.ledgerMeta}>{v.reason}</Text>
+          <Text style={styles.postMeta}>{new Date(v.decidedAt).toLocaleDateString()}</Text>
+        </View>
+      ))}
+      {!votes.length && <Text style={styles.gatedText}>No one from this Chama has been flagged.</Text>}
     </View>
   );
 }
@@ -501,12 +888,12 @@ function FeedTab({ chamaId, isMember, userId }) {
     }
   }
 
-  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view announcements.</Text>;
+  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view discussions.</Text>;
   if (!posts) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
       <View style={styles.composer}>
-        <TextInput style={[styles.input, styles.multiline]} placeholder="Post an announcement..." value={text} onChangeText={setText} multiline />
+        <TextInput style={[styles.input, styles.multiline]} placeholder="Share something with the group..." value={text} onChangeText={setText} multiline />
         <TouchableOpacity style={styles.secondaryButton} onPress={submitPost} disabled={posting}>
           <Text style={styles.secondaryButtonText}>{posting ? "Posting..." : "Post"}</Text>
         </TouchableOpacity>
@@ -519,36 +906,31 @@ function FeedTab({ chamaId, isMember, userId }) {
           <ReactionBar reactions={p.reactions} myUserId={userId} onReact={(r) => react(p, r)} />
         </View>
       ))}
-      {!posts.length && <Text style={styles.gatedText}>No announcements yet.</Text>}
+      {!posts.length && <Text style={styles.gatedText}>No discussions yet — be the first to post.</Text>}
     </View>
   );
 }
 
-function ContributeModal({ visible, onClose, chamaId, onDone }) {
-  const [method, setMethod] = useState("wallet");
+function ContributeModal({ visible, onClose, chamaId, owed, lateFeesOwed, onDone }) {
   const [amount, setAmount] = useState("");
-  const [phone, setPhone] = useState("2547");
+  const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (visible && owed > 0) setAmount(String(owed));
+  }, [visible, owed]);
 
   async function submit() {
     const amt = parseInt(amount, 10);
     if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
     setSubmitting(true);
     try {
-      if (method === "wallet") {
-        await client.post(`/chama/${chamaId}/contributions/wallet`, { amount: amt });
-        Alert.alert("Contribution recorded", `${formatKES(amt)} contributed from your wallet.`);
-        setAmount("");
-        onDone();
-      } else {
-        if (!/^2547\d{8}$/.test(phone)) return Alert.alert("Invalid phone", "Use format 2547XXXXXXXX");
-        const { data } = await client.post(`/chama/${chamaId}/contributions/mpesa`, { phone, amount: amt });
-        Alert.alert("Check your phone", data.message);
-        setAmount("");
-        onDone();
-      }
+      await client.post(`/chama/${chamaId}/contributions/mark`, { amount: amt, note: note.trim() || undefined });
+      Alert.alert("Marked as contributed", `${formatKES(amt)} recorded. An admin can correct this if the cash wasn't actually received.`);
+      setAmount(""); setNote("");
+      onDone();
     } catch (e) {
-      Alert.alert("Contribution failed", e.response?.data?.error || e.message);
+      Alert.alert("Couldn't record", e.response?.data?.error || e.message);
     } finally {
       setSubmitting(false);
     }
@@ -559,21 +941,14 @@ function ContributeModal({ visible, onClose, chamaId, onDone }) {
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Make a contribution</Text>
-        <View style={styles.optionRow}>
-          <TouchableOpacity style={[styles.optionChip, method === "wallet" && styles.optionChipActive]} onPress={() => setMethod("wallet")}>
-            <Text style={[styles.optionChipText, method === "wallet" && styles.optionChipTextActive]}>Wallet balance</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.optionChip, method === "mpesa" && styles.optionChipActive]} onPress={() => setMethod("mpesa")}>
-            <Text style={[styles.optionChipText, method === "mpesa" && styles.optionChipTextActive]}>M-Pesa</Text>
-          </TouchableOpacity>
-        </View>
-        {method === "mpesa" && (
-          <TextInput style={styles.input} placeholder="Phone (2547XXXXXXXX)" keyboardType="number-pad" value={phone} onChangeText={setPhone} />
-        )}
+        <Text style={styles.sheetTitle}>Mark as contributed</Text>
+        <Text style={styles.tabHint}>This just logs it to the group ledger — contributions are handed over physically, not through the app.</Text>
+        {owed > 0 && <Text style={styles.owedText}>You owe {formatKES(owed)} so far</Text>}
+        {lateFeesOwed > 0 && <Text style={styles.owedTextWarn}>Plus {formatKES(lateFeesOwed)} in unpaid late fees — settle those separately with your admin</Text>}
         <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
+        <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
-          <Text style={styles.primaryButtonText}>{submitting ? "Processing..." : "Contribute"}</Text>
+          <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Mark as contributed"}</Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -624,6 +999,8 @@ const styles = StyleSheet.create({
   ledgerName: { color: COLORS.ink, fontWeight: "700", fontSize: 13.5 },
   ledgerMeta: { color: COLORS.sub, fontSize: 11.5, marginTop: 2 },
   ledgerAmount: { color: COLORS.accent, fontWeight: "800", fontSize: 13.5 },
+  ledgerAmountVoided: { color: COLORS.sub, textDecorationLine: "line-through" },
+  notContributedBadge: { color: "#D32F2F", fontWeight: "700", fontSize: 10.5, marginLeft: 8 },
   nextUpBanner: { backgroundColor: COLORS.accent, color: COLORS.accentInk, padding: 10, borderRadius: 8, fontWeight: "700", marginBottom: 10, overflow: "hidden" },
   pendingPayoutCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFF3CD", borderRadius: 8, padding: 12, marginBottom: 8 },
   flagButton: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FBE7E7", borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 },
@@ -654,4 +1031,34 @@ const styles = StyleSheet.create({
   sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, paddingBottom: 28 },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },
   sheetTitle: { color: COLORS.ink, fontWeight: "800", fontSize: 16, marginBottom: 12 },
+  owedText: { color: COLORS.accent, fontWeight: "700", fontSize: 13, marginBottom: 8 },
+  owedTextWarn: { color: "#D32F2F", fontWeight: "600", fontSize: 11.5, marginBottom: 8 },
+  smallActionBtn: { borderWidth: 1, borderColor: COLORS.accent, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 },
+  smallActionBtnText: { color: COLORS.accent, fontWeight: "700", fontSize: 11.5 },
+  rowActions: { flexDirection: "row", gap: 8 },
+  voteCard: { backgroundColor: "#FFF3CD", borderRadius: 8, padding: 12, marginBottom: 8 },
+  approveBtnSmall: { backgroundColor: COLORS.accent, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 7, flex: 1, alignItems: "center" },
+  approveBtnSmallText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 12 },
+  rejectBtnSmall: { backgroundColor: "#FBE7E7", borderRadius: 6, paddingHorizontal: 12, paddingVertical: 7, flex: 1, alignItems: "center" },
+  rejectBtnSmallText: { color: "#D32F2F", fontWeight: "700", fontSize: 12 },
+  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, gap: 12 },
+  switchLabel: { color: COLORS.ink, fontSize: 13, flex: 1 },
+  achievementHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  publicPill: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#E3F5E9", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  publicPillText: { color: "#2E7D32", fontSize: 10, fontWeight: "700" },
+  privatePill: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: COLORS.wash, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  privatePillText: { color: COLORS.sub, fontSize: 10, fontWeight: "700" },
+  achievementPhoto: { width: "100%", height: 180, borderRadius: 8, marginTop: 10, backgroundColor: "#eee" },
+  achievementPhotoPreviewWrap: { borderRadius: 8, overflow: "hidden", marginBottom: 10 },
+  achievementPhotoPreview: { width: "100%", height: 150, backgroundColor: "#eee" },
+  photoRemoveButton: { position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center" },
+  photoPicker: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: COLORS.border, borderStyle: "dashed", borderRadius: 8, paddingVertical: 16, marginBottom: 10 },
+  photoPickerText: { color: COLORS.accent, fontWeight: "600", fontSize: 13 },
+  shameRow: { backgroundColor: "#FBE7E7", borderRadius: 8, padding: 12, marginBottom: 8 },
+  tipsCard: { backgroundColor: "#FFF3CD", borderRadius: 12, padding: 14 },
+  tipsHeaderRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
+  tipsTitle: { color: "#8A6D00", fontWeight: "800", fontSize: 13 },
+  tipRow: { flexDirection: "row", gap: 6, marginTop: 6, alignItems: "flex-start" },
+  tipBullet: { color: "#8A6D00", fontSize: 13, lineHeight: 18 },
+  tipText: { color: "#8A6D00", fontSize: 12, lineHeight: 18, flex: 1 },
 });

@@ -2,11 +2,13 @@ import React, { useCallback, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, TextInput, Alert, Switch, Share } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import client from "../api/client";
+import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { COLORS } from "../theme";
 
 function formatKES(n) { return `KES ${Math.round(n || 0).toLocaleString()}`; }
 
-const TABS = ["Requests", "Members", "Contributions", "Payouts", "Withdrawals", "Settings", "Audit"];
+const TABS = ["Requests", "Members", "Contributions", "Payouts", "Loans", "Withdrawals", "Votes", "Settings", "Audit"];
 
 export default function ChamaAdminScreen({ route }) {
   const { chamaId } = route.params;
@@ -30,9 +32,11 @@ export default function ChamaAdminScreen({ route }) {
       <ScrollView style={styles.body} contentContainerStyle={{ padding: 14 }}>
         {tab === "Requests" && <RequestsTab chamaId={chamaId} onChange={load} />}
         {tab === "Members" && <MembersTab chamaId={chamaId} chama={chama} onChange={load} />}
-        {tab === "Contributions" && <ContributionsTab chamaId={chamaId} />}
+        {tab === "Contributions" && <ContributionsTab chamaId={chamaId} chama={chama} />}
         {tab === "Payouts" && <PayoutsTab chamaId={chamaId} chama={chama} onChange={load} />}
+        {tab === "Loans" && <LoansTab chamaId={chamaId} chama={chama} onChange={load} />}
         {tab === "Withdrawals" && <WithdrawalsTab chamaId={chamaId} />}
+        {tab === "Votes" && <VotesTab chamaId={chamaId} />}
         {tab === "Settings" && <SettingsTab chamaId={chamaId} chama={chama} onChange={load} />}
         {tab === "Audit" && <AuditTab chamaId={chamaId} />}
       </ScrollView>
@@ -122,15 +126,41 @@ function MembersTab({ chamaId, chama, onChange }) {
   );
 }
 
-function ContributionsTab({ chamaId }) {
+function ContributionsTab({ chamaId, chama }) {
   const [defaulters, setDefaulters] = useState(null);
+  const [contributions, setContributions] = useState(null);
+  const [lateFees, setLateFees] = useState(null);
   const [userId, setUserId] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const load = useCallback(() => { client.get(`/chama/${chamaId}/defaulters`).then((r) => setDefaulters(r.data)).catch(() => setDefaulters([])); }, [chamaId]);
+  const load = useCallback(() => {
+    client.get(`/chama/${chamaId}/defaulters`).then((r) => setDefaulters(r.data)).catch(() => setDefaulters([]));
+    client.get(`/chama/${chamaId}/contributions`).then((r) => setContributions(r.data)).catch(() => setContributions([]));
+    client.get(`/chama/${chamaId}/late-fees`).then((r) => setLateFees(r.data)).catch(() => setLateFees([]));
+  }, [chamaId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function chargeLateFee(memberUserId) {
+    try {
+      const { data } = await client.post(`/chama/${chamaId}/late-fees`, { memberId: memberUserId });
+      Alert.alert("Late fee applied", `${formatKES(data.fee.amount)} charged`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't apply fee", e.response?.data?.error || e.message);
+    }
+  }
+
+  async function waiveLateFee(feeId) {
+    try { await client.post(`/chama/${chamaId}/late-fees/${feeId}/waive`); load(); }
+    catch (e) { Alert.alert("Couldn't waive", e.response?.data?.error || e.message); }
+  }
+
+  async function markLateFeePaid(feeId) {
+    try { await client.post(`/chama/${chamaId}/late-fees/${feeId}/pay`); load(); }
+    catch (e) { Alert.alert("Couldn't update", e.response?.data?.error || e.message); }
+  }
 
   async function recordManual() {
     if (!userId.trim()) return Alert.alert("Missing member", "Paste the member's user ID (tap a defaulter below to fill it in)");
@@ -146,6 +176,16 @@ function ContributionsTab({ chamaId }) {
       Alert.alert("Couldn't record", e.response?.data?.error || e.message);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function toggleStatus(contribution) {
+    const nextStatus = contribution.status === "contributed" ? "not_contributed" : "contributed";
+    try {
+      await client.patch(`/chama/${chamaId}/contributions/${contribution.id}`, { status: nextStatus });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't update", e.response?.data?.error || e.message);
     }
   }
 
@@ -174,12 +214,55 @@ function ContributionsTab({ chamaId }) {
       </View>
       {defaulters === null && <ActivityIndicator color={COLORS.accent} />}
       {defaulters?.map((d) => (
-        <TouchableOpacity key={d.member.id} style={styles.row} onPress={() => setUserId(d.user.id)}>
-          <Text style={styles.rowName}>{d.user?.name}</Text>
-          <Text style={styles.rowSub}>{d.periodsPaid}/{d.periodsDue} periods paid</Text>
-        </TouchableOpacity>
+        <View key={d.member.id} style={styles.row}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setUserId(d.user.id)}>
+            <Text style={styles.rowName}>{d.user?.name}</Text>
+            <Text style={styles.rowSub}>Owes {formatKES(d.balance)} · {d.daysLate} day(s) past deadline</Text>
+          </TouchableOpacity>
+          {!!chama?.contributionLateFeeRate && (
+            <TouchableOpacity style={styles.smallBtn} onPress={() => chargeLateFee(d.user.id)}>
+              <Text style={styles.smallBtnText}>Charge {chama.contributionLateFeeRate}% fee</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       ))}
       {defaulters?.length === 0 && <Text style={styles.empty}>No one is behind — nice!</Text>}
+
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Late fees</Text>
+      {lateFees === null && <ActivityIndicator color={COLORS.accent} />}
+      {lateFees?.map((f) => (
+        <View key={f.id} style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowName}>{f.member?.name} — {formatKES(f.amount)}</Text>
+            <Text style={styles.rowSub}>{f.status === "owed" ? "Owed" : f.status === "paid" ? "Paid" : "Waived"} · {new Date(f.createdAt).toLocaleDateString()}</Text>
+          </View>
+          {f.status === "owed" && (
+            <View style={styles.rowActions}>
+              <TouchableOpacity style={styles.approveBtn} onPress={() => markLateFeePaid(f.id)}><Text style={styles.approveBtnText}>Mark paid</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.rejectBtn} onPress={() => waiveLateFee(f.id)}><Text style={styles.rejectBtnText}>Waive</Text></TouchableOpacity>
+            </View>
+          )}
+        </View>
+      ))}
+      {lateFees?.length === 0 && <Text style={styles.empty}>No late fees charged yet.</Text>}
+
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>All contributions</Text>
+      <Text style={styles.tabHint}>Self-reported by members. Correct one if the cash wasn't actually received.</Text>
+      {contributions === null && <ActivityIndicator color={COLORS.accent} />}
+      {contributions?.map((c) => (
+        <View key={c.id} style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowName}>{c.user?.name} — {formatKES(c.amount)}</Text>
+            <Text style={styles.rowSub}>{c.method === "cash_manual" ? "Recorded by admin" : "Self-reported"} · {new Date(c.createdAt).toLocaleDateString()}{c.status === "not_contributed" ? " · Not received" : ""}</Text>
+          </View>
+          <TouchableOpacity style={c.status === "contributed" ? styles.rejectBtn : styles.approveBtn} onPress={() => toggleStatus(c)}>
+            <Text style={c.status === "contributed" ? styles.rejectBtnText : styles.approveBtnText}>
+              {c.status === "contributed" ? "Mark not received" : "Mark received"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+      {contributions?.length === 0 && <Text style={styles.empty}>No contributions recorded yet.</Text>}
     </View>
   );
 }
@@ -206,7 +289,7 @@ function PayoutsTab({ chamaId, chama, onChange }) {
   async function release(pendingId) {
     try {
       const { data } = await client.post(`/chama/${chamaId}/payouts/pending/${pendingId}/release`, {});
-      Alert.alert("Payout released", `${formatKES(data.payout.amount)} sent to their wallet`);
+      Alert.alert("Payout recorded", `${formatKES(data.payout.amount)} marked as paid — hand it over to them directly`);
       load(); onChange();
     } catch (e) {
       Alert.alert("Couldn't release", e.response?.data?.error || e.message);
@@ -233,15 +316,20 @@ function PayoutsTab({ chamaId, chama, onChange }) {
     }
   }
 
-  if (chama.payoutModel !== "merry_go_round") return <Text style={styles.empty}>This Chama uses pooled savings — see the Withdrawals tab.</Text>;
+  if (chama.payoutModel === "pooled_savings") return <Text style={styles.empty}>This Chama uses pooled savings — see the Withdrawals tab.</Text>;
+  if (chama.payoutModel === "table_banking") return <Text style={styles.empty}>This Chama uses table banking — see the Loans tab.</Text>;
   if (!rotation) return <ActivityIndicator color={COLORS.accent} />;
   const current = rotation.filter((s) => s.cycle === chama.currentCycle).sort((a, b) => a.position - b.position);
   const allPaid = current.length > 0 && current.every((s) => s.paidAt);
   const pendingBySlot = new Map(pendingPayouts.map((p) => [p.slotId, p]));
+  const nextUp = current.filter((s) => !s.paidAt).sort((a, b) => a.position - b.position)[0];
 
   return (
     <View>
       <Text style={styles.tabHint}>Pool balance: {formatKES(chama.poolBalance)} · Cycle {chama.currentCycle}</Text>
+      {!!nextUp && !!chama.nextPayoutDueAt && (
+        <Text style={styles.tabHint}>Next in line: {nextUp.user?.name} — expected {new Date(chama.nextPayoutDueAt).toLocaleDateString()}</Text>
+      )}
       <View style={styles.rowActions}>
         <TouchableOpacity style={styles.smallBtn} onPress={shuffle}><Text style={styles.smallBtnText}>Shuffle order</Text></TouchableOpacity>
         {allPaid && <TouchableOpacity style={styles.approveBtn} onPress={completeCycle}><Text style={styles.approveBtnText}>Start next cycle</Text></TouchableOpacity>}
@@ -268,6 +356,103 @@ function PayoutsTab({ chamaId, chama, onChange }) {
           </View>
         );
       })}
+    </View>
+  );
+}
+
+function LoansTab({ chamaId, chama }) {
+  const [loans, setLoans] = useState(null);
+  const load = useCallback(() => { client.get(`/chama/${chamaId}/loans`).then((r) => setLoans(r.data)).catch(() => setLoans([])); }, [chamaId]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function decide(loanId, action) {
+    try {
+      await client.post(`/chama/${chamaId}/loans/${loanId}/${action}`);
+      load();
+    } catch (e) {
+      Alert.alert("Action failed", e.response?.data?.error || e.message);
+    }
+  }
+
+  async function applyPenalty(loanId) {
+    try {
+      const { data } = await client.post(`/chama/${chamaId}/loans/${loanId}/penalty`);
+      Alert.alert("Penalty applied", data.penalty ? `${formatKES(data.penalty)} added to the balance owed` : "No penalty needed — already up to date");
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't apply penalty", e.response?.data?.error || e.message);
+    }
+  }
+
+  if (chama.payoutModel !== "table_banking") return <Text style={styles.empty}>This Chama isn't set up for table banking.</Text>;
+  if (!loans) return <ActivityIndicator color={COLORS.accent} />;
+  const pending = loans.filter((l) => l.status === "requested");
+  const active = loans.filter((l) => l.status === "active");
+  const past = loans.filter((l) => ["completed", "rejected"].includes(l.status));
+
+  return (
+    <View>
+      <Text style={styles.tabHint}>Pool balance: {formatKES(chama.poolBalance)} · {chama.loanInterestRate}% interest · up to {chama.loanMaxMultiplier}× savings · {chama.loanTermWeeks}-week term</Text>
+
+      <Text style={styles.sectionTitle}>Pending requests ({pending.length})</Text>
+      {pending.map((l) => (
+        <View key={l.id} style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowName}>{l.borrower?.name} — {formatKES(l.principal)}</Text>
+            <Text style={styles.rowSub}>{l.reason || "No reason given"} · would owe {formatKES(l.principal + Math.round(l.principal * (chama.loanInterestRate / 100)))} back</Text>
+          </View>
+          <View style={styles.rowActions}>
+            <TouchableOpacity style={styles.approveBtn} onPress={() => decide(l.id, "approve")}><Text style={styles.approveBtnText}>Approve</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.rejectBtn} onPress={() => decide(l.id, "reject")}><Text style={styles.rejectBtnText}>Reject</Text></TouchableOpacity>
+          </View>
+        </View>
+      ))}
+      {!pending.length && <Text style={styles.empty}>Nothing pending</Text>}
+
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Active loans ({active.length})</Text>
+      {active.map((l) => (
+        <View key={l.id} style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowName}>{l.borrower?.name} — {formatKES(l.remaining)} left of {formatKES(l.owed)}</Text>
+            <Text style={styles.rowSub}>
+              Due {new Date(l.dueAt).toLocaleDateString()}{l.isOverdue ? " · OVERDUE" : ""}
+              {l.penaltiesTotal > 0 ? ` · +${formatKES(l.penaltiesTotal)} penalties` : ""}
+            </Text>
+          </View>
+          {l.isOverdue && <TouchableOpacity style={styles.rejectBtn} onPress={() => applyPenalty(l.id)}><Text style={styles.rejectBtnText}>Apply penalty</Text></TouchableOpacity>}
+        </View>
+      ))}
+      {!active.length && <Text style={styles.empty}>No active loans</Text>}
+
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>History</Text>
+      {past.map((l) => (
+        <View key={l.id} style={styles.row}>
+          <Text style={styles.rowName}>{l.borrower?.name} — {formatKES(l.principal)}</Text>
+          <Text style={styles.rowSub}>{l.status}</Text>
+        </View>
+      ))}
+      {!past.length && <Text style={styles.empty}>No completed or rejected loans yet</Text>}
+    </View>
+  );
+}
+
+function VotesTab({ chamaId }) {
+  const [votes, setVotes] = useState(null);
+  useFocusEffect(useCallback(() => { client.get(`/chama/${chamaId}/votes`).then((r) => setVotes(r.data)).catch(() => setVotes([])); }, [chamaId]));
+  if (!votes) return <ActivityIndicator color={COLORS.accent} />;
+  return (
+    <View>
+      <Text style={styles.tabHint}>Removing a member or flagging them for Wall of Shame is decided by member vote, not admins alone — members start and cast these from the Chama's Members tab.</Text>
+      {votes.map((v) => (
+        <View key={v.id} style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowName}>{v.voteType === "remove" ? "Remove" : "Wall of Shame"}: {v.target?.name}</Text>
+            <Text style={styles.rowSub}>{v.tally.yes}/{v.tally.required} yes needed · started by {v.initiator?.name}</Text>
+          </View>
+          <Text style={[styles.rowSub, v.status === "passed" && { color: "#2E7D32" }, v.status === "failed" && { color: "#D32F2F" }]}>{v.status}</Text>
+        </View>
+      ))}
+      {!votes.length && <Text style={styles.empty}>No votes yet</Text>}
     </View>
   );
 }
@@ -307,20 +492,58 @@ function WithdrawalsTab({ chamaId }) {
 function SettingsTab({ chamaId, chama, onChange }) {
   const [maxMembers, setMaxMembers] = useState(String(chama.maxMembers));
   const [contributionAmount, setContributionAmount] = useState(String(chama.contributionAmount || ""));
+  const [contributionLateFeeRate, setContributionLateFeeRate] = useState(String(chama.contributionLateFeeRate ?? ""));
+  const [loanInterestRate, setLoanInterestRate] = useState(String(chama.loanInterestRate ?? ""));
+  const [loanMaxMultiplier, setLoanMaxMultiplier] = useState(String(chama.loanMaxMultiplier ?? ""));
+  const [loanTermWeeks, setLoanTermWeeks] = useState(String(chama.loanTermWeeks ?? ""));
+  const [latePenaltyRate, setLatePenaltyRate] = useState(String(chama.latePenaltyRate ?? ""));
   const [membersVisible, setMembersVisible] = useState(chama.membersVisibleToMembers);
   const [requireKyc, setRequireKyc] = useState(chama.requireKycToJoin);
   const [requireGuarantors, setRequireGuarantors] = useState(chama.requireGuarantorsToJoin);
+  const [county, setCounty] = useState(chama.county || "");
+  const [subCounty, setSubCounty] = useState(chama.subCounty || "");
   const [saving, setSaving] = useState(false);
+  const [activating, setActivating] = useState(false);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+  }
+
+  async function activate() {
+    Alert.alert("Activate this Chama", "Contribution deadlines start counting from this moment — members who haven't contributed each period will start showing as late. This can't be undone.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Activate", onPress: async () => {
+        setActivating(true);
+        try { await client.post(`/chama/${chamaId}/activate`); onChange(); }
+        catch (e) { Alert.alert("Couldn't activate", e.response?.data?.error || e.message); }
+        finally { setActivating(false); }
+      } },
+    ]);
+  }
 
   async function save() {
+    if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county this Chama meets in");
     setSaving(true);
     try {
-      const body = { membersVisibleToMembers: membersVisible, requireKycToJoin: requireKyc, requireGuarantorsToJoin: requireGuarantors };
+      const body = { membersVisibleToMembers: membersVisible, requireKycToJoin: requireKyc, requireGuarantorsToJoin: requireGuarantors, county, subCounty };
       const max = parseInt(maxMembers, 10);
       if (max && max !== chama.maxMembers) body.maxMembers = max;
       if (chama.contributionType === "fixed_recurring") {
         const amt = parseInt(contributionAmount, 10);
         if (amt && amt !== chama.contributionAmount) body.contributionAmount = amt;
+        const feeRate = parseFloat(contributionLateFeeRate);
+        if (!isNaN(feeRate) && feeRate !== chama.contributionLateFeeRate) body.contributionLateFeeRate = feeRate;
+      }
+      if (chama.payoutModel === "table_banking") {
+        const ir = parseFloat(loanInterestRate);
+        if (!isNaN(ir) && ir !== chama.loanInterestRate) body.loanInterestRate = ir;
+        const mult = parseFloat(loanMaxMultiplier);
+        if (!isNaN(mult) && mult !== chama.loanMaxMultiplier) body.loanMaxMultiplier = mult;
+        const term = parseInt(loanTermWeeks, 10);
+        if (term && term !== chama.loanTermWeeks) body.loanTermWeeks = term;
+        const penalty = parseFloat(latePenaltyRate);
+        if (!isNaN(penalty) && penalty !== chama.latePenaltyRate) body.latePenaltyRate = penalty;
       }
       await client.patch(`/chama/${chamaId}`, body);
       Alert.alert("Saved", "Settings updated");
@@ -362,12 +585,37 @@ function SettingsTab({ chamaId, chama, onChange }) {
 
   return (
     <View>
+      {!chama.activatedAt ? (
+        <View style={styles.activateBanner}>
+          <Text style={styles.activateBannerText}>This Chama isn't active yet — contribution deadlines, late fees, and member votes won't apply until you activate it.</Text>
+          <TouchableOpacity style={styles.approveBtn} onPress={activate} disabled={activating}>
+            <Text style={styles.approveBtnText}>{activating ? "Activating..." : "Activate Chama"}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <Text style={[styles.tabHint, { marginBottom: 16 }]}>Active since {new Date(chama.activatedAt).toLocaleDateString()}</Text>
+      )}
+
       <Text style={styles.label}>Max members</Text>
       <TextInput style={styles.input} value={maxMembers} onChangeText={setMaxMembers} keyboardType="number-pad" />
       {chama.contributionType === "fixed_recurring" && (
         <>
           <Text style={styles.label}>Contribution amount (KES)</Text>
           <TextInput style={styles.input} value={contributionAmount} onChangeText={setContributionAmount} keyboardType="number-pad" />
+          <Text style={styles.label}>Late fee (% of the missed contribution)</Text>
+          <TextInput style={styles.input} value={contributionLateFeeRate} onChangeText={setContributionLateFeeRate} keyboardType="decimal-pad" />
+        </>
+      )}
+      {chama.payoutModel === "table_banking" && (
+        <>
+          <Text style={styles.label}>Loan interest rate (%)</Text>
+          <TextInput style={styles.input} value={loanInterestRate} onChangeText={setLoanInterestRate} keyboardType="decimal-pad" />
+          <Text style={styles.label}>Max loan size (× savings)</Text>
+          <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" />
+          <Text style={styles.label}>Repayment term (weeks)</Text>
+          <TextInput style={styles.input} value={loanTermWeeks} onChangeText={setLoanTermWeeks} keyboardType="number-pad" />
+          <Text style={styles.label}>Late penalty (% of outstanding balance)</Text>
+          <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" />
         </>
       )}
       <View style={styles.switchRow}>
@@ -382,7 +630,11 @@ function SettingsTab({ chamaId, chama, onChange }) {
         <Text style={styles.rowName}>Require 2 accepted guarantors to join</Text>
         <Switch value={requireGuarantors} onValueChange={setRequireGuarantors} trackColor={{ true: COLORS.accent }} />
       </View>
-      <TouchableOpacity style={styles.approveBtn} onPress={save} disabled={saving}><Text style={styles.approveBtnText}>{saving ? "Saving..." : "Save settings"}</Text></TouchableOpacity>
+      <Text style={styles.label}>County</Text>
+      <CountyPicker value={county} onChange={handleCountyChange} />
+      <Text style={styles.label}>Sub-county</Text>
+      <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
+      <TouchableOpacity style={[styles.approveBtn, { marginTop: 16 }]} onPress={save} disabled={saving}><Text style={styles.approveBtnText}>{saving ? "Saving..." : "Save settings"}</Text></TouchableOpacity>
 
       <TouchableOpacity style={[styles.smallBtn, { marginTop: 20 }]} onPress={togglePositions}>
         <Text style={styles.smallBtnText}>{chama.joiningClosed ? "Reopen positions" : "Manually close positions"}</Text>
@@ -443,4 +695,6 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, marginBottom: 10, color: COLORS.ink },
   label: { fontSize: 12.5, color: COLORS.sub, marginBottom: 4 },
   switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8, marginBottom: 16 },
+  activateBanner: { backgroundColor: "#FFF3CD", borderRadius: 10, padding: 14, marginBottom: 18, gap: 10 },
+  activateBannerText: { color: "#8A6D00", fontSize: 12.5, lineHeight: 18 },
 });

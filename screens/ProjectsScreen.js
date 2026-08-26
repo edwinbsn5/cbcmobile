@@ -1,10 +1,15 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Alert } from "react-native";
 import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import client from "../api/client";
+import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { COLORS } from "../theme";
+
+const COUNTY_STORAGE_KEY = "projectsBrowseCounty";
 
 const FILTERS = [
   { key: "", label: "Explore" },
@@ -17,14 +22,37 @@ export default function ProjectsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [county, setCounty] = useState("");
+  const [loadedCounty, setLoadedCounty] = useState(false);
+  const [subCounty, setSubCounty] = useState("");
+
+  // The chosen county is saved and pre-selected on every future visit — no
+  // need to pick it again unless the user wants to browse a different one.
+  useEffect(() => {
+    AsyncStorage.getItem(COUNTY_STORAGE_KEY).then((saved) => {
+      if (saved) setCounty(saved);
+      setLoadedCounty(true);
+    });
+  }, []);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+    AsyncStorage.setItem(COUNTY_STORAGE_KEY, c).catch(() => {});
+  }
 
   const load = useCallback(() => {
+    if (!county) {
+      setProjects([]);
+      setLoading(false);
+      return;
+    }
     client
-      .get("/projects", { params: { filter: filter || undefined, search: search || undefined } })
+      .get("/projects", { params: { filter: filter || undefined, search: search || undefined, county, subCounty: subCounty || undefined } })
       .then((r) => setProjects(r.data))
       .catch((e) => Alert.alert("Couldn't load projects", e.response?.data?.error || e.message))
       .finally(() => setLoading(false));
-  }, [filter, search]);
+  }, [filter, search, county, subCounty]);
 
   useFocusEffect(useCallback(() => { setLoading(true); load(); }, [load]));
 
@@ -43,6 +71,26 @@ export default function ProjectsScreen({ navigation }) {
             <Text style={styles.heroBadge}>✦ Investments & Projects ✦</Text>
             <Text style={styles.heroTitle}>Pitch it. Build a team. Ship it.</Text>
             <Text style={styles.heroSubtitle}>Business ideas looking for collaborators — join a team or start your own.</Text>
+          </View>
+
+          <View style={styles.locationBox}>
+            <View style={styles.locationRow}>
+              <Text style={styles.locationLabel}>County: Find Projects Based Near You</Text>
+              {!!county && (
+                <TouchableOpacity onPress={() => handleCountyChange("")}>
+                  <Text style={styles.locationClear}>Clear</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <CountyPicker value={county} onChange={handleCountyChange} placeholder="Select your county" />
+            {!!county && (
+              <View style={{ marginTop: 8 }}>
+                <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} placeholder="Any sub-county" />
+              </View>
+            )}
+            {!county && loadedCounty && (
+              <Text style={styles.locationWarning}>Select a county above before browsing</Text>
+            )}
           </View>
 
           <View style={styles.searchRow}>
@@ -66,7 +114,11 @@ export default function ProjectsScreen({ navigation }) {
           </View>
         </View>
       }
-      ListEmptyComponent={loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : <Text style={styles.empty}>No projects found</Text>}
+      ListEmptyComponent={
+        loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : (
+          <Text style={styles.empty}>{!county ? "Select a county above to see projects" : "No projects found"}</Text>
+        )
+      }
       renderItem={({ item }) => (
         <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("ProjectDetail", { projectId: item.id })}>
           <Image source={{ uri: item.coverUrl }} style={styles.cover} contentFit="cover" />
@@ -89,6 +141,12 @@ export default function ProjectsScreen({ navigation }) {
                 {item.roles.map((r) => (
                   <View key={r.id} style={styles.rolePill}><Text style={styles.rolePillText}>{r.name} · {r.remaining} open</Text></View>
                 ))}
+              </View>
+            )}
+            {!!item.subCounty && (
+              <View style={styles.locationPill}>
+                <Ionicons name="location-outline" size={11} color={COLORS.sub} />
+                <Text style={styles.locationPillText}>{item.subCounty}, {item.county}</Text>
               </View>
             )}
           </View>
@@ -132,4 +190,11 @@ const styles = StyleSheet.create({
   rolesRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
   rolePill: { backgroundColor: COLORS.wash, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   rolePillText: { color: COLORS.accent, fontSize: 11, fontWeight: "700" },
+  locationBox: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginHorizontal: 12, marginTop: 12 },
+  locationRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  locationLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub },
+  locationClear: { fontSize: 12, fontWeight: "700", color: COLORS.accent },
+  locationWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 8 },
+  locationPill: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
+  locationPillText: { color: COLORS.sub, fontSize: 11, fontWeight: "600" },
 });

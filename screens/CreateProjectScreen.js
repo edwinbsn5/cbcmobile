@@ -5,6 +5,8 @@ import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
+import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { COLORS } from "../theme";
 
 function OptionRow({ options, value, onChange }) {
@@ -32,8 +34,15 @@ export default function CreateProjectScreen({ navigation }) {
   const [contributionAmount, setContributionAmount] = useState("");
   const [contributionFrequency, setContributionFrequency] = useState("monthly");
   const [visibility, setVisibility] = useState("public");
+  const [county, setCounty] = useState("");
+  const [subCounty, setSubCounty] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+  }
 
   useEffect(() => {
     client.get("/projects/categories").then((r) => { setCategories(r.data); setCategory(r.data[0]); }).catch(() => {});
@@ -68,6 +77,7 @@ export default function CreateProjectScreen({ navigation }) {
     if (requiresCapital && (!parseInt(contributionAmount, 10) || parseInt(contributionAmount, 10) <= 0)) {
       return Alert.alert("Invalid amount", "Enter a capital contribution amount in KES");
     }
+    if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county this project is based in");
 
     setSubmitting(true);
     try {
@@ -87,18 +97,12 @@ export default function CreateProjectScreen({ navigation }) {
         contributionAmount: requiresCapital ? parseInt(contributionAmount, 10) : undefined,
         contributionFrequency: requiresCapital ? contributionFrequency : undefined,
         visibility,
+        county, subCounty,
       });
       Alert.alert("Project created!", "You're the admin — start assembling your team.");
       navigation.replace("ProjectDetail", { projectId: data.id });
     } catch (e) {
-      if (e.response?.data?.requiresKyc) {
-        Alert.alert("Identity verification required", e.response.data.error, [
-          { text: "Not now", style: "cancel" },
-          { text: "Verify now", onPress: () => navigation.navigate("KYC") },
-        ]);
-      } else {
-        Alert.alert("Couldn't create project", e.response?.data?.error || e.message);
-      }
+      Alert.alert("Couldn't create project", e.response?.data?.error || e.message);
     } finally {
       setUploading(false);
       setSubmitting(false);
@@ -166,6 +170,12 @@ export default function CreateProjectScreen({ navigation }) {
 
         <Text style={styles.sectionTitle}>Visibility</Text>
         <OptionRow options={[{ value: "public", label: "Public — discoverable" }, { value: "invite_only", label: "Invite-only" }]} value={visibility} onChange={setVisibility} />
+
+        <Text style={styles.sectionTitle}>Where is this project based?</Text>
+        <Text style={styles.label}>County</Text>
+        <CountyPicker value={county} onChange={handleCountyChange} />
+        <Text style={styles.label}>Sub-county</Text>
+        <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
 
         <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting}>
           {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : <Text style={styles.buttonText}>{uploading ? "Uploading cover..." : "Create Project"}</Text>}
