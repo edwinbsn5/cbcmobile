@@ -184,7 +184,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
         <View style={styles.tabBody}>
           {tab === "overview" && <OverviewTab chama={chama} myTotal={myTotal} isMember={isMember} />}
           {tab === "feed" && <FeedTab chamaId={chamaId} isMember={isMember} userId={user?.id} />}
-          {tab === "ledger" && <LedgerTab chamaId={chamaId} isMember={isMember} />}
+          {tab === "ledger" && <LedgerTab chamaId={chamaId} isMember={isMember} chama={chama} />}
           {tab === "payouts" && <PayoutsTab chamaId={chamaId} chama={chama} isMember={isMember} userId={user?.id} />}
           {tab === "members" && <MembersTab chamaId={chamaId} isMember={isMember} chama={chama} myUserId={user?.id} />}
           {tab === "achievements" && <AchievementsTab chamaId={chamaId} isMember={isMember} />}
@@ -231,18 +231,34 @@ function OverviewTab({ chama, myTotal, isMember }) {
   );
 }
 
-function LedgerTab({ chamaId, isMember }) {
+function LedgerTab({ chamaId, isMember, chama }) {
   const [items, setItems] = useState(null);
+  const [members, setMembers] = useState(null);
   useFocusEffect(useCallback(() => {
     if (!isMember) return;
     client.get(`/chama/${chamaId}/contributions`).then((r) => setItems(r.data)).catch(() => setItems([]));
-  }, [chamaId, isMember]));
+    if (chama?.contributionType === "fixed_recurring" && chama.activatedAt) {
+      client.get(`/chama/${chamaId}/members`).then((r) => setMembers(r.data)).catch(() => setMembers([]));
+    }
+  }, [chamaId, isMember, chama?.contributionType, chama?.activatedAt]));
 
   if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view the group ledger.</Text>;
   if (!items) return <ActivityIndicator color={COLORS.accent} />;
+  const owing = (members || []).filter((m) => m.defaulter?.payableNow > 0);
   return (
     <View>
       <Text style={styles.tabHint}>Self-reported by members — contributions happen physically, not through the app.</Text>
+      {!!owing.length && (
+        <View style={styles.balancesCard}>
+          <Text style={styles.balancesTitle}>Balances still needed this period</Text>
+          {owing.map((m) => (
+            <View key={m.id} style={styles.balanceRow}>
+              <Text style={styles.balanceName}>{m.user?.name}</Text>
+              <Text style={styles.balanceAmount}>{formatKES(m.defaulter.payableNow)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
       {items.map((c) => (
         <View key={c.id} style={styles.ledgerRow}>
           <View style={{ flex: 1 }}>
@@ -1061,4 +1077,9 @@ const styles = StyleSheet.create({
   tipRow: { flexDirection: "row", gap: 6, marginTop: 6, alignItems: "flex-start" },
   tipBullet: { color: "#8A6D00", fontSize: 13, lineHeight: 18 },
   tipText: { color: "#8A6D00", fontSize: 12, lineHeight: 18, flex: 1 },
+  balancesCard: { backgroundColor: COLORS.wash, borderRadius: 10, padding: 12, marginBottom: 14 },
+  balancesTitle: { color: COLORS.ink, fontWeight: "800", fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.3 },
+  balanceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 4 },
+  balanceName: { color: COLORS.ink, fontSize: 13, fontWeight: "600" },
+  balanceAmount: { color: "#D32F2F", fontSize: 13, fontWeight: "800" },
 });
