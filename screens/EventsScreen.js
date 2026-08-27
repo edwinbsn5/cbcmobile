@@ -94,7 +94,14 @@ export default function EventsScreen({ navigation }) {
             {item.coverUrl && <Image source={{ uri: item.coverUrl }} style={styles.cover} contentFit="cover" />}
             <View style={styles.body}>
               <View style={styles.nameRow}>
-                <Text style={styles.name}>{item.name}</Text>
+                <View style={styles.nameWithBadge}>
+                  <Text style={styles.name}>{item.name}</Text>
+                  {item.isBoosted && (
+                    <View style={styles.boostedPill}>
+                      <Text style={styles.boostedPillText}>⚡ Boosted</Text>
+                    </View>
+                  )}
+                </View>
                 <TouchableOpacity onPress={() => toggleSave("event", item.id)}>
                   <Ionicons name={isSaved("event", item.id) ? "bookmark" : "bookmark-outline"} size={20} color={COLORS.accent} />
                 </TouchableOpacity>
@@ -150,7 +157,10 @@ const styles = StyleSheet.create({
   cover: { width: "100%", height: 120, backgroundColor: "#eee" },
   body: { padding: 12 },
   nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  nameWithBadge: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1, flexShrink: 1, flexWrap: "wrap" },
   name: { color: COLORS.ink, fontSize: 17, fontWeight: "700" },
+  boostedPill: { backgroundColor: "#FFF3CD", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  boostedPillText: { color: "#8A6D00", fontSize: 10.5, fontWeight: "700" },
   when: { color: COLORS.accent, fontWeight: "600", marginTop: 4, fontSize: 13 },
   location: { color: COLORS.sub, marginTop: 2, fontSize: 13 },
   host: { color: COLORS.sub, fontSize: 12, marginTop: 6 },

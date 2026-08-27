@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { Image } from "expo-image";
 import client from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
 const RSVP_OPTIONS = [
@@ -17,8 +18,9 @@ function formatWhen(startAt, endAt) {
   return `${start} – ${end}`;
 }
 
-export default function EventDetailScreen({ route }) {
+export default function EventDetailScreen({ route, navigation }) {
   const { eventId } = route.params;
+  const { user } = useAuth();
   const [event, setEvent] = useState(null);
   const [myStatus, setMyStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,10 +60,23 @@ export default function EventDetailScreen({ route }) {
     <View style={styles.container}>
       {event.coverUrl && <Image source={{ uri: event.coverUrl }} style={styles.cover} contentFit="cover" />}
       <View style={styles.body}>
-        <Text style={styles.name}>{event.name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>{event.name}</Text>
+          {event.isBoosted && (
+            <View style={styles.boostedPill}>
+              <Text style={styles.boostedPillText}>⚡ Boosted</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.when}>{formatWhen(event.startAt, event.endAt)}</Text>
         {!!event.location && <Text style={styles.location}>📍 {event.location}</Text>}
         <Text style={styles.host}>Hosted by {event.host?.name}</Text>
+
+        {event.host?.id === user?.id && !event.isBoosted && (
+          <TouchableOpacity style={styles.boostButton} onPress={() => navigation.navigate("BoostEvent", { event })}>
+            <Text style={styles.boostButtonText}>⚡ Boost this event</Text>
+          </TouchableOpacity>
+        )}
 
         {!!event.description && <Text style={styles.description}>{event.description}</Text>}
 
@@ -91,10 +106,15 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   cover: { width: "100%", height: 160, backgroundColor: "#eee" },
   body: { padding: 16 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   name: { color: COLORS.ink, fontSize: 22, fontWeight: "800" },
+  boostedPill: { backgroundColor: "#FFF3CD", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  boostedPillText: { color: "#8A6D00", fontSize: 11, fontWeight: "700" },
   when: { color: COLORS.accent, fontWeight: "700", marginTop: 8 },
   location: { color: COLORS.sub, marginTop: 6, fontSize: 14 },
   host: { color: COLORS.sub, fontSize: 12, marginTop: 8 },
+  boostButton: { alignSelf: "flex-start", backgroundColor: COLORS.wash, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9, marginTop: 12 },
+  boostButtonText: { color: COLORS.accent, fontWeight: "700", fontSize: 13 },
   description: { color: COLORS.ink, marginTop: 14, fontSize: 14, lineHeight: 20 },
   counts: { color: COLORS.sub, fontSize: 13, marginTop: 14 },
   sectionTitle: { color: COLORS.ink, fontSize: 16, fontWeight: "700", marginTop: 20, marginBottom: 10 },

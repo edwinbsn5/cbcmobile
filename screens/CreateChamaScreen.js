@@ -117,7 +117,18 @@ export default function CreateChamaScreen({ navigation }) {
       Alert.alert("Chama created!", "You're the admin — start inviting members.");
       navigation.replace("ChamaDetail", { chamaId: data.id });
     } catch (e) {
-      Alert.alert("Couldn't create Chama", e.response?.data?.error || e.message);
+      if (e.response?.data?.requiresAccess) {
+        Alert.alert(
+          "Chama access required",
+          e.response.data.error,
+          [
+            { text: "Not now", style: "cancel" },
+            { text: "Get access", onPress: () => navigation.navigate("ChamaHome") },
+          ]
+        );
+      } else {
+        Alert.alert("Couldn't create Chama", e.response?.data?.error || e.message);
+      }
     } finally {
       setUploading(false);
       setSubmitting(false);

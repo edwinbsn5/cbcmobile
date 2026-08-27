@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import client from "../api/client";
 import CountyPicker from "../components/CountyPicker";
 import SubCountyPicker from "../components/SubCountyPicker";
+import FeatureAccessModal from "../components/FeatureAccessModal";
 import { COLORS } from "../theme";
 
 const COUNTY_STORAGE_KEY = "projectsBrowseCounty";
@@ -25,6 +26,12 @@ export default function ProjectsScreen({ navigation }) {
   const [county, setCounty] = useState("");
   const [loadedCounty, setLoadedCounty] = useState(false);
   const [subCounty, setSubCounty] = useState("");
+  const [hasAccess, setHasAccess] = useState(true);
+  const [accessModalVisible, setAccessModalVisible] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    client.get("/access/status").then((r) => setHasAccess(!!r.data.access?.project)).catch(() => {});
+  }, []));
 
   // The chosen county is saved and pre-selected on every future visit — no
   // need to pick it again unless the user wants to browse a different one.
@@ -63,7 +70,10 @@ export default function ProjectsScreen({ navigation }) {
       keyExtractor={(p) => p.id}
       ListHeaderComponent={
         <View>
-          <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate("CreateProject")}>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => (hasAccess ? navigation.navigate("CreateProject") : setAccessModalVisible(true))}
+          >
             <Text style={styles.createButtonText}>+ Pitch a Project</Text>
           </TouchableOpacity>
 
@@ -72,6 +82,14 @@ export default function ProjectsScreen({ navigation }) {
             <Text style={styles.heroTitle}>Pitch it. Build a team. Ship it.</Text>
             <Text style={styles.heroSubtitle}>Business ideas looking for collaborators — join a team or start your own.</Text>
           </View>
+
+          {!hasAccess && (
+            <TouchableOpacity style={styles.accessBanner} onPress={() => setAccessModalVisible(true)}>
+              <Ionicons name="lock-closed-outline" size={16} color="#8A6D00" />
+              <Text style={styles.accessBannerText}>Unlock Projects & Investments access to join, pitch, or start a project — from KES 5</Text>
+              <Ionicons name="chevron-forward" size={16} color="#8A6D00" />
+            </TouchableOpacity>
+          )}
 
           <View style={styles.locationBox}>
             <View style={styles.locationRow}>
@@ -112,6 +130,14 @@ export default function ProjectsScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+
+          <FeatureAccessModal
+            visible={accessModalVisible}
+            onClose={() => setAccessModalVisible(false)}
+            feature="project"
+            featureLabel="Projects & Investments"
+            onPurchased={() => setHasAccess(true)}
+          />
         </View>
       }
       ListEmptyComponent={
@@ -195,6 +221,8 @@ const styles = StyleSheet.create({
   locationLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub },
   locationClear: { fontSize: 12, fontWeight: "700", color: COLORS.accent },
   locationWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 8 },
+  accessBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginHorizontal: 12, marginTop: 12 },
+  accessBannerText: { color: "#8A6D00", fontSize: 12, fontWeight: "600", flex: 1 },
   locationPill: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
   locationPillText: { color: COLORS.sub, fontSize: 11, fontWeight: "600" },
 });

@@ -1,13 +1,16 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, TextInput, Modal, TouchableWithoutFeedback, Alert, Linking } from "react-native";
 import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import ReactionBar from "../components/ReactionBar";
 import LinkifiedText from "../components/LinkifiedText";
 import PostCard from "../components/PostCard";
+import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { useSaved } from "../hooks/useSaved";
 import { COLORS } from "../theme";
 
@@ -24,6 +27,7 @@ function timeAgo(ts) {
 export default function ProjectDetailScreen({ route, navigation }) {
   const { projectId } = route.params;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [project, setProject] = useState(null);
   const [membership, setMembership] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -64,7 +68,7 @@ export default function ProjectDetailScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
         <Image source={{ uri: project.coverUrl }} style={styles.cover} contentFit="cover" />
         <View style={styles.headerBody}>
           <View style={styles.nameRow}>
@@ -124,7 +128,7 @@ export default function ProjectDetailScreen({ route, navigation }) {
         </ScrollView>
 
         <View style={styles.tabBody}>
-          {tab === "overview" && <FeedTab projectId={projectId} isMember={isMember} userId={user?.id} />}
+          {tab === "overview" && <FeedTab projectId={projectId} projectTitle={project.title} isMember={isMember} userId={user?.id} navigation={navigation} />}
           {tab === "tasks" && <TasksTab projectId={projectId} isMember={isMember} />}
           {tab === "milestones" && <MilestonesTab projectId={projectId} isMember={isMember} isAdmin={isAdmin} />}
           {tab === "docs" && <DocsTab projectId={projectId} isMember={isMember} />}
@@ -140,14 +144,45 @@ export default function ProjectDetailScreen({ route, navigation }) {
 }
 
 function JoinModal({ visible, onClose, project, navigation, onDone }) {
+  const { user } = useAuth();
   const [roleId, setRoleId] = useState(null);
   const [pitch, setPitch] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [county, setCounty] = useState("");
+  const [subCounty, setSubCounty] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (visible) {
+      setEmail(user?.email || "");
+      setPhone(user?.phone || "");
+      setCounty(user?.county || "");
+      setSubCounty(user?.subCounty || "");
+    }
+  }, [visible, user]);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+  }
+
+  const countyMismatch = !!county && county !== project.county;
+
   async function submit() {
+    if (!email.trim() || !phone.trim()) return Alert.alert("Missing info", "Enter your email and phone number");
+    if (!county || !subCounty) return Alert.alert("Location required", "Select your county and sub-county");
+    if (countyMismatch) {
+      return Alert.alert(
+        "Wrong county",
+        `This project is based in ${project.county}, not ${county} — joining one outside your own county is risky since you likely won't be able to attend physical meetings. Please look for one based in your own county instead.`
+      );
+    }
     setSubmitting(true);
     try {
-      const { data } = await client.post(`/projects/${project.id}/join`, { roleId, pitchMessage: pitch.trim() || undefined });
+      const { data } = await client.post(`/projects/${project.id}/join`, {
+        roleId, pitchMessage: pitch.trim() || undefined, email: email.trim(), phone: phone.trim(), county, subCounty,
+      });
       Alert.alert(
         data.membership.status === "waitlisted" ? "Added to waitlist" : "Application sent",
         data.membership.status === "waitlisted" ? "This project is full — you'll be notified if a spot opens up." : "The project admin will review your application."
@@ -158,6 +193,8 @@ function JoinModal({ visible, onClose, project, navigation, onDone }) {
         Alert.alert("Identity verification required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Verify now", onPress: () => navigation.navigate("KYC") }]);
       } else if (e.response?.data?.requiresGuarantors) {
         Alert.alert("Guarantors required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Add guarantors", onPress: () => navigation.navigate("Guarantors") }]);
+      } else if (e.response?.data?.requiresAccess) {
+        Alert.alert("Project access required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Get access", onPress: () => { onClose(); navigation.navigate("ProjectsHome"); } }]);
       } else {
         Alert.alert("Couldn't apply", e.response?.data?.error || e.message);
       }
@@ -172,6 +209,7 @@ function JoinModal({ visible, onClose, project, navigation, onDone }) {
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
         <Text style={styles.sheetTitle}>Apply to join {project.title}</Text>
+        <Text style={styles.tabHint}>Admins use your contact info to reach you directly if needed — it's only visible to them.</Text>
         {!!project.roles?.length && (
           <>
             <Text style={styles.label}>Which role? (optional)</Text>
@@ -186,6 +224,19 @@ function JoinModal({ visible, onClose, project, navigation, onDone }) {
         )}
         <Text style={styles.label}>Short pitch to the admin (optional)</Text>
         <TextInput style={[styles.input, styles.multiline]} value={pitch} onChangeText={setPitch} placeholder="Why you're a good fit..." multiline />
+        <Text style={styles.label}>Email</Text>
+        <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+        <Text style={styles.label}>Phone number</Text>
+        <TextInput style={styles.input} placeholder="Phone number" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+        <Text style={styles.label}>County</Text>
+        <CountyPicker value={county} onChange={handleCountyChange} />
+        <Text style={styles.label}>Sub-county</Text>
+        <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
+        {countyMismatch && (
+          <Text style={styles.owedTextWarn}>
+            This project is based in {project.county} — you likely won't be able to attend physical meetings from {county}.
+          </Text>
+        )}
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
           <Text style={styles.primaryButtonText}>{submitting ? "Sending..." : "Send application"}</Text>
         </TouchableOpacity>
@@ -194,22 +245,12 @@ function JoinModal({ visible, onClose, project, navigation, onDone }) {
   );
 }
 
-function FeedTab({ projectId, isMember, userId }) {
+function FeedTab({ projectId, projectTitle, isMember, userId, navigation }) {
   const [posts, setPosts] = useState(null);
-  const [text, setText] = useState("");
-  const [posting, setPosting] = useState(false);
   const { isSaved, toggleSave, loadSaved } = useSaved();
 
   const load = useCallback(() => { if (isMember) client.get(`/projects/${projectId}/posts`).then((r) => setPosts(r.data)).catch(() => setPosts([])); }, [projectId, isMember]);
   useFocusEffect(useCallback(() => { load(); loadSaved(); }, [load, loadSaved]));
-
-  async function submitPost() {
-    if (!text.trim()) return;
-    setPosting(true);
-    try { await client.post(`/projects/${projectId}/posts`, { content: text.trim() }); setText(""); load(); }
-    catch (e) { Alert.alert("Couldn't post", e.response?.data?.error || e.message); }
-    finally { setPosting(false); }
-  }
 
   async function react(postId, reaction) {
     try { const { data } = await client.post(`/projects/${projectId}/posts/${postId}/react`, { reaction }); setPosts((prev) => prev.map((p) => (p.id === postId ? data : p))); }
@@ -225,10 +266,13 @@ function FeedTab({ projectId, isMember, userId }) {
   if (!posts) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
-      <View style={styles.composer}>
-        <TextInput style={[styles.input, styles.multiline]} placeholder="Share an update..." value={text} onChangeText={setText} multiline />
-        <TouchableOpacity style={styles.secondaryButton} onPress={submitPost} disabled={posting}><Text style={styles.secondaryButtonText}>{posting ? "Posting..." : "Post"}</Text></TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={styles.composerTeaser}
+        onPress={() => navigation.navigate("CreatePost", { collabGroupKind: "project", collabGroupId: projectId, collabGroupLabel: projectTitle })}
+      >
+        <Ionicons name="create-outline" size={18} color={COLORS.sub} />
+        <Text style={styles.composerTeaserText}>Share an update...</Text>
+      </TouchableOpacity>
       {posts.map((p) => (
         <PostCard
           key={p.id}
@@ -553,12 +597,15 @@ const styles = StyleSheet.create({
   smallBtn: { borderWidth: 1, borderColor: COLORS.accent, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6 },
   smallBtnText: { color: COLORS.accent, fontWeight: "700", fontSize: 10.5, textTransform: "capitalize" },
   composer: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 14 },
+  composerTeaser: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, marginBottom: 14 },
+  composerTeaserText: { color: COLORS.sub, fontSize: 14 },
   postCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, marginBottom: 10 },
   postMeta: { color: COLORS.sub, fontSize: 11, marginBottom: 8 },
   postContent: { color: COLORS.ink, fontSize: 13.5, marginBottom: 10 },
   input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, marginBottom: 10, color: COLORS.ink },
   multiline: { minHeight: 60, textAlignVertical: "top" },
   label: { fontSize: 12.5, color: COLORS.sub, marginBottom: 4, marginTop: 4 },
+  owedTextWarn: { color: "#D32F2F", fontWeight: "600", fontSize: 11.5, marginBottom: 8 },
   optionRow: { flexDirection: "row", gap: 8, marginBottom: 10, flexWrap: "wrap" },
   optionChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 8, backgroundColor: COLORS.wash },
   optionChipActive: { backgroundColor: COLORS.accent },

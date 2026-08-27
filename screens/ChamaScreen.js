@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import client from "../api/client";
 import CountyPicker from "../components/CountyPicker";
 import SubCountyPicker from "../components/SubCountyPicker";
+import FeatureAccessModal from "../components/FeatureAccessModal";
 import { COLORS } from "../theme";
 
 const COUNTY_STORAGE_KEY = "chamaBrowseCounty";
@@ -35,6 +36,12 @@ export default function ChamaScreen({ navigation }) {
   const [county, setCounty] = useState("");
   const [loadedCounty, setLoadedCounty] = useState(false);
   const [subCounty, setSubCounty] = useState("");
+  const [hasAccess, setHasAccess] = useState(true); // optimistic — avoids a flash of the banner before the check lands
+  const [accessModalVisible, setAccessModalVisible] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    client.get("/access/status").then((r) => setHasAccess(!!r.data.access?.chama)).catch(() => {});
+  }, []));
 
   // The chosen county is saved and pre-selected on every future visit — no
   // need to pick it again unless the user wants to browse a different one.
@@ -83,7 +90,10 @@ export default function ChamaScreen({ navigation }) {
 
   const header = (
     <View>
-      <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate("CreateChama")}>
+      <TouchableOpacity
+        style={styles.createButton}
+        onPress={() => (hasAccess ? navigation.navigate("CreateChama") : setAccessModalVisible(true))}
+      >
         <Text style={styles.createButtonText}>+ Start a Chama</Text>
       </TouchableOpacity>
 
@@ -92,6 +102,14 @@ export default function ChamaScreen({ navigation }) {
         <Text style={styles.heroTitle}>Save together, grow together</Text>
         <Text style={styles.heroSubtitle}>Table banking and rotating savings groups, run transparently.</Text>
       </View>
+
+      {!hasAccess && (
+        <TouchableOpacity style={styles.accessBanner} onPress={() => setAccessModalVisible(true)}>
+          <Ionicons name="lock-closed-outline" size={16} color="#8A6D00" />
+          <Text style={styles.accessBannerText}>Unlock Chama access to join, contribute, or start a chama — from KES 5</Text>
+          <Ionicons name="chevron-forward" size={16} color="#8A6D00" />
+        </TouchableOpacity>
+      )}
 
       {!isFeedFilter && (
         <>
@@ -151,6 +169,14 @@ export default function ChamaScreen({ navigation }) {
           ))}
         </View>
       )}
+
+      <FeatureAccessModal
+        visible={accessModalVisible}
+        onClose={() => setAccessModalVisible(false)}
+        feature="chama"
+        featureLabel="Chama"
+        onPurchased={() => setHasAccess(true)}
+      />
     </View>
   );
 
@@ -273,6 +299,8 @@ const styles = StyleSheet.create({
   locationWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 8 },
   locationPill: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
   locationPillText: { color: COLORS.sub, fontSize: 11, fontWeight: "600" },
+  accessBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginHorizontal: 12, marginTop: 12 },
+  accessBannerText: { color: "#8A6D00", fontSize: 12, fontWeight: "600", flex: 1 },
   tipsCard: { backgroundColor: "#FFF3CD", borderRadius: 12, padding: 14, marginHorizontal: 12, marginTop: 12 },
   tipsHeaderRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
   tipsTitle: { color: "#8A6D00", fontWeight: "800", fontSize: 13 },

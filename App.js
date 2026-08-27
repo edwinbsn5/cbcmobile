@@ -77,6 +77,7 @@ import WalletSettingsScreen from "./screens/WalletSettingsScreen";
 import EventsScreen from "./screens/EventsScreen";
 import EventDetailScreen from "./screens/EventDetailScreen";
 import CreateEventScreen from "./screens/CreateEventScreen";
+import BoostEventScreen from "./screens/BoostEventScreen";
 import InboxScreen from "./screens/InboxScreen";
 import NewMessageScreen from "./screens/NewMessageScreen";
 import ChatScreen from "./screens/ChatScreen";
@@ -350,6 +351,7 @@ function RootNavigator() {
         <RootStack.Screen name="Events" component={EventsScreen} options={{ title: "Events" }} />
         <RootStack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: "Event" }} />
         <RootStack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: "Create Event" }} />
+        <RootStack.Screen name="BoostEvent" component={BoostEventScreen} options={{ title: "Boost Event" }} />
         <RootStack.Screen name="Inbox" component={InboxScreen} options={{ title: "Inbox" }} />
         <RootStack.Screen name="NewMessage" component={NewMessageScreen} options={{ title: "New Message" }} />
         <RootStack.Screen name="Chat" component={ChatScreen} />

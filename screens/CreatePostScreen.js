@@ -17,9 +17,17 @@ import { prepareVideoUpload } from "../utils/prepareVideoUpload";
 
 const MAX_PHOTOS = 10;
 
-export default function CreatePostScreen({ navigation }) {
+export default function CreatePostScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  // Optional — posting into a chama/project Discussion tab instead of the
+  // main feed. Same composer, same media/background-color support; only the
+  // submit target and header title change.
+  const { collabGroupKind, collabGroupId, collabGroupLabel } = route?.params || {};
+
+  useEffect(() => {
+    if (collabGroupLabel) navigation.setOptions({ title: `Post to ${collabGroupLabel}` });
+  }, [collabGroupLabel, navigation]);
   const [composerText, setComposerText] = useState("");
   const [media, setMedia] = useState(null); // { uri, type: "video", mimeType, fileName } — single video only
   const [photos, setPhotos] = useState([]); // [{ uri, mimeType, fileName }, ...] — 1-10 photos
@@ -141,7 +149,10 @@ export default function CreatePostScreen({ navigation }) {
         thumbnailUrl = uploaded.thumbnailUrl;
         setUploading(false);
       }
-      await client.post("/feed", {
+      const path = collabGroupKind
+        ? `/${collabGroupKind === "chama" ? "chama" : "projects"}/${collabGroupId}/posts`
+        : "/feed";
+      await client.post(path, {
         content: composerText.trim(),
         type,
         mediaUrl,

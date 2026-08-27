@@ -3,12 +3,15 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import ReactionBar from "../components/ReactionBar";
 import LinkifiedText from "../components/LinkifiedText";
 import PostCard from "../components/PostCard";
+import CountyPicker from "../components/CountyPicker";
+import SubCountyPicker from "../components/SubCountyPicker";
 import { useSaved } from "../hooks/useSaved";
 import { COLORS } from "../theme";
 
@@ -53,6 +56,7 @@ const TABS = [
 export default function ChamaDetailScreen({ route, navigation }) {
   const { chamaId } = route.params;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [chama, setChama] = useState(null);
   const [membership, setMembership] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -63,6 +67,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("overview");
   const [contributeVisible, setContributeVisible] = useState(false);
+  const [joinModalVisible, setJoinModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -89,33 +94,13 @@ export default function ChamaDetailScreen({ route, navigation }) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  async function handleJoin() {
-    try {
-      const { data } = await client.post(`/chama/${chamaId}/join`);
-      setMembership(data.membership);
-      Alert.alert(
-        data.membership.status === "active" ? "You're in!" : data.membership.status === "waitlisted" ? "Added to waitlist" : "Request sent",
-        data.membership.status === "active" ? "You're now a member." : data.membership.status === "waitlisted" ? "This Chama is full — you'll be notified if a spot opens up." : "The admin will review your request."
-      );
-      load();
-    } catch (e) {
-      if (e.response?.data?.requiresKyc) {
-        Alert.alert("Identity verification required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Verify now", onPress: () => navigation.navigate("KYC") }]);
-      } else if (e.response?.data?.requiresGuarantors) {
-        Alert.alert("Guarantors required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Add guarantors", onPress: () => navigation.navigate("Guarantors") }]);
-      } else {
-        Alert.alert("Couldn't join", e.response?.data?.error || e.message);
-      }
-    }
-  }
-
   if (loading || !chama) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   const isMember = membership?.status === "active" || isAdmin;
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
         <Image source={{ uri: chama.coverUrl }} style={styles.cover} contentFit="cover" />
         <View style={styles.headerBody}>
           <Text style={styles.name}>{chama.name}</Text>
@@ -138,14 +123,14 @@ export default function ChamaDetailScreen({ route, navigation }) {
           </View>
 
           {!membership && (
-            <TouchableOpacity style={styles.primaryButton} onPress={handleJoin}>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => setJoinModalVisible(true)}>
               <Text style={styles.primaryButtonText}>{chama.joinPolicy === "open" && chama.remaining > 0 ? "Join Chama" : "Request to Join"}</Text>
             </TouchableOpacity>
           )}
           {membership?.status === "pending" && <Text style={styles.pendingNote}>Your request to join is awaiting admin approval.</Text>}
           {membership?.status === "waitlisted" && <Text style={styles.pendingNote}>You're on the waitlist — you'll be notified when a spot opens.</Text>}
           {membership?.status === "rejected" && (
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleJoin}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => setJoinModalVisible(true)}>
               <Text style={styles.secondaryButtonText}>Your request was declined — request again</Text>
             </TouchableOpacity>
           )}
@@ -185,7 +170,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
 
         <View style={styles.tabBody}>
           {tab === "overview" && <OverviewTab chama={chama} chamaId={chamaId} myTotal={myTotal} isMember={isMember} defaulter={defaulter} />}
-          {tab === "feed" && <FeedTab chamaId={chamaId} isMember={isMember} userId={user?.id} />}
+          {tab === "feed" && <FeedTab chamaId={chamaId} chamaName={chama.name} isMember={isMember} userId={user?.id} navigation={navigation} />}
           {tab === "ledger" && <LedgerTab chamaId={chamaId} isMember={isMember} chama={chama} />}
           {tab === "payouts" && <PayoutsTab chamaId={chamaId} chama={chama} isMember={isMember} userId={user?.id} />}
           {tab === "members" && <MembersTab chamaId={chamaId} isMember={isMember} chama={chama} myUserId={user?.id} />}
@@ -201,6 +186,14 @@ export default function ChamaDetailScreen({ route, navigation }) {
         owed={owed}
         lateFeesOwed={lateFeesOwed}
         onDone={() => { setContributeVisible(false); load(); }}
+      />
+      <JoinRequestModal
+        visible={joinModalVisible}
+        onClose={() => setJoinModalVisible(false)}
+        chamaId={chamaId}
+        groupCounty={chama.county}
+        navigation={navigation}
+        onDone={(membership) => { setJoinModalVisible(false); setMembership(membership); load(); }}
       />
     </View>
   );
@@ -223,16 +216,6 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter }) {
 
   return (
     <View>
-      <View style={styles.cautionBanner}>
-        <Ionicons name="shield-checkmark-outline" size={18} color="#8A6D00" />
-        <Text style={styles.cautionText}>
-          Don't send money to a stranger without doing some due diligence (uchunguzi kidogo). Make sure you attend physical meetings of the
-          chama, meet the other members, and get to know one another.{"\n\n"}
-          If this chama is not in your county/sub-county, LEAVE. Don't risk getting conned.{"\n\n"}
-          And lastly, if a project/chama involves large sums of money, please protect yourself and involve legal practitioners.
-        </Text>
-      </View>
-
       {isMember && (
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Your total contributions</Text>
@@ -293,6 +276,16 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter }) {
           <Text style={styles.frozenText}>This Chama's funds are frozen pending investigation.</Text>
         </View>
       )}
+
+      <View style={styles.cautionBanner}>
+        <Ionicons name="shield-checkmark-outline" size={18} color="#8A6D00" />
+        <Text style={styles.cautionText}>
+          Don't send money to a stranger without doing some due diligence (uchunguzi kidogo). Make sure you attend physical meetings of the
+          chama, meet the other members, and get to know one another.{"\n\n"}
+          If this chama is not in your county/sub-county, LEAVE. Don't risk getting conned.{"\n\n"}
+          And lastly, if a project/chama involves large sums of money, please protect yourself and involve legal practitioners.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -1095,10 +1088,8 @@ function ReportFraudModal({ groupPath, target, onClose, onDone }) {
   );
 }
 
-function FeedTab({ chamaId, isMember, userId }) {
+function FeedTab({ chamaId, chamaName, isMember, userId, navigation }) {
   const [posts, setPosts] = useState(null);
-  const [text, setText] = useState("");
-  const [posting, setPosting] = useState(false);
   const { isSaved, toggleSave, loadSaved } = useSaved();
 
   const load = useCallback(() => {
@@ -1106,20 +1097,6 @@ function FeedTab({ chamaId, isMember, userId }) {
     client.get(`/chama/${chamaId}/posts`).then((r) => setPosts(r.data)).catch(() => setPosts([]));
   }, [chamaId, isMember]);
   useFocusEffect(useCallback(() => { load(); loadSaved(); }, [load, loadSaved]));
-
-  async function submitPost() {
-    if (!text.trim()) return;
-    setPosting(true);
-    try {
-      await client.post(`/chama/${chamaId}/posts`, { content: text.trim() });
-      setText("");
-      load();
-    } catch (e) {
-      Alert.alert("Couldn't post", e.response?.data?.error || e.message);
-    } finally {
-      setPosting(false);
-    }
-  }
 
   async function react(postId, reaction) {
     try {
@@ -1143,12 +1120,13 @@ function FeedTab({ chamaId, isMember, userId }) {
   if (!posts) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
-      <View style={styles.composer}>
-        <TextInput style={[styles.input, styles.multiline]} placeholder="Share something with the group..." value={text} onChangeText={setText} multiline />
-        <TouchableOpacity style={styles.secondaryButton} onPress={submitPost} disabled={posting}>
-          <Text style={styles.secondaryButtonText}>{posting ? "Posting..." : "Post"}</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={styles.composerTeaser}
+        onPress={() => navigation.navigate("CreatePost", { collabGroupKind: "chama", collabGroupId: chamaId, collabGroupLabel: chamaName })}
+      >
+        <Ionicons name="create-outline" size={18} color={COLORS.sub} />
+        <Text style={styles.composerTeaserText}>Share something with the group...</Text>
+      </TouchableOpacity>
       {posts.map((p) => (
         <PostCard
           key={p.id}
@@ -1203,6 +1181,92 @@ function ContributeModal({ visible, onClose, chamaId, owed, lateFeesOwed, onDone
         <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
           <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Mark as contributed"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
+// Applies to both a fresh join and re-requesting after a decline (chama.id
+// stays the same, just re-submits). County must match the chama's own
+// county — enforced server-side, but checked live here too so a mismatched
+// pick is caught before the user even taps submit.
+function JoinRequestModal({ visible, onClose, chamaId, groupCounty, navigation, onDone }) {
+  const { user } = useAuth();
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [county, setCounty] = useState("");
+  const [subCounty, setSubCounty] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (visible) {
+      setEmail(user?.email || "");
+      setPhone(user?.phone || "");
+      setCounty(user?.county || "");
+      setSubCounty(user?.subCounty || "");
+    }
+  }, [visible, user]);
+
+  function handleCountyChange(c) {
+    setCounty(c);
+    setSubCounty("");
+  }
+
+  const countyMismatch = !!county && county !== groupCounty;
+
+  async function submit() {
+    if (!email.trim() || !phone.trim()) return Alert.alert("Missing info", "Enter your email and phone number");
+    if (!county || !subCounty) return Alert.alert("Location required", "Select your county and sub-county");
+    if (countyMismatch) {
+      return Alert.alert(
+        "Wrong county",
+        `This chama is based in ${groupCounty}, not ${county} — joining one outside your own county is risky since you likely won't be able to attend physical meetings. Please look for one based in your own county instead.`
+      );
+    }
+    setSubmitting(true);
+    try {
+      const { data } = await client.post(`/chama/${chamaId}/join`, { email: email.trim(), phone: phone.trim(), county, subCounty });
+      Alert.alert(
+        data.membership.status === "active" ? "You're in!" : data.membership.status === "waitlisted" ? "Added to waitlist" : "Request sent",
+        data.membership.status === "active" ? "You're now a member." : data.membership.status === "waitlisted" ? "This Chama is full — you'll be notified if a spot opens up." : "The admin will review your request."
+      );
+      onDone(data.membership);
+    } catch (e) {
+      if (e.response?.data?.requiresKyc) {
+        Alert.alert("Identity verification required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Verify now", onPress: () => navigation.navigate("KYC") }]);
+      } else if (e.response?.data?.requiresGuarantors) {
+        Alert.alert("Guarantors required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Add guarantors", onPress: () => navigation.navigate("Guarantors") }]);
+      } else if (e.response?.data?.requiresAccess) {
+        Alert.alert("Chama access required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Get access", onPress: () => { onClose(); navigation.navigate("ChamaHome"); } }]);
+      } else {
+        Alert.alert("Couldn't join", e.response?.data?.error || e.message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Request to join</Text>
+        <Text style={styles.tabHint}>Admins use this to reach you directly if needed — it's only visible to them.</Text>
+        <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+        <TextInput style={styles.input} placeholder="Phone number" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+        <Text style={styles.label}>County</Text>
+        <CountyPicker value={county} onChange={handleCountyChange} />
+        <Text style={styles.label}>Sub-county</Text>
+        <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
+        {countyMismatch && (
+          <Text style={styles.owedTextWarn}>
+            This chama is based in {groupCounty} — you likely won't be able to attend physical meetings from {county}.
+          </Text>
+        )}
+        <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
+          <Text style={styles.primaryButtonText}>{submitting ? "Sending..." : "Send request"}</Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -1281,6 +1345,8 @@ const styles = StyleSheet.create({
   defaulterPill: { backgroundColor: "#FFF3CD", color: "#8A6D00", fontSize: 11, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginLeft: 6 },
   reportButton: { padding: 6, marginLeft: 6 },
   composer: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 14 },
+  composerTeaser: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, marginBottom: 14 },
+  composerTeaserText: { color: COLORS.sub, fontSize: 14 },
   postCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, marginBottom: 10 },
   postMeta: { color: COLORS.sub, fontSize: 11, marginBottom: 8 },
   postContent: { color: COLORS.ink, fontSize: 13.5, marginBottom: 10 },
@@ -1295,6 +1361,7 @@ const styles = StyleSheet.create({
   sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, paddingBottom: 28 },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },
   sheetTitle: { color: COLORS.ink, fontWeight: "800", fontSize: 16, marginBottom: 12 },
+  label: { fontSize: 12.5, color: COLORS.sub, marginBottom: 4, marginTop: 8 },
   owedText: { color: COLORS.accent, fontWeight: "700", fontSize: 13, marginBottom: 8 },
   owedTextWarn: { color: "#D32F2F", fontWeight: "600", fontSize: 11.5, marginBottom: 8 },
   smallActionBtn: { borderWidth: 1, borderColor: COLORS.accent, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 },
