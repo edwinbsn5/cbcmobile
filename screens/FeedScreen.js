@@ -34,9 +34,15 @@ function isVideoItem(item) {
   return false;
 }
 
+// "For You" (a global, ranked-by-interest discovery feed) is what a user
+// lands on when they open the app — "Following" (their own connections-only
+// feed, previously the only home feed) is one tab away.
+const DEFAULT_TAB = "forYou";
+
 export default function FeedScreen({ navigation, route }) {
   const { user } = useAuth();
   const isFocused = useIsFocused();
+  const [activeTab, setActiveTab] = useState(DEFAULT_TAB);
   const [feed, setFeed] = useState([]);
   const [storyGroups, setStoryGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,14 +74,14 @@ export default function FeedScreen({ navigation, route }) {
 
   const load = useCallback(async () => {
     const [feedRes, storiesRes] = await Promise.all([
-      client.get("/feed"),
+      client.get(activeTab === "forYou" ? "/feed/for-you" : "/feed"),
       client.get("/stories"),
     ]);
     setFeed(feedRes.data);
     setStoryGroups(storiesRes.data);
     loadSaved();
     loadReshared();
-  }, [loadSaved, loadReshared]);
+  }, [activeTab, loadSaved, loadReshared]);
 
   useFocusEffect(
     useCallback(() => {
@@ -89,6 +95,12 @@ export default function FeedScreen({ navigation, route }) {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  function switchTab(tab) {
+    if (tab === activeTab) return;
+    setLoading(true);
+    setActiveTab(tab);
   }
 
   // Group posts now appear here too (see backend routes/feed.js), but they
@@ -157,7 +169,11 @@ export default function FeedScreen({ navigation, route }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feed, focusPostId]);
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
+  // Only the very first load (nothing to show yet) takes over the whole
+  // screen — switching tabs keeps the header (incl. the tab buttons
+  // themselves) mounted and just leaves the previous tab's content up until
+  // the new tab's data arrives, so the buttons never flicker away.
+  if (loading && !feed.length) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   const hasRealContent = feed.some((item) => item.kind === "post" || item.kind === "reshare");
 
@@ -196,6 +212,17 @@ export default function FeedScreen({ navigation, route }) {
             onAddStory={() => navigation.navigate("CreateStory")}
           />
 
+          <View style={styles.feedTabs}>
+            <TouchableOpacity style={styles.feedTab} onPress={() => switchTab("following")}>
+              <Text style={[styles.feedTabText, activeTab === "following" && styles.feedTabTextActive]}>Following</Text>
+              {activeTab === "following" && <View style={styles.feedTabUnderline} />}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.feedTab} onPress={() => switchTab("forYou")}>
+              <Text style={[styles.feedTabText, activeTab === "forYou" && styles.feedTabTextActive]}>For You</Text>
+              {activeTab === "forYou" && <View style={styles.feedTabUnderline} />}
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity style={styles.composer} onPress={() => navigation.navigate("CreatePost")}>
             <Avatar uri={user?.avatar} name={user?.name} style={styles.avatar} />
             <Text style={styles.composerText}>What's on your mind?</Text>
@@ -203,7 +230,9 @@ export default function FeedScreen({ navigation, route }) {
 
           {!hasRealContent && (
             <Text style={styles.empty}>
-              Your feed is empty — it only shows your own posts and posts from people you follow. Visit a profile and tap Follow to see more here.
+              {activeTab === "following"
+                ? "Your Following feed is empty — it only shows your own posts and posts from people you follow. Visit a profile and tap Follow to see more here."
+                : "Nothing to show yet — check back once more people are posting."}
             </Text>
           )}
         </>
@@ -322,6 +351,11 @@ const styles = StyleSheet.create({
   quickItem: { flex: 1, alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 10 },
   quickIconWrap: { width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center", marginBottom: 6 },
   quickLabel: { fontSize: 11, fontWeight: "700", color: COLORS.ink },
+  feedTabs: { flexDirection: "row", marginHorizontal: 10, marginTop: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  feedTab: { flex: 1, alignItems: "center", paddingBottom: 10 },
+  feedTabText: { fontSize: 14, fontWeight: "700", color: COLORS.sub },
+  feedTabTextActive: { color: COLORS.ink },
+  feedTabUnderline: { marginTop: 8, height: 3, width: 40, borderRadius: 2, backgroundColor: COLORS.accent },
   reshareHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginHorizontal: 20, marginTop: 6 },
   reshareHeaderText: { fontSize: 12, fontWeight: "700", color: COLORS.sub },
   reshareCaption: { fontSize: 14, color: COLORS.ink, marginHorizontal: 20, marginTop: 4, lineHeight: 19 },

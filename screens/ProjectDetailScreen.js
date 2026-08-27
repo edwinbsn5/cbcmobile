@@ -12,6 +12,7 @@ import PostCard from "../components/PostCard";
 import CountyPicker from "../components/CountyPicker";
 import SubCountyPicker from "../components/SubCountyPicker";
 import { useSaved } from "../hooks/useSaved";
+import FeatureAccessModal from "../components/FeatureAccessModal";
 import { COLORS } from "../theme";
 
 function formatKES(n) { return `KES ${Math.round(n || 0).toLocaleString()}`; }
@@ -35,6 +36,8 @@ export default function ProjectDetailScreen({ route, navigation }) {
   const [tab, setTab] = useState("overview");
   const [joinVisible, setJoinVisible] = useState(false);
   const [contributeVisible, setContributeVisible] = useState(false);
+  const [accessBlocked, setAccessBlocked] = useState(false);
+  const [accessModalVisible, setAccessModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -42,17 +45,42 @@ export default function ProjectDetailScreen({ route, navigation }) {
         client.get(`/projects/${projectId}`),
         client.get(`/projects/${projectId}/my-membership`),
       ]);
+      setAccessBlocked(false);
       setProject(p);
       setMembership(mem.membership);
       setIsAdmin(mem.isAdmin);
     } catch (e) {
-      Alert.alert("Couldn't load project", e.response?.data?.error || e.message);
+      if (e.response?.data?.requiresAccess) {
+        setAccessBlocked(true);
+      } else {
+        Alert.alert("Couldn't load project", e.response?.data?.error || e.message);
+      }
     } finally {
       setLoading(false);
     }
   }, [projectId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  if (accessBlocked) {
+    return (
+      <View style={styles.accessBlockedContainer}>
+        <Ionicons name="lock-closed-outline" size={40} color={COLORS.accent} />
+        <Text style={styles.accessBlockedTitle}>Project access required</Text>
+        <Text style={styles.accessBlockedText}>You need an active Projects & Investments access pass to view this project's profile.</Text>
+        <TouchableOpacity style={styles.accessBlockedButton} onPress={() => setAccessModalVisible(true)}>
+          <Text style={styles.accessBlockedButtonText}>Get access</Text>
+        </TouchableOpacity>
+        <FeatureAccessModal
+          visible={accessModalVisible}
+          onClose={() => setAccessModalVisible(false)}
+          feature="project"
+          featureLabel="Projects & Investments"
+          onPurchased={() => { setAccessModalVisible(false); setLoading(true); load(); }}
+        />
+      </View>
+    );
+  }
 
   if (loading || !project) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
@@ -551,6 +579,11 @@ function ContributeModal({ visible, onClose, projectId, onDone }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  accessBlockedContainer: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: COLORS.bg },
+  accessBlockedTitle: { color: COLORS.ink, fontSize: 17, fontWeight: "800", marginTop: 14 },
+  accessBlockedText: { color: COLORS.sub, fontSize: 13.5, textAlign: "center", marginTop: 8, lineHeight: 19 },
+  accessBlockedButton: { backgroundColor: COLORS.accent, borderRadius: 8, paddingHorizontal: 20, paddingVertical: 12, alignItems: "center", marginTop: 16 },
+  accessBlockedButtonText: { color: COLORS.accentInk, fontWeight: "700" },
   cover: { width: "100%", height: 150, backgroundColor: "#eee" },
   headerBody: { padding: 16, backgroundColor: COLORS.surface },
   nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },

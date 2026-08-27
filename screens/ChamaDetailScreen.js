@@ -13,6 +13,7 @@ import PostCard from "../components/PostCard";
 import CountyPicker from "../components/CountyPicker";
 import SubCountyPicker from "../components/SubCountyPicker";
 import { useSaved } from "../hooks/useSaved";
+import FeatureAccessModal from "../components/FeatureAccessModal";
 import { COLORS } from "../theme";
 
 const SCAM_TIPS = [
@@ -68,6 +69,8 @@ export default function ChamaDetailScreen({ route, navigation }) {
   const [tab, setTab] = useState("overview");
   const [contributeVisible, setContributeVisible] = useState(false);
   const [joinModalVisible, setJoinModalVisible] = useState(false);
+  const [accessBlocked, setAccessBlocked] = useState(false);
+  const [accessModalVisible, setAccessModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -75,6 +78,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
         client.get(`/chama/${chamaId}`),
         client.get(`/chama/${chamaId}/my-membership`),
       ]);
+      setAccessBlocked(false);
       setChama(c);
       setMembership(mem.membership);
       setIsAdmin(mem.isAdmin);
@@ -86,13 +90,37 @@ export default function ChamaDetailScreen({ route, navigation }) {
         setLateFeesOwed(mine.lateFeesOwed || 0);
       }
     } catch (e) {
-      Alert.alert("Couldn't load Chama", e.response?.data?.error || e.message);
+      if (e.response?.data?.requiresAccess) {
+        setAccessBlocked(true);
+      } else {
+        Alert.alert("Couldn't load Chama", e.response?.data?.error || e.message);
+      }
     } finally {
       setLoading(false);
     }
   }, [chamaId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  if (accessBlocked) {
+    return (
+      <View style={styles.accessBlockedContainer}>
+        <Ionicons name="lock-closed-outline" size={40} color={COLORS.accent} />
+        <Text style={styles.accessBlockedTitle}>Chama access required</Text>
+        <Text style={styles.accessBlockedText}>You need an active Chama access pass to view this chama's profile.</Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={() => setAccessModalVisible(true)}>
+          <Text style={styles.primaryButtonText}>Get access</Text>
+        </TouchableOpacity>
+        <FeatureAccessModal
+          visible={accessModalVisible}
+          onClose={() => setAccessModalVisible(false)}
+          feature="chama"
+          featureLabel="Chama"
+          onPurchased={() => { setAccessModalVisible(false); setLoading(true); load(); }}
+        />
+      </View>
+    );
+  }
 
   if (loading || !chama) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
@@ -1289,6 +1317,9 @@ const styles = StyleSheet.create({
   metaChipText: { color: COLORS.ink, fontWeight: "700", fontSize: 11.5 },
   primaryButton: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 12, alignItems: "center", marginTop: 14 },
   primaryButtonText: { color: COLORS.accentInk, fontWeight: "700" },
+  accessBlockedContainer: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: COLORS.bg },
+  accessBlockedTitle: { color: COLORS.ink, fontSize: 17, fontWeight: "800", marginTop: 14 },
+  accessBlockedText: { color: COLORS.sub, fontSize: 13.5, textAlign: "center", marginTop: 8, lineHeight: 19 },
   primaryButtonFlex: { flex: 1, flexDirection: "row", gap: 6, justifyContent: "center", backgroundColor: COLORS.accent, borderRadius: 8, padding: 12, alignItems: "center" },
   secondaryButton: { borderWidth: 1, borderColor: COLORS.accent, borderRadius: 8, padding: 11, alignItems: "center", marginTop: 10 },
   secondaryButtonText: { color: COLORS.accent, fontWeight: "700" },
