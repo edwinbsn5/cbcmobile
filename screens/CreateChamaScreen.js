@@ -32,7 +32,8 @@ export default function CreateChamaScreen({ navigation }) {
   const [contributionFrequency, setContributionFrequency] = useState("weekly");
   const [contributionLateFeeRate, setContributionLateFeeRate] = useState("10");
   const [goalAmount, setGoalAmount] = useState("");
-  const [payoutModel, setPayoutModel] = useState("merry_go_round");
+  // Investment Groups are table-banking only now — no picker, nothing to change.
+  const payoutModel = "table_banking";
   const [loanInterestRate, setLoanInterestRate] = useState("10");
   const [loanMaxMultiplier, setLoanMaxMultiplier] = useState("3");
   const [loanTermWeeks, setLoanTermWeeks] = useState("4");
@@ -47,15 +48,6 @@ export default function CreateChamaScreen({ navigation }) {
   function handleCountyChange(c) {
     setCounty(c);
     setSubCounty("");
-  }
-
-  // Table banking lends against members' contribution history, so it needs
-  // a predictable recurring cadence — switching to it forces (and locks)
-  // fixed recurring contributions, same rule routes/chama.js enforces
-  // server-side.
-  function handlePayoutModelChange(model) {
-    setPayoutModel(model);
-    if (model === "table_banking") setContributionType("fixed_recurring");
   }
 
   async function handlePickCover() {
@@ -160,58 +152,25 @@ export default function CreateChamaScreen({ navigation }) {
         <Text style={styles.label}>Target number of positions</Text>
         <TextInput style={styles.input} value={maxMembers} onChangeText={setMaxMembers} keyboardType="number-pad" placeholder="10" />
 
-        <Text style={styles.sectionTitle}>Contribution type</Text>
-        <OptionRow
-          options={
-            payoutModel === "table_banking"
-              ? [{ value: "fixed_recurring", label: "Fixed recurring" }]
-              : [{ value: "fixed_recurring", label: "Fixed recurring" }, { value: "goal_based", label: "Goal-based" }]
-          }
-          value={contributionType} onChange={setContributionType}
-        />
-        {payoutModel === "table_banking" && (
-          <Text style={styles.hint}>Table banking requires a fixed weekly or monthly contribution to fund the loan pool.</Text>
-        )}
-        {contributionType === "fixed_recurring" ? (
-          <>
-            <Text style={styles.label}>Contribution amount (KES)</Text>
-            <TextInput style={styles.input} value={contributionAmount} onChangeText={setContributionAmount} keyboardType="number-pad" placeholder="500" />
-            <Text style={styles.label}>Frequency</Text>
-            <OptionRow options={[{ value: "weekly", label: "Weekly" }, { value: "monthly", label: "Monthly" }]} value={contributionFrequency} onChange={setContributionFrequency} />
-            <Text style={styles.label}>Late fee (% of the missed contribution, charged once past deadline)</Text>
-            <TextInput style={styles.input} value={contributionLateFeeRate} onChangeText={setContributionLateFeeRate} keyboardType="decimal-pad" placeholder="10" />
-          </>
-        ) : (
-          <>
-            <Text style={styles.label}>Savings goal (KES)</Text>
-            <TextInput style={styles.input} value={goalAmount} onChangeText={setGoalAmount} keyboardType="number-pad" placeholder="500000" />
-          </>
-        )}
+        <Text style={styles.sectionTitle}>Contribution</Text>
+        <Text style={styles.hint}>Table banking requires a fixed weekly or monthly contribution to fund the loan pool.</Text>
+        <Text style={styles.label}>Contribution amount (KES)</Text>
+        <TextInput style={styles.input} value={contributionAmount} onChangeText={setContributionAmount} keyboardType="number-pad" placeholder="500" />
+        <Text style={styles.label}>Frequency</Text>
+        <OptionRow options={[{ value: "weekly", label: "Weekly" }, { value: "monthly", label: "Monthly" }]} value={contributionFrequency} onChange={setContributionFrequency} />
+        <Text style={styles.label}>Late fee (% of the missed contribution, charged once past deadline)</Text>
+        <TextInput style={styles.input} value={contributionLateFeeRate} onChangeText={setContributionLateFeeRate} keyboardType="decimal-pad" placeholder="10" />
 
-        <Text style={styles.sectionTitle}>Payout model</Text>
-        <OptionRow
-          options={[{ value: "merry_go_round", label: "Merry-go-round" }, { value: "pooled_savings", label: "Pooled savings" }, { value: "table_banking", label: "Table banking" }]}
-          value={payoutModel} onChange={handlePayoutModelChange}
-        />
-        <Text style={styles.hint}>
-          {payoutModel === "merry_go_round"
-            ? "Funds rotate — one member receives the payout each cycle."
-            : payoutModel === "pooled_savings"
-            ? "Funds stay pooled — members can request withdrawals with admin approval."
-            : "Funds stay pooled and members can borrow against them, with interest and a repayment term you set below."}
-        </Text>
-        {payoutModel === "table_banking" && (
-          <>
-            <Text style={styles.label}>Loan interest rate (% of the amount borrowed)</Text>
-            <TextInput style={styles.input} value={loanInterestRate} onChangeText={setLoanInterestRate} keyboardType="decimal-pad" placeholder="10" />
-            <Text style={styles.label}>Max loan size (× a member's total contributions)</Text>
-            <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" placeholder="3" />
-            <Text style={styles.label}>Repayment term (weeks)</Text>
-            <TextInput style={styles.input} value={loanTermWeeks} onChangeText={setLoanTermWeeks} keyboardType="number-pad" placeholder="4" />
-            <Text style={styles.label}>Late penalty (% of the outstanding balance, charged once overdue)</Text>
-            <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" placeholder="5" />
-          </>
-        )}
+        <Text style={styles.sectionTitle}>Table banking terms</Text>
+        <Text style={styles.hint}>Funds stay pooled and members can borrow against them, with interest and a repayment term you set below.</Text>
+        <Text style={styles.label}>Loan interest rate (% of the amount borrowed)</Text>
+        <TextInput style={styles.input} value={loanInterestRate} onChangeText={setLoanInterestRate} keyboardType="decimal-pad" placeholder="10" />
+        <Text style={styles.label}>Max loan size (× a member's total contributions)</Text>
+        <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" placeholder="3" />
+        <Text style={styles.label}>Repayment term (weeks)</Text>
+        <TextInput style={styles.input} value={loanTermWeeks} onChangeText={setLoanTermWeeks} keyboardType="number-pad" placeholder="4" />
+        <Text style={styles.label}>Late penalty (% of the outstanding balance, charged once overdue)</Text>
+        <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" placeholder="5" />
 
         <Text style={styles.sectionTitle}>Joining</Text>
         <OptionRow options={[{ value: "approval", label: "Requires approval" }, { value: "open", label: "Open until full" }]} value={joinPolicy} onChange={setJoinPolicy} />

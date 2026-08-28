@@ -446,11 +446,11 @@ function VotesTab({ chamaId }) {
   if (!votes) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
-      <Text style={styles.tabHint}>Removing a member or flagging them for Wall of Shame is decided by member vote, not admins alone — members start and cast these from the Chama's Members tab.</Text>
+      <Text style={styles.tabHint}>Removing a member is decided by member vote, not admins alone — members start and cast these from the group's Members tab.</Text>
       {votes.map((v) => (
         <View key={v.id} style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.rowName}>{v.voteType === "remove" ? "Remove" : "Wall of Shame"}: {v.target?.name}</Text>
+            <Text style={styles.rowName}>Remove: {v.target?.name}</Text>
             <Text style={styles.rowSub}>{v.tally.yes}/{v.tally.required} yes needed · started by {v.initiator?.name}</Text>
           </View>
           <Text style={[styles.rowSub, v.status === "passed" && { color: "#2E7D32" }, v.status === "failed" && { color: "#D32F2F" }]}>{v.status}</Text>

@@ -54,13 +54,13 @@ import ChamaScreen from "./screens/ChamaScreen";
 import CreateChamaScreen from "./screens/CreateChamaScreen";
 import ChamaDetailScreen from "./screens/ChamaDetailScreen";
 import ChamaAdminScreen from "./screens/ChamaAdminScreen";
-import ProjectsScreen from "./screens/ProjectsScreen";
-import CreateProjectScreen from "./screens/CreateProjectScreen";
-import ProjectDetailScreen from "./screens/ProjectDetailScreen";
-import ProjectAdminScreen from "./screens/ProjectAdminScreen";
+import MyPlansScreen from "./screens/MyPlansScreen";
+import MyPlansGoalScreen from "./screens/MyPlansGoalScreen";
+import ChamaProjectsScreen from "./screens/ChamaProjectsScreen";
+import CreateChamaProjectScreen from "./screens/CreateChamaProjectScreen";
+import ChamaProjectDetailScreen from "./screens/ChamaProjectDetailScreen";
 import KYCScreen from "./screens/KYCScreen";
 import GuarantorsScreen from "./screens/GuarantorsScreen";
-import WallOfShameScreen from "./screens/WallOfShameScreen";
 import MyFraudReportsScreen from "./screens/MyFraudReportsScreen";
 import BoostPostScreen from "./screens/BoostPostScreen";
 import MySponsoredPostsScreen from "./screens/MySponsoredPostsScreen";
@@ -209,7 +209,7 @@ function MainTabs({ navigation }) {
           name="ChamaTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "Chama & Savings",
+            tabBarLabel: "Investment Groups",
             tabBarIcon: ({ color, size }) => <Ionicons name="cash-outline" size={size} color={color} />,
           }}
           listeners={{
@@ -238,16 +238,16 @@ function MainTabs({ navigation }) {
           }}
         />
         <Tabs.Screen
-          name="ProjectsTab"
+          name="MyPlansTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "Investments & Projects",
+            tabBarLabel: "My Plans",
             tabBarIcon: ({ color, size }) => <Ionicons name="rocket-outline" size={size} color={color} />,
           }}
           listeners={{
             tabPress: (e) => {
               e.preventDefault();
-              navigation.navigate("ProjectsHome");
+              navigation.navigate("MyPlansHome");
             },
           }}
         />
@@ -328,17 +328,17 @@ function RootNavigator() {
         <RootStack.Screen name="TrendingHashtags" component={TrendingHashtagsScreen} options={{ title: "Trending" }} />
         <RootStack.Screen name="FeedVideoFullscreen" component={FeedVideoFullscreenScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: "Create Group" }} />
-        <RootStack.Screen name="ChamaHome" component={ChamaScreen} options={{ title: "Chama & Savings" }} />
-        <RootStack.Screen name="CreateChama" component={CreateChamaScreen} options={{ title: "Create Chama" }} />
-        <RootStack.Screen name="ChamaDetail" component={ChamaDetailScreen} options={{ title: "Chama" }} />
-        <RootStack.Screen name="ChamaAdmin" component={ChamaAdminScreen} options={{ title: "Manage Chama" }} />
-        <RootStack.Screen name="ProjectsHome" component={ProjectsScreen} options={{ title: "Investments & Projects" }} />
-        <RootStack.Screen name="CreateProject" component={CreateProjectScreen} options={{ title: "Create Project" }} />
-        <RootStack.Screen name="ProjectDetail" component={ProjectDetailScreen} options={{ title: "Project" }} />
-        <RootStack.Screen name="ProjectAdmin" component={ProjectAdminScreen} options={{ title: "Manage Project" }} />
+        <RootStack.Screen name="ChamaHome" component={ChamaScreen} options={{ title: "Investment Groups" }} />
+        <RootStack.Screen name="CreateChama" component={CreateChamaScreen} options={{ title: "Create Investment Group" }} />
+        <RootStack.Screen name="ChamaDetail" component={ChamaDetailScreen} options={{ title: "Investment Group" }} />
+        <RootStack.Screen name="ChamaAdmin" component={ChamaAdminScreen} options={{ title: "Manage Investment Group" }} />
+        <RootStack.Screen name="ChamaProjects" component={ChamaProjectsScreen} options={{ title: "Project Updates" }} />
+        <RootStack.Screen name="CreateChamaProject" component={CreateChamaProjectScreen} options={{ title: "New Project" }} />
+        <RootStack.Screen name="ChamaProjectDetail" component={ChamaProjectDetailScreen} options={{ title: "Project" }} />
+        <RootStack.Screen name="MyPlansHome" component={MyPlansScreen} options={{ title: "My Plans" }} />
+        <RootStack.Screen name="MyPlansGoal" component={MyPlansGoalScreen} options={{ title: "Goal" }} />
         <RootStack.Screen name="KYC" component={KYCScreen} options={{ title: "Verify My Identity" }} />
         <RootStack.Screen name="Guarantors" component={GuarantorsScreen} options={{ title: "My Guarantors" }} />
-        <RootStack.Screen name="WallOfShame" component={WallOfShameScreen} options={{ title: "Wall of Shame" }} />
         <RootStack.Screen name="MyFraudReports" component={MyFraudReportsScreen} options={{ title: "Fraud Reports Against Me" }} />
         <RootStack.Screen name="BoostPost" component={BoostPostScreen} options={{ title: "Boost Post" }} />
         <RootStack.Screen name="MySponsoredPosts" component={MySponsoredPostsScreen} options={{ title: "My Sponsored Posts" }} />

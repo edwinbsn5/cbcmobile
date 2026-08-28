@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, FlatList, TextInput, Modal, TouchableWithoutFeedback, Alert, Switch } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, FlatList, TextInput, Modal, TouchableWithoutFeedback, Alert, Switch, Linking } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "@react-navigation/native";
@@ -16,13 +16,6 @@ import { useSaved } from "../hooks/useSaved";
 import FeatureAccessModal from "../components/FeatureAccessModal";
 import { COLORS } from "../theme";
 
-const SCAM_TIPS = [
-  "Never send contributions or loan repayments to a member's personal M-Pesa \"to save time\" — pay at the group meeting, in front of others.",
-  "Get a receipt or written note for every contribution and repayment, even in a WhatsApp group chat.",
-  "Be wary of anyone pushing to skip the admin/treasurer or bypass the group's usual process \"just this once.\"",
-  "If you're an admin or treasurer: record every contribution and payout promptly — being slow to update the ledger looks the same as hiding something.",
-  "Vouch for people you actually know before inviting them — a chama spreads fastest through trust, and so does fraud.",
-];
 
 async function pickPhoto() {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -48,10 +41,7 @@ const TABS = [
   { key: "overview", label: "Overview" },
   { key: "feed", label: "Discussions" },
   { key: "ledger", label: "Ledger" },
-  { key: "payouts", label: "Payouts" },
-  { key: "members", label: "Members" },
   { key: "achievements", label: "Achievements" },
-  { key: "wall_of_shame", label: "Wall of Shame" },
 ];
 
 export default function ChamaDetailScreen({ route, navigation }) {
@@ -115,7 +105,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
           visible={accessModalVisible}
           onClose={() => setAccessModalVisible(false)}
           feature="chama"
-          featureLabel="Chama"
+          featureLabel="Investment Group"
           onPurchased={() => { setAccessModalVisible(false); setLoading(true); load(); }}
         />
       </View>
@@ -185,6 +175,13 @@ export default function ChamaDetailScreen({ route, navigation }) {
                 <Ionicons name="checkmark-circle-outline" size={16} color={COLORS.accentInk} />
                 <Text style={styles.primaryButtonText}>Mark as contributed</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.secondaryButtonFlex}
+                onPress={() => navigation.navigate("ChamaProjects", { chamaId, chamaName: chama.name, isAdmin })}
+              >
+                <Ionicons name="rocket-outline" size={16} color={COLORS.accent} />
+                <Text style={styles.secondaryButtonText}>Project Updates</Text>
+              </TouchableOpacity>
               {isAdmin && (
                 <TouchableOpacity style={styles.secondaryButtonFlex} onPress={() => navigation.navigate("ChamaAdmin", { chamaId })}>
                   <Ionicons name="settings-outline" size={16} color={COLORS.accent} />
@@ -205,21 +202,36 @@ export default function ChamaDetailScreen({ route, navigation }) {
         <View style={styles.tabRow}>
           {TABS.map((t) => (
             <TouchableOpacity key={t.key} style={[styles.tab, tab === t.key && styles.tabActive]} onPress={() => setTab(t.key)}>
-              <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>
-                {t.key === "payouts" ? (chama.payoutModel === "merry_go_round" ? "Payouts" : chama.payoutModel === "table_banking" ? "Loans" : "Withdrawals") : t.label}
-              </Text>
+              <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={styles.tabBody}>
-          {tab === "overview" && <OverviewTab chama={chama} chamaId={chamaId} myTotal={myTotal} isMember={isMember} defaulter={defaulter} />}
+          {tab === "overview" && <OverviewTab chama={chama} chamaId={chamaId} myTotal={myTotal} isMember={isMember} defaulter={defaulter} isAdmin={isAdmin} userId={user?.id} navigation={navigation} />}
           {tab === "feed" && <FeedTab chamaId={chamaId} chamaName={chama.name} isMember={isMember} userId={user?.id} navigation={navigation} />}
-          {tab === "ledger" && <LedgerTab chamaId={chamaId} isMember={isMember} chama={chama} />}
-          {tab === "payouts" && <PayoutsTab chamaId={chamaId} chama={chama} isMember={isMember} userId={user?.id} />}
-          {tab === "members" && <MembersTab chamaId={chamaId} isMember={isMember} chama={chama} myUserId={user?.id} />}
+          {tab === "ledger" && (
+            isMember ? (
+              <View>
+                <Text style={styles.sectionHeading}>Ledger</Text>
+                <LedgerTab chamaId={chamaId} isMember={isMember} chama={chama} />
+                <View style={styles.sectionDivider} />
+                <Text style={styles.sectionHeading}>
+                  {chama.payoutModel === "merry_go_round" ? "Payouts" : chama.payoutModel === "table_banking" ? "Loans" : "Withdrawals"}
+                </Text>
+                <PayoutsTab chamaId={chamaId} chama={chama} isMember={isMember} userId={user?.id} />
+                <View style={styles.sectionDivider} />
+                <Text style={styles.sectionHeading}>Members</Text>
+                <MembersTab chamaId={chamaId} isMember={isMember} chama={chama} myUserId={user?.id} isAdmin={isAdmin} />
+                <View style={styles.sectionDivider} />
+                <Text style={styles.sectionHeading}>Plans & Documents</Text>
+                <DocumentsTab chamaId={chamaId} isMember={isMember} isAdmin={isAdmin} />
+              </View>
+            ) : (
+              <Text style={styles.gatedText}>Join this Chama to view the ledger, payouts, and members.</Text>
+            )
+          )}
           {tab === "achievements" && <AchievementsTab chamaId={chamaId} isMember={isMember} />}
-          {tab === "wall_of_shame" && <WallOfShameTab chamaId={chamaId} isMember={isMember} />}
         </View>
       </ScrollView>
 
@@ -247,15 +259,59 @@ function formatDate(ts) {
   return ts ? new Date(ts).toLocaleDateString() : "—";
 }
 
-function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter }) {
+function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, userId, navigation }) {
   const [loanInfo, setLoanInfo] = useState(null);
   const [allLoans, setAllLoans] = useState(null);
+  const [announcements, setAnnouncements] = useState(null);
+  const [announceText, setAnnounceText] = useState("");
+  const [posting, setPosting] = useState(false);
 
   useFocusEffect(useCallback(() => {
     if (!isMember || chama.payoutModel !== "table_banking") return;
     client.get(`/chama/${chamaId}/loans/mine`).then((r) => setLoanInfo(r.data)).catch(() => setLoanInfo(null));
     client.get(`/chama/${chamaId}/loans`).then((r) => setAllLoans(r.data)).catch(() => setAllLoans([]));
   }, [chamaId, isMember, chama.payoutModel]));
+
+  const loadAnnouncements = useCallback(() => {
+    if (!isMember) return;
+    client.get(`/chama/${chamaId}/announcements`).then((r) => setAnnouncements(r.data)).catch(() => setAnnouncements([]));
+  }, [chamaId, isMember]);
+  useFocusEffect(useCallback(() => { loadAnnouncements(); }, [loadAnnouncements]));
+
+  async function postAnnouncement() {
+    if (!announceText.trim()) return;
+    setPosting(true);
+    try {
+      await client.post(`/chama/${chamaId}/announcements`, { content: announceText.trim() });
+      setAnnounceText("");
+      loadAnnouncements();
+    } catch (e) {
+      Alert.alert("Couldn't post", e.response?.data?.error || e.message);
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  function handleLeave() {
+    Alert.alert(
+      "Leave this chama?",
+      "You'll lose access immediately and would need to request to join again.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave", style: "destructive",
+          onPress: async () => {
+            try {
+              await client.post(`/chama/${chamaId}/leave`);
+              navigation.navigate("ChamaHome");
+            } catch (e) {
+              Alert.alert("Couldn't leave", e.response?.data?.error || e.message);
+            }
+          },
+        },
+      ]
+    );
+  }
 
   const myActiveLoan = loanInfo?.loans.find((l) => l.status === "active");
   const guaranteeing = loanInfo?.guaranteeing || [];
@@ -283,6 +339,38 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter }) {
           )}
         </View>
       </ScrollView>
+
+      {isMember && (
+        <View style={styles.announcementsCard}>
+          <Text style={styles.sectionHeading}>Announcements</Text>
+          {isAdmin && (
+            <View style={styles.announceComposer}>
+              <TextInput
+                style={styles.announceInput}
+                placeholder="Meeting date, reschedule, other news..."
+                value={announceText}
+                onChangeText={setAnnounceText}
+                multiline
+              />
+              <TouchableOpacity style={styles.announcePostBtn} onPress={postAnnouncement} disabled={posting || !announceText.trim()}>
+                <Text style={styles.announcePostBtnText}>{posting ? "Posting..." : "Post"}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {!announcements ? (
+            <ActivityIndicator size="small" color={COLORS.accent} />
+          ) : announcements.length ? (
+            announcements.map((a) => (
+              <View key={a.id} style={styles.announcementRow}>
+                <Text style={styles.announcementContent}>{a.content}</Text>
+                <Text style={styles.announcementMeta}>{a.poster?.name} · {formatDate(a.createdAt)}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.infoValue}>No announcements yet.</Text>
+          )}
+        </View>
+      )}
 
       {isMember && chama.payoutModel === "table_banking" && (
         <View style={styles.infoCard}>
@@ -359,6 +447,12 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter }) {
           And lastly, if a project/chama involves large sums of money, please protect yourself and involve legal practitioners.
         </Text>
       </View>
+
+      {isMember && userId !== chama.creatorId && (
+        <TouchableOpacity style={styles.leaveButton} onPress={handleLeave}>
+          <Text style={styles.leaveButtonText}>Leave this Chama</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -865,7 +959,7 @@ function WithdrawalRequestModal({ visible, onClose, baseUrl, onDone }) {
   );
 }
 
-function MembersTab({ chamaId, isMember, chama, myUserId }) {
+function MembersTab({ chamaId, isMember, chama, myUserId, isAdmin }) {
   const [members, setMembers] = useState(null);
   const [error, setError] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
@@ -889,6 +983,27 @@ function MembersTab({ chamaId, isMember, chama, myUserId }) {
     }
   }
 
+  function handleRemoveMember(m) {
+    Alert.alert(
+      `Remove ${m.user?.name}?`,
+      "They'll lose access to this chama immediately. This can't be undone from here — they'd need to request to join again.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove", style: "destructive",
+          onPress: async () => {
+            try {
+              await client.post(`/chama/${chamaId}/members/${m.id}/remove`);
+              load();
+            } catch (e) {
+              Alert.alert("Couldn't remove member", e.response?.data?.error || e.message);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view members.</Text>;
   if (error) return <Text style={styles.gatedText}>{error}</Text>;
   if (!members) return <ActivityIndicator color={COLORS.accent} />;
@@ -899,7 +1014,7 @@ function MembersTab({ chamaId, isMember, chama, myUserId }) {
           <Text style={[styles.tabHint, { fontWeight: "700" }]}>Open votes</Text>
           {openVotes.map((v) => (
             <View key={v.id} style={styles.voteCard}>
-              <Text style={styles.ledgerName}>{v.voteType === "remove" ? "Remove" : "Wall of Shame"}: {v.target?.name}</Text>
+              <Text style={styles.ledgerName}>Remove: {v.target?.name}</Text>
               <Text style={styles.ledgerMeta}>{v.reason || "No reason given"} · {v.tally.yes}/{v.tally.required} yes needed · {v.tally.votedCount}/{v.tally.eligible} voted</Text>
               {v.targetUserId !== myUserId && (
                 <View style={[styles.rowActions, { marginTop: 8 }]}>
@@ -929,6 +1044,11 @@ function MembersTab({ chamaId, isMember, chama, myUserId }) {
               <Ionicons name="alert-circle-outline" size={16} color="#D32F2F" />
             </TouchableOpacity>
           )}
+          {isAdmin && m.userId !== chama.creatorId && (
+            <TouchableOpacity style={styles.reportButton} onPress={() => handleRemoveMember(m)}>
+              <Ionicons name="person-remove-outline" size={16} color="#D32F2F" />
+            </TouchableOpacity>
+          )}
         </View>
       ))}
       <ReportFraudModal groupPath={`/chama/${chamaId}`} target={reportTarget} onClose={() => setReportTarget(null)} onDone={() => setReportTarget(null)} />
@@ -937,16 +1057,59 @@ function MembersTab({ chamaId, isMember, chama, myUserId }) {
   );
 }
 
+// "Plans & Documents" — link-based (a title + an external URL), admin-only to add:
+// business plan, meeting minutes, group constitution are official group
+// records, not something any member should be able to post.
+function DocumentsTab({ chamaId, isMember, isAdmin }) {
+  const [docs, setDocs] = useState(null);
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const load = useCallback(() => { if (isMember) client.get(`/chama/${chamaId}/documents`).then((r) => setDocs(r.data)).catch(() => setDocs([])); }, [chamaId, isMember]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function add() {
+    if (!title.trim() || !url.trim()) return Alert.alert("Missing info", "Add both a title and a link");
+    try {
+      await client.post(`/chama/${chamaId}/documents`, { title: title.trim(), url: url.trim() });
+      setTitle(""); setUrl(""); load();
+    } catch (e) {
+      Alert.alert("Couldn't add", e.response?.data?.error || e.message);
+    }
+  }
+
+  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view its documents.</Text>;
+  if (!docs) return <ActivityIndicator color={COLORS.accent} />;
+  return (
+    <View>
+      {isAdmin && (
+        <View style={styles.composer}>
+          <TextInput style={styles.input} placeholder="Title (e.g. Business Plan)" value={title} onChangeText={setTitle} />
+          <TextInput style={styles.input} placeholder="Link (https://...)" value={url} onChangeText={setUrl} autoCapitalize="none" />
+          <TouchableOpacity style={styles.secondaryButton} onPress={add}><Text style={styles.secondaryButtonText}>Add document</Text></TouchableOpacity>
+        </View>
+      )}
+      {docs.map((d) => (
+        <TouchableOpacity key={d.id} style={styles.ledgerRow} onPress={() => Linking.openURL(d.url)}>
+          <Ionicons name="document-text-outline" size={18} color={COLORS.accent} style={{ marginRight: 10 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.ledgerName}>{d.title}</Text>
+            <Text style={styles.ledgerMeta} numberOfLines={1}>{d.url}</Text>
+          </View>
+        </TouchableOpacity>
+      ))}
+      {!docs.length && <Text style={styles.gatedText}>No documents shared yet.</Text>}
+    </View>
+  );
+}
+
 function StartVoteModal({ chamaId, target, onClose, onDone }) {
-  const [voteType, setVoteType] = useState("remove");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
-    if (voteType === "wall_of_shame" && !reason.trim()) return Alert.alert("Reason required", "Say why you're flagging this member for fraud");
     setSubmitting(true);
     try {
-      await client.post(`/chama/${chamaId}/votes`, { targetUserId: target.userId, voteType, reason: reason.trim() || undefined });
+      await client.post(`/chama/${chamaId}/votes`, { targetUserId: target.userId, voteType: "remove", reason: reason.trim() || undefined });
       Alert.alert("Vote started", "Other members can now cast their vote from this tab.");
       setReason("");
       onDone();
@@ -962,22 +1125,9 @@ function StartVoteModal({ chamaId, target, onClose, onDone }) {
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Start a vote on {target?.user?.name}</Text>
-        <Text style={styles.tabHint}>This isn't an admin decision — it passes only once more than half the other active members vote yes.</Text>
-        <View style={styles.optionRow}>
-          <TouchableOpacity style={[styles.optionChip, voteType === "remove" && styles.optionChipActive]} onPress={() => setVoteType("remove")}>
-            <Text style={[styles.optionChipText, voteType === "remove" && styles.optionChipTextActive]}>Remove from group</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.optionChip, voteType === "wall_of_shame" && styles.optionChipActive]} onPress={() => setVoteType("wall_of_shame")}>
-            <Text style={[styles.optionChipText, voteType === "wall_of_shame" && styles.optionChipTextActive]}>Flag for Wall of Shame</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.tabHint}>
-          {voteType === "remove"
-            ? "Ends their membership in this Chama if the vote passes."
-            : "If the vote passes, they're listed on this Chama's Wall of Shame and the public Wall of Shame tab on the homepage, and a report is filed for platform review."}
-        </Text>
-        <TextInput style={[styles.input, styles.multiline]} placeholder={voteType === "wall_of_shame" ? "Reason (required)" : "Reason (optional)"} value={reason} onChangeText={setReason} multiline />
+        <Text style={styles.sheetTitle}>Start a vote to remove {target?.user?.name}</Text>
+        <Text style={styles.tabHint}>This isn't an admin decision — it passes only once more than half the other active members vote yes, and ends their membership in this Chama.</Text>
+        <TextInput style={[styles.input, styles.multiline]} placeholder="Reason (optional)" value={reason} onChangeText={setReason} multiline />
         <TouchableOpacity style={[styles.primaryButton, { backgroundColor: "#D32F2F" }]} onPress={submit} disabled={submitting}>
           <Text style={styles.primaryButtonText}>{submitting ? "Starting..." : "Start vote"}</Text>
         </TouchableOpacity>
@@ -1085,42 +1235,6 @@ function PostAchievementModal({ visible, chamaId, onClose, onDone }) {
         </TouchableOpacity>
       </View>
     </Modal>
-  );
-}
-
-function WallOfShameTab({ chamaId, isMember }) {
-  const [votes, setVotes] = useState(null);
-  useFocusEffect(useCallback(() => {
-    if (!isMember) return;
-    client.get(`/chama/${chamaId}/votes`).then((r) => setVotes(r.data.filter((v) => v.voteType === "wall_of_shame" && v.status === "passed"))).catch(() => setVotes([]));
-  }, [chamaId, isMember]));
-
-  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view its Wall of Shame.</Text>;
-  if (!votes) return <ActivityIndicator color={COLORS.accent} />;
-  return (
-    <View>
-      <View style={styles.tipsCard}>
-        <View style={styles.tipsHeaderRow}>
-          <Ionicons name="shield-checkmark-outline" size={16} color="#8A6D00" />
-          <Text style={styles.tipsTitle}>Avoid getting scammed — or posted here</Text>
-        </View>
-        {SCAM_TIPS.map((tip, i) => (
-          <View key={i} style={styles.tipRow}>
-            <Text style={styles.tipBullet}>•</Text>
-            <Text style={styles.tipText}>{tip}</Text>
-          </View>
-        ))}
-      </View>
-      <Text style={[styles.tabHint, { marginTop: 14 }]}>Members this Chama has voted (&gt;51%) to flag for fraud. Also visible on the homepage's public Wall of Shame tab.</Text>
-      {votes.map((v) => (
-        <View key={v.id} style={styles.shameRow}>
-          <Text style={styles.ledgerName}>{v.target?.name}</Text>
-          <Text style={styles.ledgerMeta}>{v.reason}</Text>
-          <Text style={styles.postMeta}>{new Date(v.decidedAt).toLocaleDateString()}</Text>
-        </View>
-      ))}
-      {!votes.length && <Text style={styles.gatedText}>No one from this Chama has been flagged.</Text>}
-    </View>
   );
 }
 
@@ -1379,6 +1493,16 @@ const styles = StyleSheet.create({
   frozenText: { color: "#C4433C", fontSize: 12, flex: 1 },
   cautionBanner: { flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginBottom: 12 },
   cautionText: { color: "#6B5300", fontSize: 12, lineHeight: 18, flex: 1 },
+  announcementsCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 8 },
+  announceComposer: { marginBottom: 10 },
+  announceInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, minHeight: 60, textAlignVertical: "top", color: COLORS.ink, fontSize: 13, marginBottom: 8 },
+  announcePostBtn: { alignSelf: "flex-end", backgroundColor: COLORS.accent, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 },
+  announcePostBtnText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 12.5 },
+  announcementRow: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: COLORS.border },
+  announcementContent: { color: COLORS.ink, fontSize: 13.5, lineHeight: 19 },
+  announcementMeta: { color: COLORS.sub, fontSize: 11, marginTop: 4 },
+  leaveButton: { alignItems: "center", padding: 12, marginTop: 4 },
+  leaveButtonText: { color: "#D32F2F", fontWeight: "700", fontSize: 13.5 },
   tabRow: { flexDirection: "row", backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border },
   tab: { flex: 1, paddingVertical: 12, alignItems: "center", borderBottomWidth: 2, borderBottomColor: "transparent" },
   tabActive: { borderBottomColor: COLORS.accent },
@@ -1387,6 +1511,8 @@ const styles = StyleSheet.create({
   tabBody: { padding: 14 },
   gatedText: { color: COLORS.sub, textAlign: "center", marginTop: 20 },
   tabHint: { color: COLORS.sub, fontSize: 12, marginBottom: 8 },
+  sectionHeading: { fontSize: 11, fontWeight: "800", color: "#B4881C", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 },
+  sectionDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: 14 },
   guarantorStatusPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#E8F5E9", borderRadius: 8, padding: 8, marginBottom: 8 },
   guarantorStatusPillWarn: { backgroundColor: "#FFF3CD" },
   guarantorStatusText: { color: COLORS.ink, fontSize: 11.5, flex: 1 },
@@ -1466,13 +1592,6 @@ const styles = StyleSheet.create({
   photoRemoveButton: { position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 13, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center" },
   photoPicker: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: COLORS.border, borderStyle: "dashed", borderRadius: 8, paddingVertical: 16, marginBottom: 10 },
   photoPickerText: { color: COLORS.accent, fontWeight: "600", fontSize: 13 },
-  shameRow: { backgroundColor: "#FBE7E7", borderRadius: 8, padding: 12, marginBottom: 8 },
-  tipsCard: { backgroundColor: "#FFF3CD", borderRadius: 12, padding: 14 },
-  tipsHeaderRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
-  tipsTitle: { color: "#8A6D00", fontWeight: "800", fontSize: 13 },
-  tipRow: { flexDirection: "row", gap: 6, marginTop: 6, alignItems: "flex-start" },
-  tipBullet: { color: "#8A6D00", fontSize: 13, lineHeight: 18 },
-  tipText: { color: "#8A6D00", fontSize: 12, lineHeight: 18, flex: 1 },
   balancesCard: { backgroundColor: COLORS.wash, borderRadius: 10, padding: 12, marginBottom: 14 },
   balancesTitle: { color: COLORS.ink, fontWeight: "800", fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.3 },
   balanceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 4 },
