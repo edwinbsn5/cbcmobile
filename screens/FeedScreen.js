@@ -223,10 +223,28 @@ export default function FeedScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.composer} onPress={() => navigation.navigate("CreatePost")}>
-            <Avatar uri={user?.avatar} name={user?.name} style={styles.avatar} />
-            <Text style={styles.composerText}>What's on your mind?</Text>
-          </TouchableOpacity>
+          <View style={styles.composer}>
+            <TouchableOpacity style={styles.composerMain} onPress={() => navigation.navigate("CreatePost")}>
+              <Avatar uri={user?.avatar} name={user?.name} style={styles.avatar} />
+              <Text style={styles.composerText} numberOfLines={1}>
+                What's on your mind{user?.name ? `, ${user.name.split(" ")[0]}` : ""}?
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.composerIcons}>
+              <TouchableOpacity
+                style={styles.composerIconCircle}
+                onPress={() => navigation.navigate("CreatePost", { autoAction: "photo" })}
+              >
+                <Ionicons name="image-outline" size={18} color={COLORS.ink} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.composerIconCircle}
+                onPress={() => navigation.navigate("CreatePost", { autoAction: "textStyle" })}
+              >
+                <Text style={styles.composerAaText}>Aa</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {!hasRealContent && (
             <Text style={styles.empty}>
@@ -360,8 +378,12 @@ const styles = StyleSheet.create({
   reshareHeaderText: { fontSize: 12, fontWeight: "700", color: COLORS.sub },
   reshareCaption: { fontSize: 14, color: COLORS.ink, marginHorizontal: 20, marginTop: 4, lineHeight: 19 },
   composer: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, margin: 10, borderRadius: 10, padding: 12, gap: 10 },
+  composerMain: { flexDirection: "row", alignItems: "center", flex: 1, gap: 10, minWidth: 0 },
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.wash },
-  composerText: { color: COLORS.sub, fontSize: 15 },
+  composerText: { color: COLORS.sub, fontSize: 15, flex: 1 },
+  composerIcons: { flexDirection: "row", alignItems: "center", gap: 7 },
+  composerIconCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
+  composerAaText: { fontWeight: "700", fontSize: 15, color: COLORS.ink },
   reelsSection: { marginTop: 8, paddingBottom: 8 },
   sectionTitle: { fontSize: 13, fontWeight: "700", color: COLORS.sub, textTransform: "uppercase", letterSpacing: 0.5, marginLeft: 10, marginBottom: 8 },
   reelCard: { width: 100, height: 160, borderRadius: 14, overflow: "hidden", marginRight: 10, backgroundColor: COLORS.wash },

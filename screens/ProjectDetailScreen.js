@@ -97,7 +97,13 @@ export default function ProjectDetailScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
-        <Image source={{ uri: project.coverUrl }} style={styles.cover} contentFit="cover" />
+        {project.coverUrl ? (
+          <Image source={{ uri: project.coverUrl }} style={styles.cover} contentFit="cover" />
+        ) : (
+          <View style={styles.coverPlaceholder}>
+            <Ionicons name="rocket-outline" size={34} color={COLORS.accent} />
+          </View>
+        )}
         <View style={styles.headerBody}>
           <View style={styles.nameRow}>
             <Text style={styles.name}>{project.title}</Text>
@@ -105,20 +111,40 @@ export default function ProjectDetailScreen({ route, navigation }) {
           </View>
           <Text style={styles.desc}>{project.description}</Text>
 
-          <View style={styles.positionsCard}>
-            <Text style={styles.positionsBig}>{project.filled} of {project.maxMembers} positions filled</Text>
-            <Text style={styles.positionsSub}>{project.remaining > 0 ? `${project.remaining} position(s) remaining` : "Team is full"}</Text>
-            <View style={styles.barTrack}><View style={[styles.barFill, { width: `${Math.min(100, (project.filled / project.maxMembers) * 100)}%` }]} /></View>
-            {!!project.roles?.length && (
-              <View style={styles.rolesGrid}>
-                {project.roles.map((r) => (
-                  <View key={r.id} style={styles.roleChip}>
-                    <Text style={styles.roleChipText}>{r.name}: {r.headcountFilled}/{r.headcountNeeded}</Text>
+          {(() => {
+            const isLow = project.remaining > 0 && project.remaining <= Math.ceil(project.maxMembers * 0.25);
+            return (
+              <View style={styles.positionsBlock}>
+                {isLow ? (
+                  <View style={styles.urgencyPill}>
+                    <Text style={styles.urgencyPillText}>🔥 Only {project.remaining} spot{project.remaining === 1 ? "" : "s"} left</Text>
                   </View>
-                ))}
+                ) : project.remaining === 0 ? (
+                  <View style={styles.fullPill}>
+                    <Text style={styles.fullPillText}>Team is full</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.positionsFine}>{project.filled} of {project.maxMembers} positions filled</Text>
               </View>
-            )}
-          </View>
+            );
+          })()}
+
+          {project.requiresCapital && (
+            <View style={[styles.tileOutline, styles.tileOutlineAccent, { alignSelf: "flex-start", marginBottom: 10 }]}>
+              <Text style={styles.tileOutlineLabel}>Capital raised</Text>
+              <Text style={styles.tileOutlineValue}>{formatKES(project.poolBalance)}</Text>
+            </View>
+          )}
+
+          {!!project.roles?.length && (
+            <View style={styles.rolesGrid}>
+              {project.roles.map((r) => (
+                <View key={r.id} style={styles.roleChip}>
+                  <Text style={styles.roleChipText}>{r.name}: {r.headcountFilled}/{r.headcountNeeded}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {!membership && project.visibility === "public" && (
             <TouchableOpacity style={styles.primaryButton} onPress={() => setJoinVisible(true)}>
@@ -585,15 +611,23 @@ const styles = StyleSheet.create({
   accessBlockedButton: { backgroundColor: COLORS.accent, borderRadius: 8, paddingHorizontal: 20, paddingVertical: 12, alignItems: "center", marginTop: 16 },
   accessBlockedButtonText: { color: COLORS.accentInk, fontWeight: "700" },
   cover: { width: "100%", height: 150, backgroundColor: "#eee" },
+  coverPlaceholder: { width: "100%", height: 150, backgroundColor: COLORS.accentInk, alignItems: "center", justifyContent: "center" },
   headerBody: { padding: 16, backgroundColor: COLORS.surface },
   nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   name: { fontSize: 20, fontWeight: "800", color: COLORS.ink, flex: 1 },
   categoryPill: { backgroundColor: COLORS.accentInk, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   categoryPillText: { color: COLORS.accent, fontSize: 10.5, fontWeight: "700" },
   desc: { color: COLORS.sub, marginTop: 4, lineHeight: 19 },
-  positionsCard: { marginTop: 14, backgroundColor: COLORS.wash, borderRadius: 10, padding: 12 },
-  positionsBig: { fontWeight: "800", color: COLORS.ink, fontSize: 15 },
-  positionsSub: { color: COLORS.sub, fontSize: 12, marginTop: 2 },
+  positionsBlock: { marginTop: 14 },
+  urgencyPill: { alignSelf: "flex-start", backgroundColor: "#FDECEA", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 6 },
+  urgencyPillText: { color: "#C4433C", fontWeight: "800", fontSize: 12.5 },
+  fullPill: { alignSelf: "flex-start", backgroundColor: COLORS.wash, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 6 },
+  fullPillText: { color: COLORS.sub, fontWeight: "800", fontSize: 12.5 },
+  positionsFine: { color: COLORS.sub, fontSize: 12 },
+  tileOutline: { minWidth: 108, borderWidth: 1.4, borderColor: COLORS.border, borderRadius: 10, padding: 10 },
+  tileOutlineAccent: { borderColor: COLORS.accent },
+  tileOutlineLabel: { fontSize: 10, fontWeight: "700", color: "#8B98AF", textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 6 },
+  tileOutlineValue: { fontSize: 16, fontWeight: "700", color: COLORS.ink },
   barTrack: { height: 6, backgroundColor: COLORS.border, borderRadius: 3, marginTop: 8, overflow: "hidden" },
   barFill: { height: 6, backgroundColor: COLORS.accent, borderRadius: 3 },
   rolesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },

@@ -129,18 +129,34 @@ export default function ChamaDetailScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
-        <Image source={{ uri: chama.coverUrl }} style={styles.cover} contentFit="cover" />
+        {chama.coverUrl ? (
+          <Image source={{ uri: chama.coverUrl }} style={styles.cover} contentFit="cover" />
+        ) : (
+          <View style={styles.coverPlaceholder}>
+            <Ionicons name="cash-outline" size={34} color={COLORS.accent} />
+          </View>
+        )}
         <View style={styles.headerBody}>
           <Text style={styles.name}>{chama.name}</Text>
           <Text style={styles.desc}>{chama.description}</Text>
 
-          <View style={styles.positionsCard}>
-            <Text style={styles.positionsBig}>{chama.filled} of {chama.maxMembers} positions filled</Text>
-            <Text style={styles.positionsSub}>
-              {chama.remaining > 0 ? `${chama.remaining} position${chama.remaining === 1 ? "" : "s"} remaining` : chama.joiningClosedReason === "manual" ? "Closed by admin" : "Full"}
-            </Text>
-            <View style={styles.barTrack}><View style={[styles.barFill, { width: `${Math.min(100, (chama.filled / chama.maxMembers) * 100)}%` }]} /></View>
-          </View>
+          {(() => {
+            const isLow = chama.remaining > 0 && chama.remaining <= Math.ceil(chama.maxMembers * 0.25);
+            return (
+              <View style={styles.positionsBlock}>
+                {isLow ? (
+                  <View style={styles.urgencyPill}>
+                    <Text style={styles.urgencyPillText}>🔥 Only {chama.remaining} spot{chama.remaining === 1 ? "" : "s"} left</Text>
+                  </View>
+                ) : chama.remaining === 0 ? (
+                  <View style={styles.fullPill}>
+                    <Text style={styles.fullPillText}>{chama.joiningClosedReason === "manual" ? "Closed by admin" : "Full"}</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.positionsFine}>{chama.filled} of {chama.maxMembers} positions filled</Text>
+              </View>
+            );
+          })()}
 
           <View style={styles.metaRow}>
             <View style={styles.metaChip}><Text style={styles.metaChipText}>
@@ -233,30 +249,40 @@ function formatDate(ts) {
 
 function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter }) {
   const [loanInfo, setLoanInfo] = useState(null);
+  const [allLoans, setAllLoans] = useState(null);
 
   useFocusEffect(useCallback(() => {
     if (!isMember || chama.payoutModel !== "table_banking") return;
     client.get(`/chama/${chamaId}/loans/mine`).then((r) => setLoanInfo(r.data)).catch(() => setLoanInfo(null));
+    client.get(`/chama/${chamaId}/loans`).then((r) => setAllLoans(r.data)).catch(() => setAllLoans([]));
   }, [chamaId, isMember, chama.payoutModel]));
 
   const myActiveLoan = loanInfo?.loans.find((l) => l.status === "active");
   const guaranteeing = loanInfo?.guaranteeing || [];
+  const activeLoans = (allLoans || []).filter((l) => l.status === "active");
 
   return (
     <View>
-      {isMember && (
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Your total contributions</Text>
-          <Text style={styles.statValue}>{formatKES(myTotal)}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statStripOuter}>
+        <View style={styles.statStrip}>
+          <View style={[styles.tileOutline, styles.tileOutlineAccent]}>
+            <Text style={styles.tileOutlineLabel}>Balance</Text>
+            <Text style={styles.tileOutlineValue}>{formatKES(chama.poolBalance)}</Text>
+          </View>
+          {isMember && (
+            <View style={styles.tileOutline}>
+              <Text style={styles.tileOutlineLabel}>You've paid</Text>
+              <Text style={styles.tileOutlineValue}>{formatKES(myTotal)}</Text>
+            </View>
+          )}
+          {isMember && chama.contributionType === "fixed_recurring" && defaulter?.upcomingDeadlineAt && (
+            <View style={styles.tileOutline}>
+              <Text style={styles.tileOutlineLabel}>Next due</Text>
+              <Text style={styles.tileOutlineValue}>{formatDate(defaulter.upcomingDeadlineAt)}</Text>
+            </View>
+          )}
         </View>
-      )}
-
-      {isMember && chama.contributionType === "fixed_recurring" && defaulter?.upcomingDeadlineAt && (
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>Your next contribution</Text>
-          <Text style={styles.infoValue}>{formatKES(defaulter.upcomingAmount)} by {formatDate(defaulter.upcomingDeadlineAt)}</Text>
-        </View>
-      )}
+      </ScrollView>
 
       {isMember && chama.payoutModel === "table_banking" && (
         <View style={styles.infoCard}>
@@ -286,6 +312,25 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter }) {
             </View>
           ) : (
             <Text style={styles.infoValue}>Nobody right now</Text>
+          )}
+        </View>
+      )}
+
+      {isMember && chama.payoutModel === "table_banking" && (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoLabel}>Active loans in this chama</Text>
+          {!allLoans ? (
+            <ActivityIndicator size="small" color={COLORS.accent} />
+          ) : activeLoans.length ? (
+            <View style={{ alignItems: "flex-end" }}>
+              {activeLoans.map((l) => (
+                <Text key={l.id} style={styles.infoValue}>
+                  {l.borrower?.name}: {formatKES(l.remaining)} left — due {formatDate(l.dueAt)}
+                </Text>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.infoValue}>None right now</Text>
           )}
         </View>
       )}
@@ -1304,14 +1349,16 @@ function JoinRequestModal({ visible, onClose, chamaId, groupCounty, navigation, 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   cover: { width: "100%", height: 150, backgroundColor: "#eee" },
+  coverPlaceholder: { width: "100%", height: 150, backgroundColor: COLORS.accentInk, alignItems: "center", justifyContent: "center" },
   headerBody: { padding: 16, backgroundColor: COLORS.surface },
   name: { fontSize: 20, fontWeight: "800", color: COLORS.ink },
   desc: { color: COLORS.sub, marginTop: 4 },
-  positionsCard: { marginTop: 14, backgroundColor: COLORS.wash, borderRadius: 10, padding: 12 },
-  positionsBig: { fontWeight: "800", color: COLORS.ink, fontSize: 15 },
-  positionsSub: { color: COLORS.sub, fontSize: 12, marginTop: 2 },
-  barTrack: { height: 6, backgroundColor: COLORS.border, borderRadius: 3, marginTop: 8, overflow: "hidden" },
-  barFill: { height: 6, backgroundColor: COLORS.accent, borderRadius: 3 },
+  positionsBlock: { marginTop: 14 },
+  urgencyPill: { alignSelf: "flex-start", backgroundColor: "#FDECEA", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 6 },
+  urgencyPillText: { color: "#C4433C", fontWeight: "800", fontSize: 12.5 },
+  fullPill: { alignSelf: "flex-start", backgroundColor: COLORS.wash, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 6 },
+  fullPillText: { color: COLORS.sub, fontWeight: "800", fontSize: 12.5 },
+  positionsFine: { color: COLORS.sub, fontSize: 12 },
   metaRow: { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
   metaChip: { backgroundColor: COLORS.wash, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },
   metaChipText: { color: COLORS.ink, fontWeight: "700", fontSize: 11.5 },
@@ -1348,9 +1395,12 @@ const styles = StyleSheet.create({
   statusDeclinedSmall: { color: "#D32F2F" },
   guarantorPickList: { marginTop: 8, maxHeight: 220 },
   cancelLinkText: { color: "#D32F2F", fontWeight: "700", fontSize: 12.5, textAlign: "center" },
-  statCard: { backgroundColor: COLORS.accent, borderRadius: 10, padding: 14, marginBottom: 10 },
-  statLabel: { color: "rgba(11,31,58,0.75)", fontSize: 11, textTransform: "uppercase" },
-  statValue: { color: COLORS.accentInk, fontSize: 22, fontWeight: "800", marginTop: 4 },
+  statStripOuter: { marginHorizontal: -16, marginBottom: 10 },
+  statStrip: { flexDirection: "row", gap: 8, paddingHorizontal: 16 },
+  tileOutline: { minWidth: 108, borderWidth: 1.4, borderColor: COLORS.border, borderRadius: 10, padding: 10 },
+  tileOutlineAccent: { borderColor: COLORS.accent },
+  tileOutlineLabel: { fontSize: 10, fontWeight: "700", color: "#8B98AF", textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 6 },
+  tileOutlineValue: { fontSize: 16, fontWeight: "700", color: COLORS.ink },
   infoCard: { backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8, flexDirection: "row", justifyContent: "space-between" },
   infoLabel: { color: COLORS.sub, fontSize: 12.5 },
   infoValue: { color: COLORS.ink, fontWeight: "700", fontSize: 12.5 },

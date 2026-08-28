@@ -23,7 +23,7 @@ export default function CreatePostScreen({ navigation, route }) {
   // Optional — posting into a chama/project Discussion tab instead of the
   // main feed. Same composer, same media/background-color support; only the
   // submit target and header title change.
-  const { collabGroupKind, collabGroupId, collabGroupLabel } = route?.params || {};
+  const { collabGroupKind, collabGroupId, collabGroupLabel, autoAction } = route?.params || {};
 
   useEffect(() => {
     if (collabGroupLabel) navigation.setOptions({ title: `Post to ${collabGroupLabel}` });
@@ -63,6 +63,18 @@ export default function CreatePostScreen({ navigation, route }) {
     setTextColor(null);
     setTextAlign("left");
   }
+
+  // Composer-bar quick actions (FeedScreen's photo/"Aa" icons) skip straight
+  // to the relevant step instead of landing on the plain empty composer —
+  // 'photo' opens the image picker immediately, 'textStyle' pre-selects the
+  // first background color so the styled box is already showing. Runs once
+  // on mount only — route.params doesn't change while this screen stays
+  // mounted, so re-running on every render would just reopen the picker.
+  useEffect(() => {
+    if (autoAction === "photo") handleAttachPhotos();
+    else if (autoAction === "textStyle") setBgColor(BG_COLORS[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // A post is either the existing single video, or 1-10 photos — never both,
   // matching how the feed's swipe carousel and the single-video player are
