@@ -8,7 +8,7 @@ import { COLORS } from "../theme";
  * other people's posts get Report/Unfollow/Block. Purely presentational —
  * every action is a callback the caller supplies.
  */
-export default function PostOptionsMenu({ visible, onClose, isOwn, authorFirstName, onEdit, onDelete, onReport, onUnfollow, onBlock }) {
+export default function PostOptionsMenu({ visible, onClose, isOwn, authorFirstName, onEdit, onDelete, onBoost, onReport, onUnfollow, onBlock }) {
   function pick(action) {
     onClose();
     action?.();
@@ -20,6 +20,12 @@ export default function PostOptionsMenu({ visible, onClose, isOwn, authorFirstNa
         <View style={styles.card} onStartShouldSetResponder={() => true}>
           {isOwn ? (
             <>
+              {onBoost && (
+                <TouchableOpacity style={styles.item} onPress={() => pick(onBoost)}>
+                  <Ionicons name="megaphone-outline" size={19} color={COLORS.ink} />
+                  <Text style={styles.itemText}>Boost this post</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.item} onPress={() => pick(onEdit)}>
                 <Ionicons name="create-outline" size={19} color={COLORS.ink} />
                 <Text style={styles.itemText}>Edit post</Text>

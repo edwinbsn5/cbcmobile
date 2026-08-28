@@ -34,6 +34,7 @@ import PageTeamManagementScreen from "./screens/PageTeamManagementScreen";
 import PageVideoPlayerScreen from "./screens/PageVideoPlayerScreen";
 import BoostPageScreen from "./screens/BoostPageScreen";
 import MyBoostedPagesScreen from "./screens/MyBoostedPagesScreen";
+import MyBoostedEventsScreen from "./screens/MyBoostedEventsScreen";
 import MyAdsBoardScreen from "./screens/MyAdsBoardScreen";
 import AGirlsMarketScreen from "./screens/AGirlsMarketScreen";
 import CreateMarketProductScreen from "./screens/CreateMarketProductScreen";
@@ -310,6 +311,7 @@ function RootNavigator() {
         <RootStack.Screen name="PageVideoPlayer" component={PageVideoPlayerScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="BoostPage" component={BoostPageScreen} options={{ title: "Boost Page" }} />
         <RootStack.Screen name="MyBoostedPages" component={MyBoostedPagesScreen} options={{ title: "My Boosted Pages" }} />
+        <RootStack.Screen name="MyBoostedEvents" component={MyBoostedEventsScreen} options={{ title: "My Boosted Events" }} />
         <RootStack.Screen name="MyAdsBoard" component={MyAdsBoardScreen} options={{ title: "My Ads Board" }} />
         <RootStack.Screen name="AGirlsMarket" component={AGirlsMarketScreen} options={{ title: "A Girls Market" }} />
         <RootStack.Screen name="CreateMarketProduct" component={CreateMarketProductScreen} options={{ title: "Create Product" }} />

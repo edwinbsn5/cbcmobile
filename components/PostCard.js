@@ -144,6 +144,11 @@ export default function PostCard({
         authorFirstName={post.author?.name?.split(" ")[0] || "user"}
         onEdit={() => navigation.navigate("EditPost", { post })}
         onDelete={handleDelete}
+        onBoost={
+          !post.groupId && !post.pageId && !post.collabGroupKind
+            ? () => navigation.navigate("BoostPost", { post })
+            : undefined
+        }
         onReport={() =>
           navigation.navigate("ReportPost", {
             postId: post.id,
@@ -238,12 +243,6 @@ export default function PostCard({
         )}
       </View>
 
-      {post.userId === user?.id && !post.groupId && !post.pageId && !post.collabGroupKind && (
-        <TouchableOpacity style={styles.boostRow} onPress={() => navigation.navigate("BoostPost", { post })}>
-          <Text style={styles.boostText}>📣 Boost this post</Text>
-        </TouchableOpacity>
-      )}
-
       <PostCommentsModal
         visible={commentsOpen}
         post={post}
@@ -276,11 +275,9 @@ const styles = StyleSheet.create({
   mediaFullBleed: { marginHorizontal: -22, marginBottom: 8 },
   styledTextBox: { minHeight: 220, justifyContent: "center", paddingVertical: 24, paddingHorizontal: 20 },
   styledTextContent: { fontSize: 24, fontWeight: "700", lineHeight: 32 },
-  actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" },
   pill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: COLORS.wash, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7 },
   pillActive: { backgroundColor: COLORS.accent },
   pillText: { fontSize: 12, fontWeight: "700", color: COLORS.ink },
   pillTextActive: { color: COLORS.accentInk },
-  boostRow: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border },
-  boostText: { color: COLORS.accent, fontWeight: "600", fontSize: 13 },
 });
