@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Alert } from "react-native";
 import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
@@ -8,21 +8,41 @@ import client from "../api/client";
 import CountyPicker from "../components/CountyPicker";
 import SubCountyPicker from "../components/SubCountyPicker";
 import FeatureAccessModal from "../components/FeatureAccessModal";
+import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
 const COUNTY_STORAGE_KEY = "chamaBrowseCounty";
 
 const FILTERS = [
-  { key: "", label: "Explore" },
+  { key: "", label: "Filter" },
   { key: "joined", label: "Joined" },
-  { key: "managed", label: "Managed" },
+  { key: "managed", label: "My Groups" },
   { key: "achievements", label: "Achievements" },
 ];
 
+const SUB_FILTERS = [
+  { key: "random", label: "Random Groups" },
+  { key: "filled", label: "Filled-Up Groups" },
+  { key: "unfilled", label: "Unfilled Groups" },
+];
+
+// Fisher-Yates — used so "Random Groups" gives a genuinely shuffled order
+// rather than just re-displaying the server's own (roughly creation-order) list.
+function shuffled(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function ChamaScreen({ navigation }) {
+  const { user } = useAuth();
   const [chamas, setChamas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
+  const [subFilter, setSubFilter] = useState("random");
   const [search, setSearch] = useState("");
   const [county, setCounty] = useState("");
   const [loadedCounty, setLoadedCounty] = useState(false);
@@ -34,14 +54,16 @@ export default function ChamaScreen({ navigation }) {
     client.get("/access/status").then((r) => setHasAccess(!!r.data.access?.chama)).catch(() => {});
   }, []));
 
-  // The chosen county is saved and pre-selected on every future visit — no
-  // need to pick it again unless the user wants to browse a different one.
+  // The chosen county is saved and pre-selected on every future visit. If
+  // the user has never picked one, pre-load their own profile county
+  // instead of leaving the list empty and waiting on a manual pick.
   useEffect(() => {
     AsyncStorage.getItem(COUNTY_STORAGE_KEY).then((saved) => {
       if (saved) setCounty(saved);
+      else if (user?.county) setCounty(user.county);
       setLoadedCounty(true);
     });
-  }, []);
+  }, [user?.county]);
 
   function handleCountyChange(c) {
     setCounty(c);
@@ -50,11 +72,23 @@ export default function ChamaScreen({ navigation }) {
   }
 
   const isFeedFilter = filter === "achievements";
+  const isBrowseFilter = filter === "";
 
   // Achievements/chama-list responses have different shapes — clear stale
   // data immediately on filter switch so renderItem never sees last
   // filter's items through this filter's card layout for a frame.
   useEffect(() => { setChamas([]); }, [filter]);
+
+  // Random/Filled-Up/Unfilled only apply to the Filter tab's browse-all
+  // list — Joined/Managed show their natural list untouched. Memoized so
+  // the shuffle for "random" is stable across re-renders, only reshuffling
+  // when the underlying data or sub-filter actually changes.
+  const displayedChamas = useMemo(() => {
+    if (!isBrowseFilter) return chamas;
+    if (subFilter === "filled") return chamas.filter((c) => c.remaining === 0);
+    if (subFilter === "unfilled") return chamas.filter((c) => c.remaining > 0);
+    return shuffled(chamas);
+  }, [chamas, subFilter, isBrowseFilter]);
 
   const load = useCallback(() => {
     if (filter === "achievements") {
@@ -86,8 +120,8 @@ export default function ChamaScreen({ navigation }) {
 
       <View style={styles.hero}>
         <Text style={styles.heroBadge}>✦ Investment Groups ✦</Text>
-        <Text style={styles.heroTitle}>Welcome to SAVINGS & INVESTMENT OPPORTUNITIES</Text>
-        <Text style={styles.heroSubtitle}>Table banking savings groups, run transparently.</Text>
+        <Text style={styles.heroTitle}>Welcome to Your Investment Groups</Text>
+        <Text style={styles.heroSubtitle}>Meet Friends who Push You to Grow.</Text>
       </View>
 
       {!hasAccess && (
@@ -142,6 +176,16 @@ export default function ChamaScreen({ navigation }) {
         ))}
       </View>
 
+      {isBrowseFilter && (
+        <View style={styles.subFilterRow}>
+          {SUB_FILTERS.map((f) => (
+            <TouchableOpacity key={f.key} style={[styles.subFilterChip, subFilter === f.key && styles.subFilterChipActive]} onPress={() => setSubFilter(f.key)}>
+              <Text style={[styles.subFilterChipText, subFilter === f.key && styles.subFilterChipTextActive]}>{f.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       <FeatureAccessModal
         visible={accessModalVisible}
         onClose={() => setAccessModalVisible(false)}
@@ -175,7 +219,7 @@ export default function ChamaScreen({ navigation }) {
   return (
     <FlatList
       style={styles.container}
-      data={chamas}
+      data={displayedChamas}
       keyExtractor={(c) => c.id}
       ListHeaderComponent={header}
       ListEmptyComponent={
@@ -231,6 +275,11 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: COLORS.accent },
   filterChipText: { color: COLORS.ink, fontWeight: "600", fontSize: 12.5 },
   filterChipTextActive: { color: COLORS.accentInk },
+  subFilterRow: { flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 8, flexWrap: "wrap" },
+  subFilterChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
+  subFilterChipActive: { borderColor: COLORS.accent, backgroundColor: COLORS.wash },
+  subFilterChipText: { color: COLORS.sub, fontWeight: "600", fontSize: 11.5 },
+  subFilterChipTextActive: { color: COLORS.accent, fontWeight: "700" },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },
   card: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 10, overflow: "hidden" },
   cover: { width: "100%", height: 110, backgroundColor: "#eee" },
