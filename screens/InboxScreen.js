@@ -11,8 +11,9 @@ import { COLORS } from "../theme";
 
 const TABS = [
   { key: "inbox", label: "Inbox" },
-  { key: "mtu_wako", label: "Mtu Wako" },
+  { key: "mtu_wako", label: "BSN & Services" },
   { key: "market", label: "Market" },
+  { key: "events", label: "Events" },
 ];
 
 function timeAgo(ts) {
@@ -119,7 +120,7 @@ export default function InboxScreen({ navigation }) {
   }, [navigation, selectionMode, selectedIds, deleting]);
 
   const tabCounts = useMemo(() => {
-    const counts = { inbox: 0, mtu_wako: 0, market: 0 };
+    const counts = { inbox: 0, mtu_wako: 0, market: 0, events: 0 };
     for (const c of conversations) counts[c.tab] = (counts[c.tab] || 0) + c.unreadCount;
     return counts;
   }, [conversations]);
@@ -140,6 +141,7 @@ export default function InboxScreen({ navigation }) {
       displaySubtitle: item.displaySubtitle,
       contextPage: item.contextPage,
       contextProduct: item.contextProduct,
+      contextEvent: item.contextEvent,
     });
   }
 
@@ -177,7 +179,9 @@ export default function InboxScreen({ navigation }) {
               ? 'No conversations yet — tap "New" to message someone'
               : activeTab === "mtu_wako"
               ? "No messages from Pages yet"
-              : "No A Girls Market conversations yet"}
+              : activeTab === "events"
+              ? "No event organiser chats yet"
+              : "No MarketPlace conversations yet"}
           </Text>
         }
         renderItem={({ item }) => {
@@ -196,7 +200,7 @@ export default function InboxScreen({ navigation }) {
                 style={styles.checkbox}
               />
             )}
-            {item.contextType === "market_product" ? (
+            {item.contextType === "market_product" || item.contextType === "event" ? (
               item.displayAvatar ? (
                 <Image source={{ uri: item.displayAvatar }} style={styles.thumb} contentFit="cover" />
               ) : (

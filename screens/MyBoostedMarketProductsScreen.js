@@ -65,7 +65,7 @@ export default function MyBoostedMarketProductsScreen() {
       data={boosts}
       keyExtractor={(b) => b.id}
       ListEmptyComponent={
-        <Text style={styles.empty}>You haven't boosted any products yet. Boost a listing from A Girls Market to feature it in the browse feed.</Text>
+        <Text style={styles.empty}>You haven't boosted any products yet. Boost a listing from MarketPlace to feature it in the browse feed.</Text>
       }
       renderItem={({ item }) => {
         const expired = item.endsAt <= Date.now();

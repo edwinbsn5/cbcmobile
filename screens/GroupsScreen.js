@@ -4,8 +4,15 @@ import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
+import Avatar from "../components/Avatar";
 import { useSaved } from "../hooks/useSaved";
 import { COLORS } from "../theme";
+
+function cheapestTierLabel(tiers) {
+  if (!tiers || !tiers.length) return null;
+  const cheapest = tiers.reduce((a, b) => (b.priceKES < a.priceKES ? b : a));
+  return cheapest.priceKES === 0 ? "Free" : `From KES ${cheapest.priceKES}/${cheapest.periodDays}d`;
+}
 
 const FILTERS = [
   { key: "explore", label: "Explore Groups", icon: "shuffle-outline", desc: "A random mix of groups to discover" },
@@ -56,8 +63,8 @@ export default function GroupsScreen({ navigation }) {
             </TouchableOpacity>
 
             <View style={styles.hero}>
-              <Text style={styles.heroBadge}>✦ Plugs Wako ✦</Text>
-              <Text style={styles.heroTitle}>Find Plug Wako</Text>
+              <Text style={styles.heroBadge}>✦ Plugs & Mentors ✦</Text>
+              <Text style={styles.heroTitle}>Find Plugs & Mentors</Text>
               <Text style={styles.heroSubtitle}>Communities, causes &amp; interests worth joining on Tujijenge.</Text>
             </View>
 
@@ -84,34 +91,39 @@ export default function GroupsScreen({ navigation }) {
           </Text>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("GroupDetail", { groupId: item.id })}>
+          <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => navigation.navigate("GroupDetail", { groupId: item.id })}>
             <Image source={{ uri: item.coverUrl }} style={styles.cover} contentFit="cover" />
             <TouchableOpacity style={styles.saveButton} onPress={() => toggleSave("group", item.id)}>
-              <Ionicons name={isSaved("group", item.id) ? "bookmark" : "bookmark-outline"} size={20} color="#fff" />
+              <Ionicons name={isSaved("group", item.id) ? "bookmark" : "bookmark-outline"} size={18} color="#F0A93B" />
             </TouchableOpacity>
             <View style={styles.body}>
-              <View style={styles.nameRow}>
-                <Text style={styles.name}>{item.name}</Text>
-                {item.status !== "approved" && (
-                  <View style={styles.statusPill}>
-                    <Text style={styles.statusPillText}>{item.status === "rejected" ? "Rejected" : "Pending approval"}</Text>
+              <View style={styles.identityRow}>
+                <Avatar uri={item.avatarUrl} name={item.name} style={styles.cardAvatar} />
+                <View style={styles.identityText}>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+                    {item.status !== "approved" && (
+                      <View style={styles.statusPill}>
+                        <Text style={styles.statusPillText}>{item.status === "rejected" ? "Rejected" : "Pending approval"}</Text>
+                      </View>
+                    )}
                   </View>
-                )}
+                  <Text style={styles.admin}>Admin: {item.admin?.name}</Text>
+                </View>
               </View>
               <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
-              <Text style={styles.admin}>Admin: {item.admin?.name}</Text>
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={13} color="#F5A623" />
-                <Text style={styles.ratingText}>
-                  {item.reviewCount > 0 ? `${item.avgRating.toFixed(1)} · ${item.reviewCount} review${item.reviewCount === 1 ? "" : "s"}` : "No reviews yet"}
-                </Text>
-              </View>
-              <View style={styles.tierRow}>
-                {item.tiers.map((t) => (
-                  <View key={t.id} style={styles.tierPill}>
-                    <Text style={styles.tierPillText}>{t.name} · KES {t.priceKES}/mo</Text>
+              <View style={styles.footerRow}>
+                <View style={styles.ratingRow}>
+                  <Ionicons name="star" size={13} color="#F5A623" />
+                  <Text style={styles.ratingText}>
+                    {item.reviewCount > 0 ? `${item.avgRating.toFixed(1)} · ${item.reviewCount} review${item.reviewCount === 1 ? "" : "s"}` : "No reviews yet"}
+                  </Text>
+                </View>
+                {!!cheapestTierLabel(item.tiers) && (
+                  <View style={styles.priceTag}>
+                    <Text style={styles.priceTagText}>{cheapestTierLabel(item.tiers)}</Text>
                   </View>
-                ))}
+                )}
               </View>
             </View>
           </TouchableOpacity>
@@ -156,21 +168,27 @@ const styles = StyleSheet.create({
   filterButtonText: { color: COLORS.accent, fontWeight: "700" },
   clearFilterText: { color: COLORS.sub, fontSize: 12, textAlign: "center", marginTop: 8, textDecorationLine: "underline" },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },
-  card: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 10, overflow: "hidden" },
-  cover: { width: "100%", height: 120, backgroundColor: "#eee" },
-  saveButton: { position: "absolute", top: 10, right: 10, backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 16, padding: 6 },
+  card: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 14, overflow: "hidden", shadowColor: "#0B1F3A", shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  cover: { width: "100%", height: 100, backgroundColor: "#eee" },
+  saveButton: { position: "absolute", top: 10, right: 10, backgroundColor: "rgba(0,0,0,0.4)", borderRadius: 15, width: 30, height: 30, alignItems: "center", justifyContent: "center" },
   body: { padding: 12 },
+  identityRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: -30 },
+  cardAvatar: { width: 52, height: 52, borderRadius: 16, borderWidth: 3, borderColor: COLORS.surface },
+  identityText: { flex: 1, paddingTop: 22 },
   nameRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap" },
-  name: { color: COLORS.ink, fontSize: 17, fontWeight: "700" },
+  name: { color: COLORS.ink, fontSize: 16, fontWeight: "800", maxWidth: "78%" },
   statusPill: { backgroundColor: "#FFF3CD", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 8 },
   statusPillText: { color: "#856404", fontSize: 11, fontWeight: "700" },
-  desc: { color: COLORS.sub, marginTop: 4 },
-  admin: { color: COLORS.sub, fontSize: 12, marginTop: 6 },
-  ratingRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 },
+  desc: { color: COLORS.sub, marginTop: 10, fontSize: 13 },
+  admin: { color: COLORS.sub, fontSize: 11.5, fontWeight: "600", marginTop: 2 },
+  footerRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.wash,
+  },
+  ratingRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   ratingText: { color: COLORS.sub, fontSize: 12, fontWeight: "600" },
-  tierRow: { flexDirection: "row", marginTop: 10, flexWrap: "wrap" },
-  tierPill: { backgroundColor: COLORS.wash, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 4, marginRight: 8, marginBottom: 6 },
-  tierPillText: { color: COLORS.accent, fontWeight: "600", fontSize: 12 },
+  priceTag: { backgroundColor: COLORS.wash, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  priceTagText: { color: COLORS.accent, fontWeight: "800", fontSize: 12 },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 24 },
   modalCard: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16 },
   modalTitle: { color: COLORS.ink, fontSize: 16, fontWeight: "800", marginBottom: 10 },

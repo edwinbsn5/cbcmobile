@@ -50,7 +50,7 @@ function StreamPhotoCarousel({ photoUrls, height, onPress }) {
   );
 }
 
-// One full-screen card in the unified A Girls Market stream — video
+// One full-screen card in the unified MarketPlace stream — video
 // (autoplay/loop while active, FeedVideoPlayer's "fullscreen" variant), a
 // single photo, or (photoUrls.length > 1) a full-bleed carousel. Same
 // overlay shape regardless of media: seller row/title/description/price

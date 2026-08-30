@@ -7,7 +7,7 @@ import { COLORS } from "../theme";
 /**
  * Multi-select category/subcategory picker, fed from a two-tier tree
  * endpoint (defaults to GET /api/categories/pages; pass endpoint="/market/
- * categories/tree" for A Girls Market's taxonomy — same {id,name,slug,
+ * categories/tree" for MarketPlace's taxonomy — same {id,name,slug,
  * subcategories} shape both return). An item can be tagged with any mix of
  * top-level categories and subcategories — tapping a category row toggles
  * it directly (selecting the parent itself is a valid tag, not just a

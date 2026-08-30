@@ -504,7 +504,6 @@ function SettingsTab({ chamaId, chama, onChange }) {
   const [latePenaltyRate, setLatePenaltyRate] = useState(String(chama.latePenaltyRate ?? ""));
   const [loanEligibilityDays, setLoanEligibilityDays] = useState(chama.loanEligibilityDays != null ? String(chama.loanEligibilityDays) : "");
   const [membersVisible, setMembersVisible] = useState(chama.membersVisibleToMembers);
-  const [requireKyc, setRequireKyc] = useState(chama.requireKycToJoin);
   const [requireGuarantors, setRequireGuarantors] = useState(chama.requireGuarantorsToJoin);
   const [county, setCounty] = useState(chama.county || "");
   const [subCounty, setSubCounty] = useState(chama.subCounty || "");
@@ -532,7 +531,7 @@ function SettingsTab({ chamaId, chama, onChange }) {
     if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county this Chama meets in");
     setSaving(true);
     try {
-      const body = { membersVisibleToMembers: membersVisible, requireKycToJoin: requireKyc, requireGuarantorsToJoin: requireGuarantors, county, subCounty };
+      const body = { membersVisibleToMembers: membersVisible, requireGuarantorsToJoin: requireGuarantors, county, subCounty };
       const max = parseInt(maxMembers, 10);
       if (max && max !== chama.maxMembers) body.maxMembers = max;
       if (chama.contributionType === "fixed_recurring") {
@@ -646,10 +645,6 @@ function SettingsTab({ chamaId, chama, onChange }) {
       <View style={styles.switchRow}>
         <Text style={styles.rowName}>Members can see each other</Text>
         <Switch value={membersVisible} onValueChange={setMembersVisible} trackColor={{ true: COLORS.accent }} />
-      </View>
-      <View style={styles.switchRow}>
-        <Text style={styles.rowName}>Require identity verification (KYC) to join</Text>
-        <Switch value={requireKyc} onValueChange={setRequireKyc} trackColor={{ true: COLORS.accent }} />
       </View>
       <View style={styles.switchRow}>
         <Text style={styles.rowName}>Require 2 accepted guarantors to join</Text>

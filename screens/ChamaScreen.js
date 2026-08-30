@@ -136,7 +136,7 @@ export default function ChamaScreen({ navigation }) {
         <>
           <View style={styles.locationBox}>
             <View style={styles.locationRow}>
-              <Text style={styles.locationLabel}>County: Find Investment Groups Meeting Near You</Text>
+              <Text style={styles.locationLabel}>County: Find Investment Groups Near You</Text>
               {!!county && (
                 <TouchableOpacity onPress={() => handleCountyChange("")}>
                   <Text style={styles.locationClear}>Clear</Text>

@@ -26,6 +26,24 @@ export default function PagesListScreen({ navigation }) {
   const [loadedCounty, setLoadedCounty] = useState(false);
   const [categoryId, setCategoryId] = useState(null);
   const [categoryName, setCategoryName] = useState(null);
+  const [busyFollowIds, setBusyFollowIds] = useState({});
+
+  async function handleToggleFollow(item) {
+    setBusyFollowIds((prev) => ({ ...prev, [item.id]: true }));
+    try {
+      const path = item.amIFollowing ? "unfollow" : "follow";
+      const { data } = await client.post(`/pages/${item.id}/${path}`);
+      setPages((prev) => prev.map((p) => (p.id === item.id ? { ...p, ...data } : p)));
+    } catch (e) {
+      Alert.alert("Couldn't update follow status", e.response?.data?.error || e.message);
+    } finally {
+      setBusyFollowIds((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+    }
+  }
 
   useEffect(() => {
     client.get("/categories/pages").then((r) => setDirectory(r.data)).catch(() => {});
@@ -104,7 +122,7 @@ export default function PagesListScreen({ navigation }) {
             </View>
 
             <View style={styles.hero}>
-              <Text style={styles.heroBadge}>✦ Find Mtu Wako! ✦</Text>
+              <Text style={styles.heroBadge}>✦ Find BSN & Services! ✦</Text>
               <Text style={styles.heroTitle}>Reliable Services, Just When You Need It</Text>
               <Text style={styles.heroSubtitle}>
                 Mama Fua, Hair Stylists, Sales &amp; Marketers, Errand Services, Electricians, Gardeners, Massage Services.. ETC...
@@ -163,13 +181,16 @@ export default function PagesListScreen({ navigation }) {
           </Text>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("PageDetail", { pageId: item.id })}>
+          <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => navigation.navigate("PageDetail", { pageId: item.id })}>
             <Image source={{ uri: item.coverUrl }} style={styles.cover} contentFit="cover" />
             <View style={styles.body}>
               <View style={styles.nameRow}>
                 <Image source={{ uri: item.avatarUrl }} style={styles.avatar} contentFit="cover" />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.name}>{item.name}</Text>
+                  <View style={styles.nameLine}>
+                    <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+                    {item.isVerified && <Ionicons name="checkmark-circle" size={14} color="#2563EB" style={{ marginLeft: 4 }} />}
+                  </View>
                   <View style={styles.categoryPillRow}>
                     {item.categories.slice(0, 3).map((c) => (
                       <View key={c.id} style={styles.categoryPill}>
@@ -178,15 +199,34 @@ export default function PagesListScreen({ navigation }) {
                     ))}
                   </View>
                 </View>
+                <TouchableOpacity
+                  style={[styles.followButton, item.amIFollowing && styles.followingButton]}
+                  onPress={() => handleToggleFollow(item)}
+                  disabled={!!busyFollowIds[item.id]}
+                >
+                  <Text style={[styles.followButtonText, item.amIFollowing && styles.followingButtonText]}>
+                    {busyFollowIds[item.id] ? "..." : item.amIFollowing ? "Following" : "Follow"}
+                  </Text>
+                </TouchableOpacity>
               </View>
               <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={13} color="#F5A623" />
-                <Text style={styles.ratingText}>
-                  {item.totalCount > 0 ? `${item.avgRating.toFixed(1)} · ${item.totalCount} review${item.totalCount === 1 ? "" : "s"}` : "No reviews yet"}
-                </Text>
-                <Text style={styles.dot}>·</Text>
-                <Text style={styles.ratingText}>{item.memberCount} team member{item.memberCount === 1 ? "" : "s"}</Text>
+              <View style={styles.footerRow}>
+                <View style={styles.ratingRow}>
+                  <Ionicons name="star" size={13} color="#F5A623" />
+                  <Text style={styles.ratingText}>
+                    {item.totalCount > 0 ? `${item.avgRating.toFixed(1)} · ${item.totalCount} review${item.totalCount === 1 ? "" : "s"}` : "No reviews yet"}
+                  </Text>
+                </View>
+                {item.totalCount > 0 ? (
+                  <View style={styles.recommendBadge}>
+                    <Text style={styles.recommendPct}>{item.recommendPct}%</Text>
+                    <Text style={styles.recommendLabel}>Recommend</Text>
+                  </View>
+                ) : (
+                  <View style={styles.newBadge}>
+                    <Text style={styles.newBadgeText}>New listing</Text>
+                  </View>
+                )}
               </View>
             </View>
           </TouchableOpacity>
@@ -241,19 +281,35 @@ const styles = StyleSheet.create({
   chip: { backgroundColor: COLORS.wash, borderRadius: 12, paddingHorizontal: 11, paddingVertical: 5 },
   chipText: { fontWeight: "400", fontSize: 11.5, color: COLORS.sub },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },
-  card: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 10, overflow: "hidden" },
-  cover: { width: "100%", height: 100, backgroundColor: "#eee" },
+  card: {
+    backgroundColor: COLORS.surface, margin: 10, borderRadius: 14, overflow: "hidden",
+    shadowColor: "#0B1F3A", shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2,
+  },
+  cover: { width: "100%", height: 90, backgroundColor: "#eee" },
   body: { padding: 12 },
-  nameRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: -28 },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#eee", borderWidth: 2, borderColor: COLORS.surface },
-  name: { color: COLORS.ink, fontSize: 17, fontWeight: "700" },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: -26 },
+  avatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: "#eee", borderWidth: 3, borderColor: COLORS.surface },
+  nameLine: { flexDirection: "row", alignItems: "center" },
+  name: { color: COLORS.ink, fontSize: 15.5, fontWeight: "800", flexShrink: 1 },
   categoryPillRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 3 },
   categoryPill: { backgroundColor: COLORS.wash, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   categoryPillText: { color: COLORS.accent, fontSize: 10.5, fontWeight: "600" },
-  desc: { color: COLORS.sub, marginTop: 8 },
-  ratingRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 8 },
+  followButton: { backgroundColor: COLORS.accent, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7, alignSelf: "center" },
+  followingButton: { backgroundColor: COLORS.surface, borderWidth: 1.5, borderColor: COLORS.border },
+  followButtonText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 11.5 },
+  followingButtonText: { color: COLORS.ink },
+  desc: { color: COLORS.sub, marginTop: 10, fontSize: 13 },
+  footerRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.wash,
+  },
+  ratingRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   ratingText: { color: COLORS.sub, fontSize: 12, fontWeight: "600" },
-  dot: { color: COLORS.sub, fontSize: 12 },
+  recommendBadge: { alignItems: "center", backgroundColor: "#E9F8EE", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
+  recommendPct: { color: "#2E7D32", fontSize: 13, fontWeight: "800" },
+  recommendLabel: { color: "#2E7D32", fontSize: 8.5, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.4 },
+  newBadge: { backgroundColor: COLORS.bg, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  newBadgeText: { color: COLORS.sub, fontSize: 10.5, fontWeight: "700" },
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 24 },
   modalCard: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16 },
   modalTitle: { color: COLORS.ink, fontSize: 16, fontWeight: "800", marginBottom: 10 },

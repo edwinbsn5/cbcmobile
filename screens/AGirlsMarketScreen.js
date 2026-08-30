@@ -220,7 +220,7 @@ export default function AGirlsMarketScreen({ navigation }) {
           <TouchableOpacity style={styles.iconBtn} onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate("MainTabs", { screen: "Home" }))} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="chevron-back" size={19} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.wordmark}>A Girl's Market</Text>
+          <Text style={styles.wordmark}>MarketPlace</Text>
         </View>
         <View style={styles.topBarRight}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate("CreateMarketProduct")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>

@@ -14,13 +14,39 @@ import { connectSocket } from "../api/socket";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
-// Header title with an optional second line — used for the Mtu Wako
+// Header title with an optional second line — used for the BSN & Services
 // context ("Grace Muthoni" / "Messaging Faith's Hair Studio").
 function ChatHeaderTitle({ name, subtitle }) {
   return (
     <View>
       <Text style={styles.headerName} numberOfLines={1}>{name}</Text>
       {!!subtitle && <Text style={styles.headerSubtitle} numberOfLines={1}>{subtitle}</Text>}
+    </View>
+  );
+}
+
+function EventPin({ event, onView }) {
+  if (!event) {
+    return (
+      <View style={styles.pinUnavailable}>
+        <Ionicons name="alert-circle-outline" size={14} color={COLORS.sub} />
+        <Text style={styles.pinUnavailableText}>This event is no longer available</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.pin}>
+      {event.coverUrl ? (
+        <Image source={{ uri: event.coverUrl }} style={styles.pinThumb} contentFit="cover" />
+      ) : (
+        <View style={[styles.pinThumb, styles.pinThumbPlaceholder]} />
+      )}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.pinTitle} numberOfLines={1}>{event.name}</Text>
+      </View>
+      <TouchableOpacity style={[styles.pinButton, styles.pinButtonGhost]} onPress={onView}>
+        <Text style={styles.pinButtonGhostText}>View</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -268,6 +294,11 @@ export default function ChatScreen({ route, navigation }) {
     navigation.navigate("MarketProductDetail", { productId: conversation.contextProduct.id });
   }
 
+  function handleViewEvent() {
+    if (!conversation?.contextEvent) return;
+    navigation.navigate("EventDetail", { eventId: conversation.contextEvent.id });
+  }
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   return (
@@ -286,6 +317,9 @@ export default function ChatScreen({ route, navigation }) {
           <Ionicons name="alert-circle-outline" size={14} color={COLORS.sub} />
           <Text style={styles.pinUnavailableText}>This Page is no longer available</Text>
         </View>
+      )}
+      {conversation?.contextType === "event" && (
+        <EventPin event={conversation.contextEvent} onView={handleViewEvent} />
       )}
 
       <FlatList

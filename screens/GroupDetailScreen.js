@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import PostCard from "../components/PostCard";
@@ -12,6 +13,16 @@ import AdMobBanner from "../components/AdMobBanner";
 import Avatar from "../components/Avatar";
 import { useSaved } from "../hooks/useSaved";
 import { COLORS } from "../theme";
+
+function formatCount(n) {
+  if (!n) return "0";
+  if (n >= 1000) return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + "k";
+  return String(n);
+}
+
+function firstName(fullName) {
+  return (fullName || "").trim().split(/\s+/)[0] || "them";
+}
 
 const TABS = ["Feed", "Blogs", "Videos", "Reviews"];
 
@@ -68,6 +79,7 @@ function VideoGridRow({ row, onPress }) {
 
 export default function GroupDetailScreen({ route, navigation }) {
   const { groupId } = route.params;
+  const insets = useSafeAreaInsets();
   const { user, updateWalletBalance } = useAuth();
   const [group, setGroup] = useState(null);
   const [mySub, setMySub] = useState(null);
@@ -92,6 +104,9 @@ export default function GroupDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(null);
   const [changingCover, setChangingCover] = useState(false);
+  const [changingAvatar, setChangingAvatar] = useState(false);
+  const [messaging, setMessaging] = useState(false);
+  const tiersYRef = useRef(0);
 
   const [composerText, setComposerText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -407,6 +422,38 @@ export default function GroupDetailScreen({ route, navigation }) {
     }
   }
 
+  async function handleChangeAvatar() {
+    const localMedia = await pickMedia({ imagesOnly: true });
+    if (!localMedia) return;
+    setChangingAvatar(true);
+    try {
+      const uploaded = await uploadMedia(localMedia);
+      const { data } = await client.patch(`/groups/${groupId}/avatar`, { avatarUrl: uploaded.url });
+      setGroup((prev) => ({ ...prev, avatarUrl: data.avatarUrl }));
+    } catch (e) {
+      Alert.alert("Couldn't update avatar", e.response?.data?.error || e.message);
+    } finally {
+      setChangingAvatar(false);
+    }
+  }
+
+  async function handleMessageAdmin() {
+    if (!group?.admin?.id) return;
+    setMessaging(true);
+    try {
+      const { data } = await client.post("/inbox/start", { userId: group.admin.id });
+      navigation.navigate("Chat", { conversationId: data.id, otherUser: data.otherUser });
+    } catch (e) {
+      Alert.alert("Couldn't start chat", e.response?.data?.error || e.message);
+    } finally {
+      setMessaging(false);
+    }
+  }
+
+  function handleScrollToTiers() {
+    listRef.current?.scrollToOffset({ offset: Math.max(tiersYRef.current - 12, 0), animated: true });
+  }
+
   useEffect(() => {
     if (!focusPostId || activeTab !== "Feed" || !posts.length) return;
     const index = posts.findIndex((item) => item.id === focusPostId);
@@ -418,7 +465,16 @@ export default function GroupDetailScreen({ route, navigation }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts, activeTab, focusPostId]);
 
-  if (loading || !group) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
+  if (loading || !group) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
+        <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />
+        <TouchableOpacity style={[styles.backBtn, { top: insets.top + 8 }]} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Videos render as a 3-column grid rather than one card per row, so the
   // shared FlatList (which stays single-column for every other tab) is fed
@@ -430,6 +486,7 @@ export default function GroupDetailScreen({ route, navigation }) {
     activeTab === "Reviews" ? reviews.items : activeTab === "Blogs" ? blogs : activeTab === "Videos" ? videoRows : posts;
 
   return (
+    <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
     <FlatList
       ref={listRef}
       style={styles.container}
@@ -482,24 +539,56 @@ export default function GroupDetailScreen({ route, navigation }) {
             )}
           </View>
           <View style={styles.body}>
+            <TouchableOpacity
+              activeOpacity={isAdmin ? 0.8 : 1}
+              onPress={isAdmin ? handleChangeAvatar : undefined}
+              disabled={!isAdmin || changingAvatar}
+              style={styles.avatarWrap}
+            >
+              <Avatar uri={group.avatarUrl} name={group.name} style={styles.avatar} />
+              {isAdmin && (
+                <View style={styles.avatarCameraBadge}>
+                  {changingAvatar ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="camera" size={13} color="#fff" />}
+                </View>
+              )}
+            </TouchableOpacity>
+
             <Text style={styles.name}>{group.name}</Text>
-            <Text style={styles.desc}>{group.description}</Text>
             <Text style={styles.admin}>Admin: {group.admin?.name}</Text>
+
+            <View style={styles.statsRow}>
+              <View style={styles.statBlock}>
+                <Text style={styles.statValue}>{formatCount(group.memberCount)}</Text>
+                <Text style={styles.statLabel}>Members</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBlock}>
+                <Text style={styles.statValue}>{group.reviewCount > 0 ? `${group.avgRating.toFixed(1)}★` : "—"}</Text>
+                <Text style={styles.statLabel}>{group.reviewCount} review{group.reviewCount === 1 ? "" : "s"}</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBlock}>
+                <Text style={styles.statValue}>{formatCount(group.postCount)}</Text>
+                <Text style={styles.statLabel}>Posts</Text>
+              </View>
+            </View>
+
+            {!!group.description && <Text style={styles.desc}>{group.description}</Text>}
+
+            <View style={styles.chipsRow}>
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>🕐 Since {new Date(group.createdAt).getFullYear()}</Text>
+              </View>
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>📌 {group.tiers.length} plan{group.tiers.length === 1 ? "" : "s"}</Text>
+              </View>
+            </View>
 
             {isAdmin && (
               <TouchableOpacity style={styles.boostRow} onPress={() => navigation.navigate("BoostGroup", { group })}>
                 <Text style={styles.boostText}>📣 Boost this group</Text>
               </TouchableOpacity>
             )}
-
-            <View style={styles.ratingRow}>
-              <StarRow value={Math.round(group.avgRating)} size={14} />
-              <Text style={styles.ratingText}>
-                {group.reviewCount > 0
-                  ? `${group.avgRating.toFixed(1)} · ${group.reviewCount} review${group.reviewCount === 1 ? "" : "s"}`
-                  : "No reviews yet"}
-              </Text>
-            </View>
 
             {group.status === "pending" && (
               <View style={styles.pendingBanner}>
@@ -520,33 +609,48 @@ export default function GroupDetailScreen({ route, navigation }) {
               </View>
             )}
 
-            <Text style={styles.sectionTitle}>Membership tiers</Text>
-            {group.tiers.map((tier) => (
-              <View key={tier.id} style={styles.tierCard}>
-                <View style={styles.tierHeader}>
-                  <Text style={styles.tierName}>{tier.name}</Text>
-                  <Text style={styles.tierPrice}>KES {tier.priceKES}/{tier.periodDays}d</Text>
-                </View>
-                {tier.perks.map((perk, i) => (
-                  <Text key={i} style={styles.perk}>• {perk}</Text>
-                ))}
-                <TouchableOpacity
-                  style={[styles.subscribeButton, group.adminId === user?.id && styles.disabledButton]}
-                  disabled={group.adminId === user?.id || subscribing === tier.id}
-                  onPress={() => handleSubscribe(tier)}
-                >
-                  <Text style={styles.subscribeButtonText}>
-                    {group.adminId === user?.id
-                      ? "You're the admin"
-                      : subscribing === tier.id
-                      ? "Processing..."
-                      : mySub?.subscribed
-                      ? "Renew / switch tier"
-                      : "Subscribe from wallet"}
-                  </Text>
+            {!isAdmin && (
+              <View style={styles.ctaRow}>
+                <TouchableOpacity style={styles.subscribeCta} onPress={handleScrollToTiers}>
+                  <Text style={styles.subscribeCtaText}>{mySub?.subscribed ? "Manage subscription" : "Subscribe"}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.messageCta} onPress={handleMessageAdmin} disabled={messaging}>
+                  <Text style={styles.messageCtaText}>{messaging ? "Opening..." : `Message ${firstName(group.admin?.name)}`}</Text>
                 </TouchableOpacity>
               </View>
-            ))}
+            )}
+
+            <View onLayout={(e) => { tiersYRef.current = e.nativeEvent.layout.y; }}>
+              <Text style={styles.sectionTitle}>Membership tiers</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 4 }}>
+                {group.tiers.map((tier) => (
+                  <View key={tier.id} style={styles.tierCard}>
+                    <View style={styles.tierHeader}>
+                      <Text style={styles.tierName}>{tier.name}</Text>
+                      <Text style={styles.tierPrice}>KES {tier.priceKES}/{tier.periodDays}d</Text>
+                    </View>
+                    {tier.perks.map((perk, i) => (
+                      <Text key={i} style={styles.perk}>• {perk}</Text>
+                    ))}
+                    <TouchableOpacity
+                      style={[styles.subscribeButton, group.adminId === user?.id && styles.disabledButton]}
+                      disabled={group.adminId === user?.id || subscribing === tier.id}
+                      onPress={() => handleSubscribe(tier)}
+                    >
+                      <Text style={styles.subscribeButtonText}>
+                        {group.adminId === user?.id
+                          ? "You're the admin"
+                          : subscribing === tier.id
+                          ? "Processing..."
+                          : mySub?.subscribed
+                          ? "Renew / switch tier"
+                          : "Subscribe from wallet"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
 
             <View style={styles.tabRow}>
               {TABS.map((t) => (
@@ -739,6 +843,10 @@ export default function GroupDetailScreen({ route, navigation }) {
         </View>
       }
     />
+    <TouchableOpacity style={[styles.backBtn, { top: insets.top + 8 }]} onPress={() => navigation.goBack()}>
+      <Ionicons name="chevron-back" size={20} color="#fff" />
+    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -750,12 +858,38 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6,
   },
   changeCoverText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+  backBtn: {
+    position: "absolute", left: 14, width: 34, height: 34, borderRadius: 17,
+    backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center",
+  },
   body: { padding: 16 },
-  name: { color: COLORS.ink, fontSize: 22, fontWeight: "800" },
-  desc: { color: COLORS.sub, marginTop: 6, fontSize: 14 },
-  admin: { color: COLORS.sub, fontSize: 12, marginTop: 8 },
+  avatarWrap: { marginTop: -40, width: 88, height: 88 },
+  avatar: { width: 88, height: 88, borderRadius: 24, borderWidth: 4, borderColor: COLORS.bg },
+  avatarCameraBadge: {
+    position: "absolute", right: -2, bottom: -2, width: 26, height: 26, borderRadius: 13,
+    backgroundColor: COLORS.accentInk, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: COLORS.bg,
+  },
+  name: { color: COLORS.ink, fontSize: 21, fontWeight: "800", marginTop: 12 },
+  desc: { color: COLORS.sub, marginTop: 12, fontSize: 13.5, lineHeight: 20 },
+  admin: { color: COLORS.sub, fontSize: 12.5, fontWeight: "600", marginTop: 2 },
   boostRow: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border },
   boostText: { color: COLORS.accent, fontWeight: "600", fontSize: 13 },
+  statsRow: {
+    flexDirection: "row", alignItems: "center", marginTop: 16, paddingVertical: 14,
+    borderTopWidth: 1, borderBottomWidth: 1, borderColor: COLORS.border,
+  },
+  statBlock: { flex: 1, alignItems: "center" },
+  statValue: { color: COLORS.ink, fontSize: 15, fontWeight: "800" },
+  statLabel: { color: COLORS.sub, fontSize: 10.5, fontWeight: "600", marginTop: 2 },
+  statDivider: { width: 1, height: 26, backgroundColor: COLORS.border },
+  chipsRow: { flexDirection: "row", gap: 8, marginTop: 14 },
+  chip: { backgroundColor: COLORS.wash, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 },
+  chipText: { color: COLORS.ink, fontSize: 11.5, fontWeight: "700" },
+  ctaRow: { flexDirection: "row", gap: 10, marginTop: 16 },
+  subscribeCta: { flex: 1, backgroundColor: COLORS.accent, borderRadius: 10, paddingVertical: 12, alignItems: "center" },
+  subscribeCtaText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 13.5 },
+  messageCta: { flex: 1, borderWidth: 1.5, borderColor: COLORS.accentInk, borderRadius: 10, paddingVertical: 11.5, alignItems: "center" },
+  messageCtaText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 13.5 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
   ratingText: { color: COLORS.sub, fontSize: 12, fontWeight: "600" },
   activeBanner: { backgroundColor: "#E9F8EE", padding: 10, borderRadius: 8, marginTop: 12 },
@@ -765,11 +899,11 @@ const styles = StyleSheet.create({
   rejectedBanner: { backgroundColor: "#F8D7DA", padding: 10, borderRadius: 8, marginTop: 12 },
   rejectedBannerText: { color: "#721C24", fontWeight: "600" },
   sectionTitle: { color: COLORS.ink, fontSize: 16, fontWeight: "700", marginTop: 20, marginBottom: 10 },
-  tierCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, marginBottom: 12 },
-  tierHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  tierName: { color: COLORS.ink, fontSize: 16, fontWeight: "700" },
-  tierPrice: { fontSize: 15, fontWeight: "700", color: COLORS.accent },
-  perk: { color: COLORS.sub, marginBottom: 2 },
+  tierCard: { width: 210, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 14 },
+  tierHeader: { marginBottom: 8 },
+  tierName: { color: COLORS.ink, fontSize: 15, fontWeight: "800" },
+  tierPrice: { fontSize: 14.5, fontWeight: "700", color: COLORS.accent, marginTop: 2 },
+  perk: { color: COLORS.sub, fontSize: 12.5, marginBottom: 3 },
   subscribeButton: { backgroundColor: COLORS.accent, borderRadius: 8, paddingVertical: 10, alignItems: "center", marginTop: 10 },
   disabledButton: { backgroundColor: "#BCC0C4" },
   subscribeButtonText: { color: COLORS.accentInk, fontWeight: "700" },

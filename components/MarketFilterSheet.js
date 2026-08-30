@@ -7,10 +7,10 @@ import SubCountyPicker from "./SubCountyPicker";
 import CategoryPicker from "./CategoryPicker";
 import { COLORS } from "../theme";
 
-// Filter bottom sheet for the unified A Girls Market stream: saved items /
+// Filter bottom sheet for the unified MarketPlace stream: saved items /
 // my listings shortcuts, county/sub-county (the same pickers used across
 // the app, not a bespoke zone widget), category multi-select (reuses
-// CategoryPicker against A Girls Market's own taxonomy), and a price
+// CategoryPicker against MarketPlace's own taxonomy), and a price
 // range — a single "Search" action applies everything at once and closes
 // the sheet, mirroring Fundi Jikoni's own filter sheet.
 export default function MarketFilterSheet({

@@ -52,21 +52,30 @@ export default function MyPlansScreen({ navigation }) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  // Grouped by life area (in LIFE_AREAS' own order) so "savings goals",
-  // "relationship goals", etc. read as their own sections instead of one
-  // flat list — an area only gets a section once it actually has a goal in
-  // it; anything without a life area falls into its own trailing bucket.
+  // Achieved goals get pulled into their own "Wins" section up top — a
+  // trophy shelf, rather than sitting buried in their life-area group with
+  // just a green pill to show for it. Everything else keeps the existing
+  // by-life-area grouping (in LIFE_AREAS' own order; an area only gets a
+  // section once it actually has a goal in it; anything without a life
+  // area falls into its own trailing bucket).
   const sections = useMemo(() => {
     if (!goals) return [];
+    const wins = goals
+      .filter((g) => g.status === "achieved")
+      .sort((a, b) => (b.achievedAt || b.updatedAt || 0) - (a.achievedAt || a.updatedAt || 0));
+    const rest = goals.filter((g) => g.status !== "achieved");
+
     const byArea = new Map();
-    for (const g of goals) {
+    for (const g of rest) {
       const key = g.lifeArea || "__none";
       if (!byArea.has(key)) byArea.set(key, []);
       byArea.get(key).push(g);
     }
-    const ordered = LIFE_AREAS
-      .filter((a) => byArea.has(a.key))
-      .map((a) => ({ title: a.label, data: byArea.get(a.key) }));
+    const ordered = [];
+    if (wins.length) ordered.push({ title: "🏆 Wins", kind: "wins", data: wins });
+    ordered.push(
+      ...LIFE_AREAS.filter((a) => byArea.has(a.key)).map((a) => ({ title: a.label, data: byArea.get(a.key) }))
+    );
     if (byArea.has("__none")) ordered.push({ title: NO_AREA_LABEL, data: byArea.get("__none") });
     return ordered;
   }, [goals]);
@@ -77,19 +86,28 @@ export default function MyPlansScreen({ navigation }) {
       sections={sections}
       keyExtractor={(g) => g.id}
       stickySectionHeadersEnabled={false}
-      renderSectionHeader={({ section }) => <Text style={styles.sectionHeaderText}>{section.title}</Text>}
+      renderSectionHeader={({ section }) =>
+        section.kind === "wins" ? (
+          <View style={styles.winsHeader}>
+            <Text style={styles.winsHeaderText}>{section.title}</Text>
+            <Text style={styles.winsHeaderCount}>{section.data.length} achieved</Text>
+          </View>
+        ) : (
+          <Text style={styles.sectionHeaderText}>{section.title}</Text>
+        )
+      }
       ListHeaderComponent={
         <View>
           <View style={styles.hero}>
             <Ionicons name="rocket-outline" size={22} color={COLORS.accent} />
-            <Text style={styles.heroTitle}>My Plans</Text>
+            <Text style={styles.heroTitle}>The PLAN</Text>
             <Text style={styles.heroSubtitle}>Your private life planner — vision, goals, and progress, seen by no one but you.</Text>
           </View>
 
           {!hasAccess && (
             <TouchableOpacity style={styles.accessBanner} onPress={() => setAccessModalVisible(true)}>
               <Ionicons name="lock-closed-outline" size={16} color="#8A6D00" />
-              <Text style={styles.accessBannerText}>Unlock My Plans access to write your vision and track your goals — from KES 5</Text>
+              <Text style={styles.accessBannerText}>Unlock The PLAN access to write your vision and track your goals — from KES 5</Text>
               <Ionicons name="chevron-forward" size={16} color="#8A6D00" />
             </TouchableOpacity>
           )}
@@ -123,7 +141,7 @@ export default function MyPlansScreen({ navigation }) {
             visible={accessModalVisible}
             onClose={() => setAccessModalVisible(false)}
             feature="project"
-            featureLabel="My Plans"
+            featureLabel="The PLAN"
             onPurchased={() => { setHasAccess(true); setAccessModalVisible(false); load(); }}
           />
           <VisionModal
@@ -144,7 +162,25 @@ export default function MyPlansScreen({ navigation }) {
           <Text style={styles.empty}>{hasAccess ? "No goals yet — add one to start tracking." : ""}</Text>
         )
       }
-      renderItem={({ item }) => {
+      renderItem={({ item, section }) => {
+        if (section.kind === "wins") {
+          return (
+            <TouchableOpacity style={styles.winCard} onPress={() => navigation.navigate("MyPlansGoal", { goalId: item.id })}>
+              <View style={styles.winTrophy}>
+                <Ionicons name="trophy" size={18} color={COLORS.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.winTitle}>{item.title}</Text>
+                <View style={styles.goalMetaRow}>
+                  {!!item.lifeArea && <View style={styles.areaPill}><Text style={styles.areaPillText}>{LIFE_AREA_LABELS[item.lifeArea]}</Text></View>}
+                  <Text style={styles.winMetaText}>
+                    Achieved {new Date(item.achievedAt || item.updatedAt).toLocaleDateString()}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        }
         const sc = STATUS_COLORS[item.status] || STATUS_COLORS.not_started;
         const doneCount = item.milestones.filter((m) => m.done).length;
         return (
@@ -268,6 +304,12 @@ const styles = StyleSheet.create({
   goalsHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginHorizontal: 12, marginTop: 20 },
   sectionTitle: { fontSize: 15, fontWeight: "800", color: COLORS.ink },
   sectionHeaderText: { fontSize: 11.5, fontWeight: "800", color: COLORS.accent, textTransform: "uppercase", letterSpacing: 0.4, marginHorizontal: 12, marginTop: 16, marginBottom: 4 },
+  winsHeader: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginHorizontal: 12, marginTop: 16, marginBottom: 4,
+  },
+  winsHeaderText: { fontSize: 13.5, fontWeight: "800", color: COLORS.accentInk },
+  winsHeaderCount: { fontSize: 11, fontWeight: "700", color: COLORS.sub },
   addButton: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: COLORS.accent, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
   addButtonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 12.5 },
   empty: { textAlign: "center", color: COLORS.sub, marginTop: 30 },
@@ -276,6 +318,17 @@ const styles = StyleSheet.create({
   goalTitle: { color: COLORS.ink, fontSize: 14.5, fontWeight: "700", flex: 1 },
   statusPill: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   statusPillText: { fontSize: 10.5, fontWeight: "700" },
+  winCard: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    backgroundColor: "#FFFBF0", borderWidth: 1, borderColor: COLORS.accent,
+    marginHorizontal: 12, marginTop: 10, borderRadius: 10, padding: 14,
+  },
+  winTrophy: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: "#FBF0D2",
+    alignItems: "center", justifyContent: "center",
+  },
+  winTitle: { color: COLORS.ink, fontSize: 14.5, fontWeight: "700" },
+  winMetaText: { color: COLORS.sub, fontSize: 11.5, marginTop: 4 },
   goalMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" },
   areaPill: { backgroundColor: COLORS.wash, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   areaPillText: { color: COLORS.accent, fontSize: 10.5, fontWeight: "700" },

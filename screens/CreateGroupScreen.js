@@ -12,6 +12,7 @@ export default function CreateGroupScreen({ navigation }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [cover, setCover] = useState(null); // { uri, mimeType, fileName }
+  const [avatar, setAvatar] = useState(null); // { uri, mimeType, fileName }
   const [tierName, setTierName] = useState("Member");
   const [priceKES, setPriceKES] = useState("");
   const [periodDays, setPeriodDays] = useState("30");
@@ -30,6 +31,25 @@ export default function CreateGroupScreen({ navigation }) {
     setCover({ uri: asset.uri, mimeType, fileName: asset.fileName || `cover.${mimeType.split("/")[1]}` });
   }
 
+  async function handlePickAvatar() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return Alert.alert("Permission needed", "Allow photo library access to pick a profile photo");
+
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
+    if (result.canceled || !result.assets?.length) return;
+
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType || "image/jpeg";
+    setAvatar({ uri: asset.uri, mimeType, fileName: asset.fileName || `avatar.${mimeType.split("/")[1]}` });
+  }
+
+  async function uploadImage(localImage) {
+    const form = new FormData();
+    form.append("file", { uri: localImage.uri, name: localImage.fileName, type: localImage.mimeType });
+    const { data } = await client.post("/upload", form, { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 });
+    return data.url;
+  }
+
   async function handleCreate() {
     if (!name.trim()) return Alert.alert("Name required", "Give your group a name");
     if (!tierName.trim()) return Alert.alert("Tier name required", "Give your starter membership tier a name");
@@ -43,21 +63,18 @@ export default function CreateGroupScreen({ navigation }) {
     setSubmitting(true);
     try {
       let coverUrl;
-      if (cover) {
+      let avatarUrl;
+      if (cover || avatar) {
         setUploading(true);
-        const form = new FormData();
-        form.append("file", { uri: cover.uri, name: cover.fileName, type: cover.mimeType });
-        const { data: uploaded } = await client.post("/upload", form, {
-          headers: { "Content-Type": "multipart/form-data" },
-          timeout: 60000,
-        });
-        coverUrl = uploaded.url;
+        if (cover) coverUrl = await uploadImage(cover);
+        if (avatar) avatarUrl = await uploadImage(avatar);
         setUploading(false);
       }
 
       const { data } = await client.post("/groups", {
         name: name.trim(),
         description: description.trim(),
+        avatarUrl,
         coverUrl,
         tiers: [{ name: tierName.trim(), priceKES: price, periodDays: period, perks: [] }],
       });
@@ -95,6 +112,21 @@ export default function CreateGroupScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
+        <Text style={styles.label}>Profile photo (avatar)</Text>
+        {avatar ? (
+          <View style={styles.avatarPreviewWrap}>
+            <Image source={{ uri: avatar.uri }} style={styles.avatarPreview} contentFit="cover" />
+            <TouchableOpacity style={styles.coverRemoveButton} onPress={() => setAvatar(null)}>
+              <Ionicons name="close" size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.coverPicker} onPress={handlePickAvatar}>
+            <Ionicons name="person-circle-outline" size={22} color={COLORS.accent} />
+            <Text style={styles.coverPickerText}>Choose a profile photo (optional)</Text>
+          </TouchableOpacity>
+        )}
+
         <Text style={styles.sectionTitle}>Starter membership tier</Text>
         <Text style={styles.label}>Tier name</Text>
         <TextInput style={styles.input} value={tierName} onChangeText={setTierName} placeholder="Member" />
@@ -106,7 +138,7 @@ export default function CreateGroupScreen({ navigation }) {
         <TextInput style={styles.input} value={periodDays} onChangeText={setPeriodDays} placeholder="30" keyboardType="number-pad" />
 
         <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{uploading ? "Uploading cover..." : "Submit for approval"}</Text>}
+          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{uploading ? "Uploading photos..." : "Submit for approval"}</Text>}
         </TouchableOpacity>
         <Text style={styles.hint}>New groups are reviewed by an admin before they appear publicly.</Text>
       </View>
@@ -128,6 +160,8 @@ const styles = StyleSheet.create({
   coverPickerText: { color: COLORS.accent, fontWeight: "600", fontSize: 13 },
   coverPreviewWrap: { borderRadius: 8, overflow: "hidden" },
   coverPreview: { width: "100%", height: 150, backgroundColor: "#eee" },
+  avatarPreviewWrap: { width: 84, height: 84, borderRadius: 22, overflow: "hidden" },
+  avatarPreview: { width: "100%", height: "100%", backgroundColor: "#eee" },
   coverRemoveButton: {
     position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 13,
     backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center",

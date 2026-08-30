@@ -5,9 +5,11 @@ import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 import EventDatePicker from "../components/EventDatePicker";
 import TimePicker from "../components/TimePicker";
+import CountyPicker from "../components/CountyPicker";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
@@ -15,9 +17,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default function CreateEventScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [county, setCounty] = useState(user?.county || "");
   const [cover, setCover] = useState(null); // { uri, mimeType, fileName }
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -39,6 +43,7 @@ export default function CreateEventScreen({ navigation }) {
 
   async function handleCreate() {
     if (!name.trim()) return Alert.alert("Name required", "Give your event a name");
+    if (!county) return Alert.alert("County required", "Select the county this event is happening in");
     if (!DATE_RE.test(date)) return Alert.alert("Date required", "Select the day, month, and year");
     if (!TIME_RE.test(time)) return Alert.alert("Start time required", "Select the start hour and minute");
     if (!TIME_RE.test(endTime)) return Alert.alert("End time required", "Select the hour and minute the event ends");
@@ -72,6 +77,7 @@ export default function CreateEventScreen({ navigation }) {
         name: name.trim(),
         description: description.trim(),
         location: location.trim(),
+        county,
         coverUrl,
         startAt,
         endAt,
@@ -98,6 +104,9 @@ export default function CreateEventScreen({ navigation }) {
 
         <Text style={styles.label}>Location</Text>
         <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="Venue or address" />
+
+        <Text style={styles.label}>County</Text>
+        <CountyPicker value={county} onChange={setCounty} placeholder="Select the county this event is in" />
 
         <Text style={styles.label}>Cover photo</Text>
         {cover ? (

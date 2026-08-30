@@ -39,6 +39,8 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [updateContent, setUpdateContent] = useState("");
   const [contributionAmount, setContributionAmount] = useState("");
+  const [expenseAmount, setExpenseAmount] = useState("");
+  const [expenseReason, setExpenseReason] = useState("");
   const [posting, setPosting] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -133,6 +135,23 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
       load();
     } catch (e) {
       Alert.alert("Couldn't contribute", e.response?.data?.error || e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function logExpense() {
+    const amt = parseInt(expenseAmount, 10);
+    if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
+    if (!expenseReason.trim()) return Alert.alert("Reason required", "Say what this money was spent on");
+    setBusy(true);
+    try {
+      await client.post(`/chama/${chamaId}/projects/${projectId}/expenses`, { amount: amt, reason: expenseReason.trim() });
+      setExpenseAmount("");
+      setExpenseReason("");
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't log expense", e.response?.data?.error || e.message);
     } finally {
       setBusy(false);
     }
@@ -284,6 +303,54 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
+        <Text style={styles.sectionTitle}>Ledger</Text>
+        <View style={styles.ledgerSummaryRow}>
+          <View style={styles.ledgerStat}>
+            <Text style={styles.ledgerStatValue}>{formatKES(project.totalFunded)}</Text>
+            <Text style={styles.ledgerStatLabel}>Contributed</Text>
+          </View>
+          <View style={styles.ledgerStatDivider} />
+          <View style={styles.ledgerStat}>
+            <Text style={styles.ledgerStatValue}>{formatKES(project.spentKES)}</Text>
+            <Text style={styles.ledgerStatLabel}>Spent</Text>
+          </View>
+          <View style={styles.ledgerStatDivider} />
+          <View style={styles.ledgerStat}>
+            <Text style={[styles.ledgerStatValue, project.balance < 0 && { color: "#D32F2F" }]}>{formatKES(project.balance)}</Text>
+            <Text style={styles.ledgerStatLabel}>Balance</Text>
+          </View>
+        </View>
+
+        <Text style={styles.subHeading}>By contributor</Text>
+        {project.contributorTotals.map((c) => (
+          <View key={c.userId} style={styles.ledgerRow}>
+            <Text style={styles.milestoneText}>{c.user?.name} <Text style={styles.tabHint}>({c.count} contribution{c.count === 1 ? "" : "s"})</Text></Text>
+            <Text style={styles.ledgerAmount}>{formatKES(c.total)}</Text>
+          </View>
+        ))}
+        {!project.contributorTotals.length && <Text style={styles.emptySmall}>No contributions logged yet.</Text>}
+
+        <Text style={styles.subHeading}>Expenses</Text>
+        {isAdmin && (
+          <View style={styles.composer}>
+            <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={expenseAmount} onChangeText={setExpenseAmount} />
+            <TextInput style={[styles.input, { marginTop: 8 }]} placeholder="Reason — what was this spent on?" value={expenseReason} onChangeText={setExpenseReason} />
+            <TouchableOpacity style={styles.secondaryButton} onPress={logExpense} disabled={busy}>
+              <Text style={styles.secondaryButtonText}>{busy ? "Logging..." : "Log expense"}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {project.expenses.map((e) => (
+          <View key={e.id} style={styles.expenseCard}>
+            <View style={styles.fundingRow}>
+              <Text style={styles.milestoneText}>{e.reason}</Text>
+              <Text style={styles.ledgerAmount}>{formatKES(e.amount)}</Text>
+            </View>
+            <Text style={styles.updateMeta}>{e.loggedByUser?.name} · {timeAgo(e.createdAt)}</Text>
+          </View>
+        ))}
+        {!project.expenses.length && <Text style={styles.emptySmall}>No expenses logged yet.</Text>}
+
         <Text style={styles.sectionTitle}>Project members ({project.members.length})</Text>
         <Text style={styles.tabHint}>Only a chama's own members who register here can log a contribution to this project — a small crew running one project doesn't need the whole group involved.</Text>
         {(() => {
@@ -364,17 +431,14 @@ function FundProjectModal({ visible, onClose, onSubmit, busy }) {
 
 function EditProjectModal({ visible, onClose, project, onSaved, chamaId }) {
   const [status, setStatus] = useState(project.status);
-  const [spentKES, setSpentKES] = useState(String(project.spentKES ?? 0));
   const [closingSummary, setClosingSummary] = useState(project.closingSummary || "");
   const [submitting, setSubmitting] = useState(false);
 
   async function save() {
-    const spent = parseInt(spentKES, 10);
-    if (spentKES.trim() && (!Number.isInteger(spent) || spent < 0)) return Alert.alert("Invalid amount", "Enter a whole number in KES");
     setSubmitting(true);
     try {
       await client.patch(`/chama/${chamaId}/projects/${project.id}`, {
-        status, spentKES: spentKES.trim() ? spent : undefined, closingSummary: closingSummary.trim() || null,
+        status, closingSummary: closingSummary.trim() || null,
       });
       onSaved();
     } catch (e) {
@@ -399,9 +463,6 @@ function EditProjectModal({ visible, onClose, project, onSaved, chamaId }) {
             </TouchableOpacity>
           ))}
         </View>
-
-        <Text style={styles.label}>Amount spent so far (KES)</Text>
-        <TextInput style={styles.input} keyboardType="number-pad" value={spentKES} onChangeText={setSpentKES} />
 
         <Text style={styles.label}>Closing report (optional — shown once the project wraps up)</Text>
         <TextInput style={[styles.input, styles.multiline]} value={closingSummary} onChangeText={setClosingSummary} multiline placeholder="What was achieved, final costs, outcomes..." />
@@ -452,8 +513,15 @@ const styles = StyleSheet.create({
   fundingLabel: { color: COLORS.sub, fontSize: 12.5 },
   fundingValue: { color: COLORS.ink, fontSize: 13.5, fontWeight: "600" },
   memberRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginTop: 8 },
+  ledgerSummaryRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 10, padding: 14 },
+  ledgerStat: { flex: 1, alignItems: "center" },
+  ledgerStatValue: { color: COLORS.ink, fontSize: 14, fontWeight: "800" },
+  ledgerStatLabel: { color: COLORS.sub, fontSize: 10.5, fontWeight: "600", marginTop: 3 },
+  ledgerStatDivider: { width: 1, height: 26, backgroundColor: COLORS.border },
+  subHeading: { fontSize: 12.5, fontWeight: "800", color: COLORS.sub, textTransform: "uppercase", letterSpacing: 0.3, marginTop: 18, marginBottom: 8 },
   ledgerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginTop: 8 },
   ledgerAmount: { color: COLORS.accent, fontWeight: "800", fontSize: 13.5 },
+  expenseCard: { backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginTop: 8 },
   updateCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 8 },
   updateMeta: { color: COLORS.sub, fontSize: 11, marginBottom: 6, fontWeight: "600" },
   updateContent: { color: COLORS.ink, fontSize: 13.5, lineHeight: 19 },

@@ -83,6 +83,22 @@ export default function MyPlansGoalScreen({ route, navigation }) {
     }
   }
 
+  // Moves one milestone up/down in the checklist — same "reorder locally,
+  // send the whole new order to the server in one go" pattern as the
+  // Chama Projects milestone reorder.
+  async function moveMilestone(index, direction) {
+    const target = index + direction;
+    if (target < 0 || target >= goal.milestones.length) return;
+    const reordered = goal.milestones.slice();
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    try {
+      await client.patch(`/myplans/goals/${goalId}/milestones/reorder`, { order: reordered.map((m) => m.id) });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't reorder", e.response?.data?.error || e.message);
+    }
+  }
+
   async function postJournal() {
     if (!journalContent.trim()) return;
     setPosting(true);
@@ -145,13 +161,21 @@ export default function MyPlansGoalScreen({ route, navigation }) {
           <TextInput style={styles.input} placeholder="New milestone" value={milestoneTitle} onChangeText={setMilestoneTitle} onSubmitEditing={addMilestone} />
           <TouchableOpacity style={styles.secondaryButton} onPress={addMilestone}><Text style={styles.secondaryButtonText}>Add</Text></TouchableOpacity>
         </View>
-        {goal.milestones.map((m) => (
+        {goal.milestones.map((m, idx) => (
           <View key={m.id} style={styles.milestoneRow}>
             <TouchableOpacity style={styles.milestoneCheck} onPress={() => toggleMilestone(m)}>
               <Ionicons name={m.done ? "checkbox" : "square-outline"} size={20} color={m.done ? COLORS.accent : COLORS.sub} />
             </TouchableOpacity>
             <Text style={[styles.milestoneText, m.done && styles.milestoneTextDone]}>{m.title}</Text>
-            <TouchableOpacity onPress={() => removeMilestone(m)}><Ionicons name="close" size={16} color={COLORS.sub} /></TouchableOpacity>
+            <View style={styles.milestoneActions}>
+              <TouchableOpacity disabled={idx === 0} onPress={() => moveMilestone(idx, -1)}>
+                <Ionicons name="chevron-up" size={18} color={idx === 0 ? COLORS.border : COLORS.sub} />
+              </TouchableOpacity>
+              <TouchableOpacity disabled={idx === goal.milestones.length - 1} onPress={() => moveMilestone(idx, 1)}>
+                <Ionicons name="chevron-down" size={18} color={idx === goal.milestones.length - 1 ? COLORS.border : COLORS.sub} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => removeMilestone(m)}><Ionicons name="close" size={16} color={COLORS.sub} /></TouchableOpacity>
+            </View>
           </View>
         ))}
         {!goal.milestones.length && <Text style={styles.emptySmall}>No milestones yet.</Text>}
@@ -203,10 +227,14 @@ function EditGoalModal({ visible, onClose, goal, onSaved }) {
     } else {
       target = null;
     }
+    const justAchieved = status === "achieved" && goal.status !== "achieved";
     setSubmitting(true);
     try {
       await client.patch(`/myplans/goals/${goal.id}`, { title: title.trim(), description: description.trim(), lifeArea, status, targetDate: target });
       onSaved();
+      if (justAchieved) {
+        Alert.alert("🎉 Goal achieved!", `"${title.trim()}" just moved to your Wins.`);
+      }
     } catch (e) {
       Alert.alert("Couldn't save", e.response?.data?.error || e.message);
     } finally {
@@ -275,6 +303,7 @@ const styles = StyleSheet.create({
   milestoneCheck: { padding: 2 },
   milestoneText: { flex: 1, color: COLORS.ink, fontSize: 13.5 },
   milestoneTextDone: { color: COLORS.sub, textDecorationLine: "line-through" },
+  milestoneActions: { flexDirection: "row", alignItems: "center", gap: 10 },
   emptySmall: { color: COLORS.sub, fontSize: 12.5, marginTop: 8 },
   journalCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 8 },
   journalTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

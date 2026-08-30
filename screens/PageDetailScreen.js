@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import PostCard from "../components/PostCard";
@@ -210,6 +211,7 @@ async function uploadMultiplePhotos(photoList) {
 
 export default function PageDetailScreen({ route, navigation }) {
   const { pageId } = route.params;
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [page, setPage] = useState(null);
   const [activeTab, setActiveTab] = useState("Feed");
@@ -504,7 +506,16 @@ export default function PageDetailScreen({ route, navigation }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feed, activeTab, focusPostId]);
 
-  if (loading || !page) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
+  if (loading || !page) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
+        <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />
+        <TouchableOpacity style={[styles.backBtn, { top: insets.top + 8 }]} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const photoRows = [];
   for (let i = 0; i < photos.length; i += 3) photoRows.push(photos.slice(i, i + 3));
@@ -515,6 +526,7 @@ export default function PageDetailScreen({ route, navigation }) {
     activeTab === "Reviews" ? reviews.items : activeTab === "Photos" ? photoRows : activeTab === "Videos" ? videoRows : feed;
 
   return (
+    <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
     <FlatList
       ref={listRef}
       style={styles.container}
@@ -558,18 +570,41 @@ export default function PageDetailScreen({ route, navigation }) {
       }
       ListHeaderComponent={
         <View>
-          <View>
+          <View style={styles.coverWrap}>
             <Image source={{ uri: page.coverUrl }} style={styles.cover} contentFit="cover" />
+            <View style={styles.coverShade} pointerEvents="none" />
             {canManageTeam && (
               <TouchableOpacity style={styles.changeCoverButton} onPress={handleChangeCover} disabled={changingCover}>
                 <Ionicons name="camera-outline" size={13} color="#fff" />
                 <Text style={styles.changeCoverText}>{changingCover ? "Uploading..." : "Change cover"}</Text>
               </TouchableOpacity>
             )}
-            <Image source={{ uri: page.avatarUrl }} style={styles.avatar} contentFit="cover" />
+            <View style={styles.coverIdentity}>
+              <Avatar uri={page.avatarUrl} name={page.name} style={styles.coverAvatar} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={styles.coverNameLine}>
+                  <Text style={styles.coverName} numberOfLines={1}>{page.name}</Text>
+                  {page.isVerified && <Ionicons name="checkmark-circle" size={16} color="#4C9AFF" style={{ marginLeft: 4 }} />}
+                </View>
+                <Text style={styles.coverMeta} numberOfLines={1}>
+                  {page.totalCount > 0 ? `★ ${page.avgRating.toFixed(1)} (${page.totalCount})` : "★ New"}
+                  {page.county ? `  ·  📍 ${page.county}` : ""}
+                </Text>
+              </View>
+            </View>
           </View>
+
+          {photos.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
+              {photos.slice(0, 8).map((p) => (
+                <TouchableOpacity key={p.id} onPress={() => setActiveTab("Photos")} activeOpacity={0.85}>
+                  <Image source={{ uri: p.url }} style={styles.photoStripItem} contentFit="cover" />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
           <View style={styles.body}>
-            <Text style={styles.name}>{page.name}</Text>
             <View style={styles.categoryRow}>
               {page.categories.map((c) => (
                 <View key={c.id} style={styles.categoryPill}>
@@ -579,16 +614,9 @@ export default function PageDetailScreen({ route, navigation }) {
             </View>
             {!!page.description && <Text style={styles.desc}>{page.description}</Text>}
 
-            <View style={styles.ratingRow}>
-              <StarRow value={Math.round(page.avgRating)} size={14} />
-              <Text style={styles.ratingText}>
-                {page.totalCount > 0
-                  ? `${page.avgRating.toFixed(1)} · ${page.totalCount} review${page.totalCount === 1 ? "" : "s"} · ${page.recommendPct}% recommend`
-                  : "No reviews yet"}
-              </Text>
-            </View>
             <Text style={styles.memberCount}>
               {page.memberCount} team member{page.memberCount === 1 ? "" : "s"} · {page.followerCount} follower{page.followerCount === 1 ? "" : "s"}
+              {page.totalCount > 0 ? ` · ${page.recommendPct}% recommend` : ""}
             </Text>
 
             {!isTeamMember && (
@@ -764,30 +792,46 @@ export default function PageDetailScreen({ route, navigation }) {
         </View>
       }
     />
+    <TouchableOpacity style={[styles.backBtn, { top: insets.top + 8 }]} onPress={() => navigation.goBack()}>
+      <Ionicons name="chevron-back" size={20} color="#fff" />
+    </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  cover: { width: "100%", height: 140, backgroundColor: "#eee" },
+  backBtn: {
+    position: "absolute", left: 14, width: 34, height: 34, borderRadius: 17,
+    backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center",
+  },
+  coverWrap: { height: 190, backgroundColor: "#eee" },
+  cover: { width: "100%", height: "100%" },
+  coverShade: {
+    position: "absolute", left: 0, right: 0, bottom: 0, height: 90,
+    backgroundColor: "rgba(8,21,39,0.55)",
+  },
   changeCoverButton: {
-    position: "absolute", right: 10, bottom: 10, flexDirection: "row", alignItems: "center", gap: 5,
-    backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6,
+    position: "absolute", right: 10, top: 34, flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6,
   },
   changeCoverText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-  avatar: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: "#eee", position: "absolute", left: 16, bottom: -30,
-    borderWidth: 3, borderColor: COLORS.bg,
+  coverIdentity: {
+    position: "absolute", left: 16, right: 16, bottom: 14,
+    flexDirection: "row", alignItems: "center", gap: 10,
   },
-  body: { padding: 16, paddingTop: 40 },
-  name: { color: COLORS.ink, fontSize: 22, fontWeight: "800" },
-  categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 },
+  coverAvatar: { width: 42, height: 42, borderRadius: 13, borderWidth: 2, borderColor: "rgba(255,255,255,0.7)" },
+  coverNameLine: { flexDirection: "row", alignItems: "center" },
+  coverName: { color: "#fff", fontSize: 18, fontWeight: "800", flexShrink: 1 },
+  coverMeta: { color: "#E9EEF7", fontSize: 11.5, fontWeight: "700", marginTop: 3 },
+  photoStrip: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 14 },
+  photoStripItem: { width: 74, height: 74, borderRadius: 10, backgroundColor: COLORS.wash },
+  body: { paddingHorizontal: 16, paddingBottom: 16 },
+  categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   categoryPill: { backgroundColor: COLORS.wash, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
   categoryPillText: { color: COLORS.accent, fontSize: 11.5, fontWeight: "600" },
   desc: { color: COLORS.sub, marginTop: 8, fontSize: 14 },
-  ratingRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
-  ratingText: { color: COLORS.sub, fontSize: 12, fontWeight: "600" },
-  memberCount: { color: COLORS.sub, fontSize: 12, marginTop: 4 },
+  memberCount: { color: COLORS.sub, fontSize: 12, marginTop: 10 },
   followRow: { flexDirection: "row", gap: 8, marginTop: 12 },
   followButton: { flex: 1, backgroundColor: COLORS.accent, borderRadius: 8, paddingVertical: 11, alignItems: "center" },
   followButtonText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 13.5 },

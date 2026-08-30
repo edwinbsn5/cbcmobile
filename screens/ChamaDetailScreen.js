@@ -152,8 +152,6 @@ export default function ChamaDetailScreen({ route, navigation }) {
             <View style={styles.metaChip}><Text style={styles.metaChipText}>
               {chama.contributionType === "fixed_recurring" ? `${formatKES(chama.contributionAmount)}/${chama.contributionFrequency}` : `Goal ${formatKES(chama.goalAmount)}`}
             </Text></View>
-            <View style={styles.metaChip}><Text style={styles.metaChipText}>{chama.payoutModel === "merry_go_round" ? "Merry-go-round" : chama.payoutModel === "table_banking" ? "Table banking" : "Pooled savings"}</Text></View>
-            <View style={styles.metaChip}><Text style={styles.metaChipText}>Pool: {formatKES(chama.poolBalance)}</Text></View>
           </View>
 
           {!membership && (
@@ -322,15 +320,9 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statStripOuter}>
         <View style={styles.statStrip}>
           <View style={[styles.tileOutline, styles.tileOutlineAccent]}>
-            <Text style={styles.tileOutlineLabel}>Balance</Text>
+            <Text style={styles.tileOutlineLabel}>Group Account</Text>
             <Text style={styles.tileOutlineValue}>{formatKES(chama.poolBalance)}</Text>
           </View>
-          {isMember && (
-            <View style={styles.tileOutline}>
-              <Text style={styles.tileOutlineLabel}>You've paid</Text>
-              <Text style={styles.tileOutlineValue}>{formatKES(myTotal)}</Text>
-            </View>
-          )}
           {isMember && (
             <View style={styles.tileOutline}>
               <Text style={styles.tileOutlineLabel}>Share points</Text>
@@ -375,6 +367,19 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
           ) : (
             <Text style={styles.infoValue}>No announcements yet.</Text>
           )}
+        </View>
+      )}
+
+      {isMember && chama.contributionType === "fixed_recurring" && (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoLabel}>Next contribution Amount</Text>
+          <Text style={styles.infoValue}>{formatKES(chama.contributionAmount)}</Text>
+        </View>
+      )}
+      {isMember && chama.contributionType === "fixed_recurring" && (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoLabel}>Next contribution date</Text>
+          <Text style={styles.infoValue}>{defaulter?.upcomingDeadlineAt ? formatDate(defaulter.upcomingDeadlineAt) : "—"}</Text>
         </View>
       )}
 
@@ -1048,7 +1053,7 @@ function MembersTab({ chamaId, isMember, chama, myUserId, isAdmin }) {
         <View key={m.id} style={styles.memberRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.ledgerName}>{m.user?.name}{m.userId === chama.creatorId ? " (Creator)" : ""}</Text>
-            <Text style={styles.ledgerMeta}>{m.role === "treasurer" ? "Treasurer" : m.role === "admin" ? "Admin" : "Member"} · Trust {m.trust?.score ?? "—"}{m.trust?.kycVerified ? " · KYC ✓" : ""}</Text>
+            <Text style={styles.ledgerMeta}>{m.role === "treasurer" ? "Treasurer" : m.role === "admin" ? "Admin" : "Member"} · Trust {m.trust?.score ?? "—"}</Text>
           </View>
           {m.alreadyPaidOutThisCycle && <Text style={styles.defaulterPill}>Already paid this cycle</Text>}
           {m.defaulter?.isDefaulter && <Text style={styles.defaulterPill}>{m.defaulter.daysLate}d late</Text>}
@@ -1438,9 +1443,7 @@ function JoinRequestModal({ visible, onClose, chamaId, groupCounty, navigation, 
       );
       onDone(data.membership);
     } catch (e) {
-      if (e.response?.data?.requiresKyc) {
-        Alert.alert("Identity verification required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Verify now", onPress: () => navigation.navigate("KYC") }]);
-      } else if (e.response?.data?.requiresGuarantors) {
+      if (e.response?.data?.requiresGuarantors) {
         Alert.alert("Guarantors required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Add guarantors", onPress: () => navigation.navigate("Guarantors") }]);
       } else if (e.response?.data?.requiresAccess) {
         Alert.alert("Chama access required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Get access", onPress: () => { onClose(); navigation.navigate("ChamaHome"); } }]);

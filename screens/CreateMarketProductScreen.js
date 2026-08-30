@@ -113,7 +113,7 @@ export default function CreateMarketProductScreen({ navigation }) {
         title: title.trim(), description: description.trim(), priceKES: price, mediaType,
         photoUrls, mediaUrl, thumbnailUrl, categoryIds,
       });
-      Alert.alert("Listing submitted", "Your product will appear in A Girls Market once an admin approves it.");
+      Alert.alert("Listing submitted", "Your product will appear in MarketPlace once an admin approves it.");
       navigation.replace("MyMarketProducts");
       void data;
     } catch (e) {
@@ -187,7 +187,7 @@ export default function CreateMarketProductScreen({ navigation }) {
         <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={submitting}>
           {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{uploading ? "Uploading..." : "Submit for review"}</Text>}
         </TouchableOpacity>
-        <Text style={styles.hint}>New listings are reviewed by an admin before they appear in A Girls Market.</Text>
+        <Text style={styles.hint}>New listings are reviewed by an admin before they appear in MarketPlace.</Text>
       </View>
     </ScrollView>
   );

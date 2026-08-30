@@ -56,7 +56,6 @@ import MyPlansGoalScreen from "./screens/MyPlansGoalScreen";
 import ChamaProjectsScreen from "./screens/ChamaProjectsScreen";
 import CreateChamaProjectScreen from "./screens/CreateChamaProjectScreen";
 import ChamaProjectDetailScreen from "./screens/ChamaProjectDetailScreen";
-import KYCScreen from "./screens/KYCScreen";
 import GuarantorsScreen from "./screens/GuarantorsScreen";
 import MyFraudReportsScreen from "./screens/MyFraudReportsScreen";
 import BoostPostScreen from "./screens/BoostPostScreen";
@@ -238,7 +237,7 @@ function MainTabs({ navigation }) {
           name="MyPlansTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "My Plans",
+            tabBarLabel: "The PLAN",
             tabBarIcon: ({ color, size }) => <Ionicons name="rocket-outline" size={size} color={color} />,
           }}
           listeners={{
@@ -295,14 +294,14 @@ function RootNavigator() {
       >
         <RootStack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
         <RootStack.Screen name="CreatePost" component={CreatePostScreen} options={{ title: "Create Post", presentation: "modal" }} />
-        <RootStack.Screen name="Groups" component={GroupsScreen} options={{ title: "Groups" }} />
+        <RootStack.Screen name="Groups" component={GroupsScreen} options={{ title: "Plugs & Mentors" }} />
         <RootStack.Screen name="Wallet" component={WalletScreen} options={{ title: "My Wallet" }} />
         <RootStack.Screen name="Reels" component={ReelsScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="Profile" component={ProfileScreen} options={{ title: "My Profile" }} />
-        <RootStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: "Group" }} />
+        <RootStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="GroupVideoPlayer" component={GroupVideoPlayerScreen} options={{ headerShown: false }} />
-        <RootStack.Screen name="Pages" component={PagesListScreen} options={{ title: "Pages" }} />
-        <RootStack.Screen name="PageDetail" component={PageDetailScreen} options={{ title: "Page" }} />
+        <RootStack.Screen name="Pages" component={PagesListScreen} options={{ title: "BSN & Services" }} />
+        <RootStack.Screen name="PageDetail" component={PageDetailScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="CreatePage" component={CreatePageScreen} options={{ title: "Create Page" }} />
         <RootStack.Screen name="PageTeamManagement" component={PageTeamManagementScreen} options={{ title: "Manage Team" }} />
         <RootStack.Screen name="PageVideoPlayer" component={PageVideoPlayerScreen} options={{ headerShown: false }} />
@@ -329,9 +328,8 @@ function RootNavigator() {
         <RootStack.Screen name="ChamaProjects" component={ChamaProjectsScreen} options={{ title: "Project Updates" }} />
         <RootStack.Screen name="CreateChamaProject" component={CreateChamaProjectScreen} options={{ title: "New Project" }} />
         <RootStack.Screen name="ChamaProjectDetail" component={ChamaProjectDetailScreen} options={{ title: "Project" }} />
-        <RootStack.Screen name="MyPlansHome" component={MyPlansScreen} options={{ title: "My Plans" }} />
+        <RootStack.Screen name="MyPlansHome" component={MyPlansScreen} options={{ title: "The PLAN" }} />
         <RootStack.Screen name="MyPlansGoal" component={MyPlansGoalScreen} options={{ title: "Goal" }} />
-        <RootStack.Screen name="KYC" component={KYCScreen} options={{ title: "Verify My Identity" }} />
         <RootStack.Screen name="Guarantors" component={GuarantorsScreen} options={{ title: "My Guarantors" }} />
         <RootStack.Screen name="MyFraudReports" component={MyFraudReportsScreen} options={{ title: "Fraud Reports Against Me" }} />
         <RootStack.Screen name="BoostPost" component={BoostPostScreen} options={{ title: "Boost Post" }} />
@@ -344,8 +342,8 @@ function RootNavigator() {
         <RootStack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ title: "Account Settings" }} />
         <RootStack.Screen name="PrivacySettings" component={PrivacySettingsScreen} options={{ title: "Privacy" }} />
         <RootStack.Screen name="WalletSettings" component={WalletSettingsScreen} options={{ title: "Wallet Settings" }} />
-        <RootStack.Screen name="Events" component={EventsScreen} options={{ title: "Events" }} />
-        <RootStack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: "Event" }} />
+        <RootStack.Screen name="Events" component={EventsScreen} options={{ headerShown: false }} />
+        <RootStack.Screen name="EventDetail" component={EventDetailScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: "Create Event" }} />
         <RootStack.Screen name="BoostEvent" component={BoostEventScreen} options={{ title: "Boost Event" }} />
         <RootStack.Screen name="Inbox" component={InboxScreen} options={{ title: "Inbox" }} />
