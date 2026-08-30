@@ -96,6 +96,12 @@ export default function MarketProductDetailScreen({ route, navigation }) {
             <Text style={styles.sellerLabel}>Seller</Text>
             <Text style={styles.sellerName}>{product.seller?.name}</Text>
           </View>
+          {product.sellerReviewCount > 0 && (
+            <View style={styles.sellerRating}>
+              <Ionicons name="star" size={14} color={COLORS.accent} />
+              <Text style={styles.sellerRatingText}>{product.sellerRating.toFixed(1)}</Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         <View style={styles.actionsRow}>
@@ -143,6 +149,8 @@ const styles = StyleSheet.create({
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#eee" },
   sellerLabel: { fontSize: 10.5, color: COLORS.sub, textTransform: "uppercase", letterSpacing: 0.5 },
   sellerName: { fontSize: 14.5, fontWeight: "700", color: COLORS.ink, marginTop: 1 },
+  sellerRating: { flexDirection: "row", alignItems: "center", gap: 3 },
+  sellerRatingText: { fontSize: 13, fontWeight: "700", color: COLORS.ink },
   actionsRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 18 },
   likeButton: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: COLORS.surface, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10 },
   likeCount: { fontSize: 13, fontWeight: "700", color: COLORS.ink },
