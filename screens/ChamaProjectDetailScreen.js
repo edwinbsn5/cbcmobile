@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
 function formatKES(n) { return `KES ${Math.round(n || 0).toLocaleString()}`; }
@@ -28,19 +29,25 @@ const STATUS_COLORS = {
 
 export default function ChamaProjectDetailScreen({ route, navigation }) {
   const { chamaId, projectId, isAdmin } = route.params;
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [project, setProject] = useState(null);
+  const [contributions, setContributions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editVisible, setEditVisible] = useState(false);
+  const [fundVisible, setFundVisible] = useState(false);
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [updateContent, setUpdateContent] = useState("");
+  const [contributionAmount, setContributionAmount] = useState("");
   const [posting, setPosting] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
     client.get(`/chama/${chamaId}/projects/${projectId}`)
       .then((r) => setProject(r.data))
       .catch((e) => Alert.alert("Couldn't load project", e.response?.data?.error || e.message))
       .finally(() => setLoading(false));
+    client.get(`/chama/${chamaId}/projects/${projectId}/contributions`).then((r) => setContributions(r.data)).catch(() => setContributions([]));
   }, [chamaId, projectId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -71,6 +78,63 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
       load();
     } catch (e) {
       Alert.alert("Couldn't remove milestone", e.response?.data?.error || e.message);
+    }
+  }
+
+  // Moves one milestone up/down in the checklist — e.g. #8 to #4 — by
+  // reordering the local array and sending the whole new order to the
+  // server in one go (mirrors the chama's own rotation-reorder pattern).
+  async function moveMilestone(index, direction) {
+    const target = index + direction;
+    if (target < 0 || target >= project.milestones.length) return;
+    const reordered = project.milestones.slice();
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    try {
+      await client.patch(`/chama/${chamaId}/projects/${projectId}/milestones/reorder`, { order: reordered.map((m) => m.id) });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't reorder", e.response?.data?.error || e.message);
+    }
+  }
+
+  async function fundProject(amount, note) {
+    setBusy(true);
+    try {
+      await client.post(`/chama/${chamaId}/projects/${projectId}/fund`, { amount, note });
+      setFundVisible(false);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't fund project", e.response?.data?.error || e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleMembership(isRegistered) {
+    setBusy(true);
+    try {
+      if (isRegistered) await client.delete(`/chama/${chamaId}/projects/${projectId}/members/me`);
+      else await client.post(`/chama/${chamaId}/projects/${projectId}/members`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't update", e.response?.data?.error || e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitContribution() {
+    const amt = parseInt(contributionAmount, 10);
+    if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
+    setBusy(true);
+    try {
+      await client.post(`/chama/${chamaId}/projects/${projectId}/contributions`, { amount: amt });
+      setContributionAmount("");
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't contribute", e.response?.data?.error || e.message);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -167,14 +231,22 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
             <TouchableOpacity style={styles.secondaryButton} onPress={addMilestone}><Text style={styles.secondaryButtonText}>Add</Text></TouchableOpacity>
           </View>
         )}
-        {project.milestones.map((m) => (
+        {project.milestones.map((m, idx) => (
           <View key={m.id} style={styles.milestoneRow}>
             <TouchableOpacity style={styles.milestoneCheck} onPress={() => isAdmin && toggleMilestone(m)} disabled={!isAdmin}>
               <Ionicons name={m.done ? "checkbox" : "square-outline"} size={20} color={m.done ? COLORS.accent : COLORS.sub} />
             </TouchableOpacity>
             <Text style={[styles.milestoneText, m.done && styles.milestoneTextDone]}>{m.title}</Text>
             {isAdmin && (
-              <TouchableOpacity onPress={() => removeMilestone(m)}><Ionicons name="close" size={16} color={COLORS.sub} /></TouchableOpacity>
+              <View style={styles.milestoneActions}>
+                <TouchableOpacity disabled={idx === 0} onPress={() => moveMilestone(idx, -1)}>
+                  <Ionicons name="chevron-up" size={18} color={idx === 0 ? COLORS.border : COLORS.sub} />
+                </TouchableOpacity>
+                <TouchableOpacity disabled={idx === project.milestones.length - 1} onPress={() => moveMilestone(idx, 1)}>
+                  <Ionicons name="chevron-down" size={18} color={idx === project.milestones.length - 1 ? COLORS.border : COLORS.sub} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => removeMilestone(m)}><Ionicons name="close" size={16} color={COLORS.sub} /></TouchableOpacity>
+              </View>
             )}
           </View>
         ))}
@@ -196,6 +268,53 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
           </View>
         ))}
         {!project.updates.length && <Text style={styles.emptySmall}>No updates posted yet.</Text>}
+
+        <Text style={styles.sectionTitle}>Funding</Text>
+        <View style={styles.fundingCard}>
+          <View style={styles.fundingRow}><Text style={styles.fundingLabel}>Funded from group pool</Text><Text style={styles.fundingValue}>{formatKES(project.fundedFromPool)}</Text></View>
+          <View style={styles.fundingRow}><Text style={styles.fundingLabel}>Raised from project members</Text><Text style={styles.fundingValue}>{formatKES(project.raisedFromMembers)}</Text></View>
+          <View style={[styles.fundingRow, { marginTop: 4, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border }]}>
+            <Text style={[styles.fundingLabel, { fontWeight: "800" }]}>Total funded</Text>
+            <Text style={[styles.fundingValue, { fontWeight: "800" }]}>{formatKES(project.totalFunded)}</Text>
+          </View>
+        </View>
+        {isAdmin && (
+          <TouchableOpacity style={styles.secondaryButton} onPress={() => setFundVisible(true)}>
+            <Text style={styles.secondaryButtonText}>Fund from group pool</Text>
+          </TouchableOpacity>
+        )}
+
+        <Text style={styles.sectionTitle}>Project members ({project.members.length})</Text>
+        <Text style={styles.tabHint}>Only a chama's own members who register here can log a contribution to this project — a small crew running one project doesn't need the whole group involved.</Text>
+        {(() => {
+          const isRegistered = project.members.some((m) => m.userId === user?.id);
+          return (
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => toggleMembership(isRegistered)} disabled={busy}>
+              <Text style={styles.secondaryButtonText}>{isRegistered ? "Leave this project" : "Register for this project"}</Text>
+            </TouchableOpacity>
+          );
+        })()}
+        {project.members.map((m) => (
+          <View key={m.id} style={styles.memberRow}>
+            <Text style={styles.milestoneText}>{m.user?.name}</Text>
+          </View>
+        ))}
+        {!project.members.length && <Text style={styles.emptySmall}>Nobody's registered yet.</Text>}
+
+        {project.members.some((m) => m.userId === user?.id) && (
+          <View style={[styles.composer, { marginTop: 10 }]}>
+            <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={contributionAmount} onChangeText={setContributionAmount} />
+            <TouchableOpacity style={styles.secondaryButton} onPress={submitContribution} disabled={busy}>
+              <Text style={styles.secondaryButtonText}>Mark as contributed</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {(contributions || []).map((c) => (
+          <View key={c.id} style={styles.ledgerRow}>
+            <Text style={styles.milestoneText}>{c.user?.name}</Text>
+            <Text style={styles.ledgerAmount}>{formatKES(c.amount)}</Text>
+          </View>
+        ))}
       </ScrollView>
 
       <EditProjectModal
@@ -205,7 +324,41 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
         onSaved={() => { setEditVisible(false); load(); }}
         chamaId={chamaId}
       />
+      <FundProjectModal
+        visible={fundVisible}
+        onClose={() => setFundVisible(false)}
+        onSubmit={fundProject}
+        busy={busy}
+      />
     </View>
+  );
+}
+
+function FundProjectModal({ visible, onClose, onSubmit, busy }) {
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+
+  function submit() {
+    const amt = parseInt(amount, 10);
+    if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
+    onSubmit(amt, note.trim() || undefined);
+    setAmount(""); setNote("");
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Fund from group pool</Text>
+        <Text style={styles.tabHint}>Moves money out of the chama's ledger into this project — it leaves the pool the same way a payout does, so it can't also be lent out.</Text>
+        <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
+        <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
+        <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={busy}>
+          <Text style={styles.primaryButtonText}>{busy ? "Transferring..." : "Transfer funds"}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
   );
 }
 
@@ -291,7 +444,16 @@ const styles = StyleSheet.create({
   milestoneCheck: { padding: 2 },
   milestoneText: { flex: 1, color: COLORS.ink, fontSize: 13.5 },
   milestoneTextDone: { color: COLORS.sub, textDecorationLine: "line-through" },
+  milestoneActions: { flexDirection: "row", alignItems: "center", gap: 10 },
   emptySmall: { color: COLORS.sub, fontSize: 12.5, marginTop: 8 },
+  tabHint: { color: COLORS.sub, fontSize: 12, marginBottom: 8, lineHeight: 17 },
+  fundingCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12 },
+  fundingRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 3 },
+  fundingLabel: { color: COLORS.sub, fontSize: 12.5 },
+  fundingValue: { color: COLORS.ink, fontSize: 13.5, fontWeight: "600" },
+  memberRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginTop: 8 },
+  ledgerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginTop: 8 },
+  ledgerAmount: { color: COLORS.accent, fontWeight: "800", fontSize: 13.5 },
   updateCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 8 },
   updateMeta: { color: COLORS.sub, fontSize: 11, marginBottom: 6, fontWeight: "600" },
   updateContent: { color: COLORS.ink, fontSize: 13.5, lineHeight: 19 },

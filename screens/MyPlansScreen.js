@@ -1,22 +1,29 @@
-import React, { useCallback, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal, TouchableWithoutFeedback, Alert } from "react-native";
+import React, { useCallback, useMemo, useState } from "react";
+import { View, Text, SectionList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal, TouchableWithoutFeedback, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import FeatureAccessModal from "../components/FeatureAccessModal";
 import { COLORS } from "../theme";
 
+// "Business" and "Mental Health" split out from the more general
+// Career/Health buckets — named to match how people actually describe
+// goals in this category (savings goal, relationship goal, mental health
+// goal, business goal) rather than the original 8-way taxonomy alone.
 const LIFE_AREAS = [
+  { key: "finances", label: "Savings & Finances" },
+  { key: "business", label: "Business" },
   { key: "career", label: "Career" },
-  { key: "health", label: "Health" },
-  { key: "finances", label: "Finances" },
   { key: "relationships", label: "Relationships" },
+  { key: "mental_health", label: "Mental Health" },
+  { key: "health", label: "Physical Health" },
   { key: "education", label: "Education" },
   { key: "spiritual", label: "Spiritual" },
   { key: "personal_growth", label: "Personal Growth" },
   { key: "other", label: "Other" },
 ];
 const LIFE_AREA_LABELS = Object.fromEntries(LIFE_AREAS.map((a) => [a.key, a.label]));
+const NO_AREA_LABEL = "Uncategorized";
 
 const STATUS_LABELS = { not_started: "Not started", in_progress: "In Progress", achieved: "Achieved", abandoned: "Abandoned" };
 const STATUS_COLORS = {
@@ -45,11 +52,32 @@ export default function MyPlansScreen({ navigation }) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // Grouped by life area (in LIFE_AREAS' own order) so "savings goals",
+  // "relationship goals", etc. read as their own sections instead of one
+  // flat list — an area only gets a section once it actually has a goal in
+  // it; anything without a life area falls into its own trailing bucket.
+  const sections = useMemo(() => {
+    if (!goals) return [];
+    const byArea = new Map();
+    for (const g of goals) {
+      const key = g.lifeArea || "__none";
+      if (!byArea.has(key)) byArea.set(key, []);
+      byArea.get(key).push(g);
+    }
+    const ordered = LIFE_AREAS
+      .filter((a) => byArea.has(a.key))
+      .map((a) => ({ title: a.label, data: byArea.get(a.key) }));
+    if (byArea.has("__none")) ordered.push({ title: NO_AREA_LABEL, data: byArea.get("__none") });
+    return ordered;
+  }, [goals]);
+
   return (
-    <FlatList
+    <SectionList
       style={styles.container}
-      data={goals || []}
+      sections={sections}
       keyExtractor={(g) => g.id}
+      stickySectionHeadersEnabled={false}
+      renderSectionHeader={({ section }) => <Text style={styles.sectionHeaderText}>{section.title}</Text>}
       ListHeaderComponent={
         <View>
           <View style={styles.hero}>
@@ -239,6 +267,7 @@ const styles = StyleSheet.create({
   visionPlaceholder: { color: COLORS.sub, fontSize: 13, marginTop: 8, lineHeight: 19, fontStyle: "italic" },
   goalsHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginHorizontal: 12, marginTop: 20 },
   sectionTitle: { fontSize: 15, fontWeight: "800", color: COLORS.ink },
+  sectionHeaderText: { fontSize: 11.5, fontWeight: "800", color: COLORS.accent, textTransform: "uppercase", letterSpacing: 0.4, marginHorizontal: 12, marginTop: 16, marginBottom: 4 },
   addButton: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: COLORS.accent, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
   addButtonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 12.5 },
   empty: { textAlign: "center", color: COLORS.sub, marginTop: 30 },

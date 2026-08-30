@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
@@ -13,9 +13,11 @@ const BOOST_COST_KES = 100; // must match backend/routes/marketBoosts.js
 export default function MarketBoostProductScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { product } = route.params;
-  const { updateWalletBalance } = useAuth();
+  const { user, updateWalletBalance } = useAuth();
   const [targetCounty, setTargetCounty] = useState("");
   const [targetSubCounty, setTargetSubCounty] = useState("");
+  const [contactPhone, setContactPhone] = useState(user?.boostContactPhone || user?.phone || "");
+  const [contactEmail, setContactEmail] = useState(user?.boostContactEmail || user?.email || "");
   const [submitting, setSubmitting] = useState(false);
   const [freeBoostAvailable, setFreeBoostAvailable] = useState(false);
 
@@ -34,6 +36,8 @@ export default function MarketBoostProductScreen({ route, navigation }) {
         productId: product.id,
         targetCounty: targetCounty || undefined,
         targetSubCounty: targetSubCounty || undefined,
+        contactPhone: contactPhone.trim() || undefined,
+        contactEmail: contactEmail.trim() || undefined,
       });
       updateWalletBalance(data.walletBalance);
       Alert.alert(
@@ -88,6 +92,13 @@ export default function MarketBoostProductScreen({ route, navigation }) {
       <Text style={styles.label}>Sub-county</Text>
       <SubCountyPicker county={targetCounty} value={targetSubCounty} onChange={setTargetSubCounty} placeholder="Any sub-county" />
 
+      <Text style={styles.sectionTitle}>Partner contact</Text>
+      <Text style={styles.hint}>So our team can reach you directly about this boost — reused for next time.</Text>
+      <Text style={styles.label}>Phone</Text>
+      <TextInput style={styles.input} value={contactPhone} onChangeText={setContactPhone} placeholder="e.g. 2547XXXXXXXX" keyboardType="phone-pad" />
+      <Text style={styles.label}>Email</Text>
+      <TextInput style={styles.input} value={contactEmail} onChangeText={setContactEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
+
       {freeBoostAvailable ? (
         <View style={styles.freeBox}>
           <Text style={styles.freeText}>🔵 Free this month — your Gold tier benefit covers this boost for 7 days</Text>
@@ -119,6 +130,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: "700", color: COLORS.ink },
   hint: { color: COLORS.sub, fontSize: 12, marginTop: 4, marginBottom: 16 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 6, marginTop: 12 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, backgroundColor: COLORS.surface, color: COLORS.ink },
   costBox: { backgroundColor: COLORS.wash, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24 },
   costText: { color: COLORS.accent, fontWeight: "700" },
   freeBox: { backgroundColor: "#E6F4EA", borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24 },

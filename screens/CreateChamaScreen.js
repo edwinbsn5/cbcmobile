@@ -34,10 +34,12 @@ export default function CreateChamaScreen({ navigation }) {
   const [goalAmount, setGoalAmount] = useState("");
   // Investment Groups are table-banking only now — no picker, nothing to change.
   const payoutModel = "table_banking";
-  const [loanInterestRate, setLoanInterestRate] = useState("10");
+  // 3 fixed repayment plans — more time, more interest. Rate/days are each
+  // editable per tier; the borrower picks one of these 3 per loan request.
+  const [loanTiers, setLoanTiers] = useState([{ rate: "10", days: "30" }, { rate: "25", days: "60" }, { rate: "40", days: "90" }]);
   const [loanMaxMultiplier, setLoanMaxMultiplier] = useState("3");
-  const [loanTermWeeks, setLoanTermWeeks] = useState("4");
   const [latePenaltyRate, setLatePenaltyRate] = useState("5");
+  const [loanEligibilityDays, setLoanEligibilityDays] = useState("");
   const [joinPolicy, setJoinPolicy] = useState("approval");
   const [membersVisible, setMembersVisible] = useState(true);
   const [county, setCounty] = useState("");
@@ -74,10 +76,15 @@ export default function CreateChamaScreen({ navigation }) {
       return Alert.alert("Invalid goal", "Enter a savings goal in KES");
     }
     if (payoutModel === "table_banking") {
-      if (loanInterestRate === "" || isNaN(parseFloat(loanInterestRate)) || parseFloat(loanInterestRate) < 0) return Alert.alert("Invalid interest rate", "Enter a loan interest percentage (0 or more)");
+      for (const t of loanTiers) {
+        if (t.rate === "" || isNaN(parseFloat(t.rate)) || parseFloat(t.rate) < 0) return Alert.alert("Invalid tier rate", "Each repayment plan needs an interest percentage (0 or more)");
+        if (!parseInt(t.days, 10) || parseInt(t.days, 10) <= 0) return Alert.alert("Invalid tier term", "Each repayment plan needs a positive number of days");
+      }
       if (!parseFloat(loanMaxMultiplier) || parseFloat(loanMaxMultiplier) <= 0) return Alert.alert("Invalid multiplier", "Enter how many times a member's savings they can borrow");
-      if (!parseInt(loanTermWeeks, 10) || parseInt(loanTermWeeks, 10) <= 0) return Alert.alert("Invalid term", "Enter a loan repayment term in weeks");
       if (latePenaltyRate === "" || isNaN(parseFloat(latePenaltyRate)) || parseFloat(latePenaltyRate) < 0) return Alert.alert("Invalid penalty", "Enter a late-penalty percentage (0 or more)");
+      if (loanEligibilityDays !== "" && (!Number.isInteger(parseInt(loanEligibilityDays, 10)) || parseInt(loanEligibilityDays, 10) < 0)) {
+        return Alert.alert("Invalid incubation period", "Enter a non-negative number of days, or leave blank for none");
+      }
     }
     if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county your Chama meets in");
 
@@ -100,10 +107,10 @@ export default function CreateChamaScreen({ navigation }) {
         contributionLateFeeRate: contributionType === "fixed_recurring" ? parseFloat(contributionLateFeeRate) : undefined,
         goalAmount: contributionType === "goal_based" ? parseInt(goalAmount, 10) : undefined,
         payoutModel, joinPolicy, membersVisibleToMembers: membersVisible,
-        loanInterestRate: payoutModel === "table_banking" ? parseFloat(loanInterestRate) : undefined,
+        loanTiers: payoutModel === "table_banking" ? loanTiers.map((t) => ({ rate: parseFloat(t.rate), days: parseInt(t.days, 10) })) : undefined,
         loanMaxMultiplier: payoutModel === "table_banking" ? parseFloat(loanMaxMultiplier) : undefined,
-        loanTermWeeks: payoutModel === "table_banking" ? parseInt(loanTermWeeks, 10) : undefined,
         latePenaltyRate: payoutModel === "table_banking" ? parseFloat(latePenaltyRate) : undefined,
+        loanEligibilityDays: payoutModel === "table_banking" && loanEligibilityDays !== "" ? parseInt(loanEligibilityDays, 10) : undefined,
         county, subCounty,
       });
       Alert.alert("Chama created!", "You're the admin — start inviting members.");
@@ -162,15 +169,34 @@ export default function CreateChamaScreen({ navigation }) {
         <TextInput style={styles.input} value={contributionLateFeeRate} onChangeText={setContributionLateFeeRate} keyboardType="decimal-pad" placeholder="10" />
 
         <Text style={styles.sectionTitle}>Table banking terms</Text>
-        <Text style={styles.hint}>Funds stay pooled and members can borrow against them, with interest and a repayment term you set below.</Text>
-        <Text style={styles.label}>Loan interest rate (% of the amount borrowed)</Text>
-        <TextInput style={styles.input} value={loanInterestRate} onChangeText={setLoanInterestRate} keyboardType="decimal-pad" placeholder="10" />
+        <Text style={styles.hint}>Funds stay pooled and members can borrow against them. Set 3 repayment plans below — more time, more interest — and a member picks the one that suits them when they request a loan.</Text>
+        {loanTiers.map((t, i) => (
+          <View key={i} style={styles.tierRow}>
+            <Text style={styles.tierRowLabel}>Plan {i + 1}</Text>
+            <View style={styles.tierRowFields}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Interest %</Text>
+                <TextInput
+                  style={styles.input} value={t.rate} keyboardType="decimal-pad"
+                  onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, rate: v } : x)))}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Days</Text>
+                <TextInput
+                  style={styles.input} value={t.days} keyboardType="number-pad"
+                  onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, days: v } : x)))}
+                />
+              </View>
+            </View>
+          </View>
+        ))}
         <Text style={styles.label}>Max loan size (× a member's total contributions)</Text>
         <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" placeholder="3" />
-        <Text style={styles.label}>Repayment term (weeks)</Text>
-        <TextInput style={styles.input} value={loanTermWeeks} onChangeText={setLoanTermWeeks} keyboardType="number-pad" placeholder="4" />
         <Text style={styles.label}>Late penalty (% of the outstanding balance, charged once overdue)</Text>
         <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" placeholder="5" />
+        <Text style={styles.label}>Incubation period — days a member must belong before requesting a loan (optional)</Text>
+        <TextInput style={styles.input} value={loanEligibilityDays} onChangeText={setLoanEligibilityDays} keyboardType="number-pad" placeholder="e.g. 90, or leave blank for none" />
 
         <Text style={styles.sectionTitle}>Joining</Text>
         <OptionRow options={[{ value: "approval", label: "Requires approval" }, { value: "open", label: "Open until full" }]} value={joinPolicy} onChange={setJoinPolicy} />
@@ -200,6 +226,9 @@ const styles = StyleSheet.create({
   sectionTitle: { color: COLORS.ink, fontSize: 15, fontWeight: "700", marginTop: 20 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 4, marginTop: 12 },
   input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, color: COLORS.ink },
+  tierRow: { backgroundColor: COLORS.wash, borderRadius: 10, padding: 12, marginTop: 12 },
+  tierRowLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.ink },
+  tierRowFields: { flexDirection: "row", gap: 10 },
   multiline: { minHeight: 70, textAlignVertical: "top" },
   coverPicker: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: COLORS.border, borderStyle: "dashed", borderRadius: 8, paddingVertical: 22 },
   coverPickerText: { color: COLORS.accent, fontWeight: "600", fontSize: 13 },

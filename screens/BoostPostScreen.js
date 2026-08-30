@@ -15,13 +15,15 @@ const BOOST_COST_KES = 100; // must match backend/routes/boosts.js
 export default function BoostPostScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const { post } = route.params;
-  const { updateWalletBalance } = useAuth();
+  const { user, updateWalletBalance } = useAuth();
   const [targetCampus, setTargetCampus] = useState("");
   const [targetCounty, setTargetCounty] = useState("");
   const [targetSubCounty, setTargetSubCounty] = useState("");
   const [targetGender, setTargetGender] = useState("");
   const [targetAgeMin, setTargetAgeMin] = useState("");
   const [targetAgeMax, setTargetAgeMax] = useState("");
+  const [contactPhone, setContactPhone] = useState(user?.boostContactPhone || user?.phone || "");
+  const [contactEmail, setContactEmail] = useState(user?.boostContactEmail || user?.email || "");
   const [submitting, setSubmitting] = useState(false);
   const [freeBoostAvailable, setFreeBoostAvailable] = useState(false);
 
@@ -43,6 +45,8 @@ export default function BoostPostScreen({ route, navigation }) {
         targetGender: targetGender || undefined,
         targetAgeMin: targetAgeMin || undefined,
         targetAgeMax: targetAgeMax || undefined,
+        contactPhone: contactPhone.trim() || undefined,
+        contactEmail: contactEmail.trim() || undefined,
       });
       updateWalletBalance(data.walletBalance);
       Alert.alert(
@@ -112,6 +116,13 @@ export default function BoostPostScreen({ route, navigation }) {
 
       <Text style={styles.label}>Max age</Text>
       <TextInput style={styles.input} value={targetAgeMax} onChangeText={setTargetAgeMax} placeholder="Any" keyboardType="number-pad" />
+
+      <Text style={styles.sectionTitle}>Partner contact</Text>
+      <Text style={styles.hint}>So our team can reach you directly about this boost — reused for next time.</Text>
+      <Text style={styles.label}>Phone</Text>
+      <TextInput style={styles.input} value={contactPhone} onChangeText={setContactPhone} placeholder="e.g. 2547XXXXXXXX" keyboardType="phone-pad" />
+      <Text style={styles.label}>Email</Text>
+      <TextInput style={styles.input} value={contactEmail} onChangeText={setContactEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
 
       {freeBoostAvailable ? (
         <View style={styles.freeBox}>

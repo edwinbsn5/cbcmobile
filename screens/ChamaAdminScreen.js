@@ -392,7 +392,9 @@ function LoansTab({ chamaId, chama }) {
 
   return (
     <View>
-      <Text style={styles.tabHint}>Pool balance: {formatKES(chama.poolBalance)} · {chama.loanInterestRate}% interest · up to {chama.loanMaxMultiplier}× savings · {chama.loanTermWeeks}-week term</Text>
+      <Text style={styles.tabHint}>
+        Pool balance: {formatKES(chama.poolBalance)} · up to {chama.loanMaxMultiplier}× savings · {(chama.loanTiers || []).map((t) => `${t.rate}%/${t.days}d`).join(" · ")}
+      </Text>
 
       <Text style={styles.sectionTitle}>Pending requests ({pending.length})</Text>
       {pending.map((l) => (
@@ -402,7 +404,7 @@ function LoansTab({ chamaId, chama }) {
               {l.borrower?.name} — {formatKES(l.principal)}
               {l.missedLastTime && <Text style={styles.priorityBadge}>  PRIORITY</Text>}
             </Text>
-            <Text style={styles.rowSub}>{l.reason || "No reason given"} · would owe {formatKES(l.principal + Math.round(l.principal * (chama.loanInterestRate / 100)))} back</Text>
+            <Text style={styles.rowSub}>{l.reason || "No reason given"} · {l.interestRate}% over {l.termDays} days · would owe {formatKES(l.owed)} back</Text>
             {l.missedLastTime && <Text style={styles.rowSub}>Missed out last time purely for lack of pool funds</Text>}
           </View>
           <View style={styles.rowActions}>
@@ -497,10 +499,10 @@ function SettingsTab({ chamaId, chama, onChange }) {
   const [maxMembers, setMaxMembers] = useState(String(chama.maxMembers));
   const [contributionAmount, setContributionAmount] = useState(String(chama.contributionAmount || ""));
   const [contributionLateFeeRate, setContributionLateFeeRate] = useState(String(chama.contributionLateFeeRate ?? ""));
-  const [loanInterestRate, setLoanInterestRate] = useState(String(chama.loanInterestRate ?? ""));
+  const [loanTiers, setLoanTiers] = useState((chama.loanTiers || [{ rate: 10, days: 30 }, { rate: 25, days: 60 }, { rate: 40, days: 90 }]).map((t) => ({ rate: String(t.rate), days: String(t.days) })));
   const [loanMaxMultiplier, setLoanMaxMultiplier] = useState(String(chama.loanMaxMultiplier ?? ""));
-  const [loanTermWeeks, setLoanTermWeeks] = useState(String(chama.loanTermWeeks ?? ""));
   const [latePenaltyRate, setLatePenaltyRate] = useState(String(chama.latePenaltyRate ?? ""));
+  const [loanEligibilityDays, setLoanEligibilityDays] = useState(chama.loanEligibilityDays != null ? String(chama.loanEligibilityDays) : "");
   const [membersVisible, setMembersVisible] = useState(chama.membersVisibleToMembers);
   const [requireKyc, setRequireKyc] = useState(chama.requireKycToJoin);
   const [requireGuarantors, setRequireGuarantors] = useState(chama.requireGuarantorsToJoin);
@@ -540,14 +542,13 @@ function SettingsTab({ chamaId, chama, onChange }) {
         if (!isNaN(feeRate) && feeRate !== chama.contributionLateFeeRate) body.contributionLateFeeRate = feeRate;
       }
       if (chama.payoutModel === "table_banking") {
-        const ir = parseFloat(loanInterestRate);
-        if (!isNaN(ir) && ir !== chama.loanInterestRate) body.loanInterestRate = ir;
+        const parsedTiers = loanTiers.map((t) => ({ rate: parseFloat(t.rate), days: parseInt(t.days, 10) }));
+        if (parsedTiers.every((t) => !isNaN(t.rate) && t.rate >= 0 && t.days > 0)) body.loanTiers = parsedTiers;
         const mult = parseFloat(loanMaxMultiplier);
         if (!isNaN(mult) && mult !== chama.loanMaxMultiplier) body.loanMaxMultiplier = mult;
-        const term = parseInt(loanTermWeeks, 10);
-        if (term && term !== chama.loanTermWeeks) body.loanTermWeeks = term;
         const penalty = parseFloat(latePenaltyRate);
         if (!isNaN(penalty) && penalty !== chama.latePenaltyRate) body.latePenaltyRate = penalty;
+        body.loanEligibilityDays = loanEligibilityDays !== "" ? parseInt(loanEligibilityDays, 10) : null;
       }
       await client.patch(`/chama/${chamaId}`, body);
       Alert.alert("Saved", "Settings updated");
@@ -612,14 +613,34 @@ function SettingsTab({ chamaId, chama, onChange }) {
       )}
       {chama.payoutModel === "table_banking" && (
         <>
-          <Text style={styles.label}>Loan interest rate (%)</Text>
-          <TextInput style={styles.input} value={loanInterestRate} onChangeText={setLoanInterestRate} keyboardType="decimal-pad" />
+          <Text style={styles.label}>Repayment plans — more time, more interest</Text>
+          {loanTiers.map((t, i) => (
+            <View key={i} style={styles.tierRow}>
+              <Text style={styles.tierRowLabel}>Plan {i + 1}</Text>
+              <View style={styles.tierRowFields}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Interest %</Text>
+                  <TextInput
+                    style={styles.input} value={t.rate} keyboardType="decimal-pad"
+                    onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, rate: v } : x)))}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Days</Text>
+                  <TextInput
+                    style={styles.input} value={t.days} keyboardType="number-pad"
+                    onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, days: v } : x)))}
+                  />
+                </View>
+              </View>
+            </View>
+          ))}
           <Text style={styles.label}>Max loan size (× savings)</Text>
           <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" />
-          <Text style={styles.label}>Repayment term (weeks)</Text>
-          <TextInput style={styles.input} value={loanTermWeeks} onChangeText={setLoanTermWeeks} keyboardType="number-pad" />
           <Text style={styles.label}>Late penalty (% of outstanding balance)</Text>
           <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" />
+          <Text style={styles.label}>Incubation period — days a member must belong before requesting a loan (blank = none)</Text>
+          <TextInput style={styles.input} value={loanEligibilityDays} onChangeText={setLoanEligibilityDays} keyboardType="number-pad" placeholder="e.g. 90" />
         </>
       )}
       <View style={styles.switchRow}>
@@ -674,6 +695,9 @@ function AuditTab({ chamaId }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  tierRow: { backgroundColor: COLORS.wash, borderRadius: 10, padding: 12, marginTop: 10 },
+  tierRowLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.ink },
+  tierRowFields: { flexDirection: "row", gap: 10 },
   tabRow: { backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border, maxHeight: 46 },
   tab: { paddingHorizontal: 14, paddingVertical: 12 },
   tabActive: { borderBottomWidth: 2, borderBottomColor: COLORS.accent },

@@ -15,8 +15,12 @@ function timeAgo(ts) {
   return `${Math.floor(hrs / 24)}d`;
 }
 
-const LIFE_AREAS = ["career", "health", "finances", "relationships", "education", "spiritual", "personal_growth", "other"];
-const LIFE_AREA_LABELS = { career: "Career", health: "Health", finances: "Finances", relationships: "Relationships", education: "Education", spiritual: "Spiritual", personal_growth: "Personal Growth", other: "Other" };
+const LIFE_AREAS = ["finances", "business", "career", "relationships", "mental_health", "health", "education", "spiritual", "personal_growth", "other"];
+const LIFE_AREA_LABELS = {
+  finances: "Savings & Finances", business: "Business", career: "Career", relationships: "Relationships",
+  mental_health: "Mental Health", health: "Physical Health", education: "Education", spiritual: "Spiritual",
+  personal_growth: "Personal Growth", other: "Other",
+};
 const STATUSES = ["not_started", "in_progress", "achieved", "abandoned"];
 const STATUS_LABELS = { not_started: "Not started", in_progress: "In Progress", achieved: "Achieved", abandoned: "Abandoned" };
 

@@ -331,6 +331,12 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
               <Text style={styles.tileOutlineValue}>{formatKES(myTotal)}</Text>
             </View>
           )}
+          {isMember && (
+            <View style={styles.tileOutline}>
+              <Text style={styles.tileOutlineLabel}>Share points</Text>
+              <Text style={styles.tileOutlineValue}>{myTotal.toLocaleString()}</Text>
+            </View>
+          )}
           {isMember && chama.contributionType === "fixed_recurring" && defaulter?.upcomingDeadlineAt && (
             <View style={styles.tileOutline}>
               <Text style={styles.tileOutlineLabel}>Next due</Text>
@@ -621,7 +627,7 @@ function LoansTab({ chamaId, chama }) {
   return (
     <View>
       <Text style={styles.tabHint}>
-        Pool balance: {formatKES(chama.poolBalance)} · {chama.loanInterestRate}% interest · {chama.loanTermWeeks}-week term
+        Pool balance: {formatKES(chama.poolBalance)} · {(chama.loanTiers || []).map((t) => `${t.rate}%/${t.days}d`).join(" · ")}
       </Text>
       <Text style={styles.tabHint}>You can borrow up to {formatKES(canBorrow)} right now.</Text>
       <View style={[styles.guarantorStatusPill, !mine.myGuarantorViability.viable && styles.guarantorStatusPillWarn]}>
@@ -642,6 +648,7 @@ function LoansTab({ chamaId, chama }) {
         onClose={() => setRequestVisible(false)}
         chamaId={chamaId}
         maxAmount={canBorrow}
+        tiers={mine.tiers || []}
         onCreated={(loan) => { setRequestVisible(false); load(); setGuarantorLoan(loan); }}
       />
       <LoanRepayModal loan={repayTarget} chamaId={chamaId} onClose={() => setRepayTarget(null)} onDone={() => { setRepayTarget(null); load(); }} />
@@ -685,9 +692,10 @@ function LoansTab({ chamaId, chama }) {
   );
 }
 
-function LoanRequestModal({ visible, onClose, chamaId, maxAmount, onCreated }) {
+function LoanRequestModal({ visible, onClose, chamaId, maxAmount, tiers, onCreated }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
+  const [tierIndex, setTierIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
@@ -696,7 +704,7 @@ function LoanRequestModal({ visible, onClose, chamaId, maxAmount, onCreated }) {
     if (amt > maxAmount) return Alert.alert("Amount too high", `You can borrow up to ${formatKES(maxAmount)} right now.`);
     setSubmitting(true);
     try {
-      const { data } = await client.post(`/chama/${chamaId}/loans`, { amount: amt, reason: reason.trim() || undefined });
+      const { data } = await client.post(`/chama/${chamaId}/loans`, { amount: amt, reason: reason.trim() || undefined, tierIndex });
       setAmount(""); setReason("");
       onCreated(data.loan);
     } catch (e) {
@@ -714,6 +722,16 @@ function LoanRequestModal({ visible, onClose, chamaId, maxAmount, onCreated }) {
         <Text style={styles.sheetTitle}>Request a loan</Text>
         <Text style={styles.tabHint}>You can borrow up to {formatKES(maxAmount)} right now.</Text>
         <Text style={styles.tabHint}>After this, you'll need 2 members to accept being your guarantors before it's sent to admins.</Text>
+
+        <Text style={styles.label}>Repayment plan — more time, more interest</Text>
+        <View style={styles.optionRow}>
+          {(tiers || []).map((t, i) => (
+            <TouchableOpacity key={i} style={[styles.optionChip, tierIndex === i && styles.optionChipActive]} onPress={() => setTierIndex(i)}>
+              <Text style={[styles.optionChipText, tierIndex === i && styles.optionChipTextActive]}>{t.rate}% · {t.days} days</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
         <TextInput style={styles.input} placeholder="Reason (optional)" value={reason} onChangeText={setReason} />
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
