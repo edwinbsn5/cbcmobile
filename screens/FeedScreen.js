@@ -44,6 +44,13 @@ export default function FeedScreen({ navigation, route }) {
   const isFocused = useIsFocused();
   const [activeTab, setActiveTab] = useState(DEFAULT_TAB);
   const [feed, setFeed] = useState([]);
+  // Every feed endpoint now returns { items, nextCursor } instead of a bare
+  // array — nextCursor is null once there's nothing further to page in.
+  // loadingMore guards against onEndReached firing a second request while
+  // one's already in flight (FlatList can fire it more than once near the
+  // threshold).
+  const [nextCursor, setNextCursor] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   // Partners is gated behind having an active boost — a 403 from
   // GET /feed/partners means "not eligible right now", not a real error, so
   // it's tracked separately from a genuinely-empty feed (see load() below).
@@ -76,12 +83,14 @@ export default function FeedScreen({ navigation, route }) {
     isEligible: isVideoItem,
   });
 
+  const endpointFor = (tab) => (tab === "partners" ? "/feed/partners" : tab === "forYou" ? "/feed/for-you" : "/feed");
+
   const load = useCallback(async () => {
-    const endpoint = activeTab === "partners" ? "/feed/partners" : activeTab === "forYou" ? "/feed/for-you" : "/feed";
     try {
-      const [feedRes, storiesRes] = await Promise.all([client.get(endpoint), client.get("/stories")]);
+      const [feedRes, storiesRes] = await Promise.all([client.get(endpointFor(activeTab)), client.get("/stories")]);
       setPartnersLocked(false);
-      setFeed(feedRes.data);
+      setFeed(feedRes.data.items);
+      setNextCursor(feedRes.data.nextCursor);
       setStoryGroups(storiesRes.data);
       loadSaved();
       loadReshared();
@@ -89,11 +98,27 @@ export default function FeedScreen({ navigation, route }) {
       if (activeTab === "partners" && e.response?.status === 403) {
         setPartnersLocked(true);
         setFeed([]);
+        setNextCursor(null);
         return;
       }
       throw e;
     }
   }, [activeTab, loadSaved, loadReshared]);
+
+  async function loadMore() {
+    if (loadingMore || !nextCursor || partnersLocked) return;
+    setLoadingMore(true);
+    try {
+      const { data } = await client.get(endpointFor(activeTab), { params: { cursor: nextCursor } });
+      setFeed((prev) => [...prev, ...data.items]);
+      setNextCursor(data.nextCursor);
+    } catch (e) {
+      // Silent — a failed "load more" shouldn't interrupt someone mid-scroll
+      // with an alert; they can just keep scrolling and it'll retry.
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -203,6 +228,9 @@ export default function FeedScreen({ navigation, route }) {
       onScrollToIndexFailed={(info) => {
         setTimeout(() => listRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.15 }), 300);
       }}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.6}
+      ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.footerLoader} color={COLORS.accent} /> : null}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={
         <>
@@ -438,4 +466,5 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0,0,0,0.6)", textShadowRadius: 3,
   },
   empty: { textAlign: "center", color: "#999", marginTop: 30, marginHorizontal: 24, lineHeight: 20 },
+  footerLoader: { marginVertical: 20 },
 });
