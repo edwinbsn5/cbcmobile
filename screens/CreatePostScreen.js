@@ -20,14 +20,16 @@ const MAX_PHOTOS = 10;
 export default function CreatePostScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  // Optional — posting into a chama/project Discussion tab instead of the
-  // main feed. Same composer, same media/background-color support; only the
-  // submit target and header title change.
-  const { collabGroupKind, collabGroupId, collabGroupLabel, autoAction } = route?.params || {};
+  // Optional — posting into a chama/project Discussion tab, or an event's
+  // own Discussions tab, instead of the main feed. Same composer, same
+  // media/background-color support; only the submit target and header
+  // title change.
+  const { collabGroupKind, collabGroupId, collabGroupLabel, eventId, eventLabel, autoAction } = route?.params || {};
+  const targetLabel = collabGroupLabel || eventLabel;
 
   useEffect(() => {
-    if (collabGroupLabel) navigation.setOptions({ title: `Post to ${collabGroupLabel}` });
-  }, [collabGroupLabel, navigation]);
+    if (targetLabel) navigation.setOptions({ title: `Post to ${targetLabel}` });
+  }, [targetLabel, navigation]);
   const [composerText, setComposerText] = useState("");
   const [media, setMedia] = useState(null); // { uri, type: "video", mimeType, fileName } — single video only
   const [photos, setPhotos] = useState([]); // [{ uri, mimeType, fileName }, ...] — 1-10 photos
@@ -163,6 +165,8 @@ export default function CreatePostScreen({ navigation, route }) {
       }
       const path = collabGroupKind
         ? `/${collabGroupKind === "chama" ? "chama" : "projects"}/${collabGroupId}/posts`
+        : eventId
+        ? `/events/${eventId}/posts`
         : "/feed";
       await client.post(path, {
         content: composerText.trim(),

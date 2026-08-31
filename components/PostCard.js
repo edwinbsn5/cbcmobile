@@ -56,6 +56,8 @@ export default function PostCard({
     ? `/pages/${post.pageId}/feed/${post.id}/comments`
     : post.groupId
     ? `/groups/${post.groupId}/posts/${post.id}/comments`
+    : post.eventId
+    ? `/events/${post.eventId}/posts/${post.id}/comments`
     : post.collabGroupKind
     ? `/${post.collabGroupKind === "chama" ? "chama" : "projects"}/${post.collabGroupId}/posts/${post.id}/comments`
     : `/feed/${post.id}/comments`;
@@ -136,6 +138,9 @@ export default function PostCard({
       {!!post.pageTag && (
         <Text style={styles.groupTagText}>📍 Posted on {post.pageTag.name}</Text>
       )}
+      {!!post.eventTag && (
+        <Text style={styles.groupTagText}>📍 Posted in {post.eventTag.name}</Text>
+      )}
 
       <PostOptionsMenu
         visible={menuOpen}
@@ -145,7 +150,7 @@ export default function PostCard({
         onEdit={() => navigation.navigate("EditPost", { post })}
         onDelete={handleDelete}
         onBoost={
-          !post.groupId && !post.pageId && !post.collabGroupKind
+          !post.groupId && !post.pageId && !post.eventId && !post.collabGroupKind
             ? () => navigation.navigate("BoostPost", { post })
             : undefined
         }
@@ -154,6 +159,7 @@ export default function PostCard({
             postId: post.id,
             groupId: post.groupId || undefined,
             pageId: post.pageId || undefined,
+            eventId: post.eventId || undefined,
             collabGroupKind: post.collabGroupKind || undefined,
             collabGroupId: post.collabGroupId || undefined,
           })
@@ -206,7 +212,7 @@ export default function PostCard({
           <Text style={styles.pillText}>{formatCount(post.commentCount || 0)}</Text>
         </TouchableOpacity>
 
-        {!post.groupId && !post.pageId && !post.collabGroupKind ? (
+        {!post.groupId && !post.pageId && !post.eventId && !post.collabGroupKind ? (
           <TouchableOpacity
             style={[styles.pill, isReshared && styles.pillActive]}
             onPress={() => {

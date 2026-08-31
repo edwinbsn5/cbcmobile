@@ -102,9 +102,9 @@ export default function GroupsScreen({ navigation }) {
                 <View style={styles.identityText}>
                   <View style={styles.nameRow}>
                     <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-                    {item.status !== "approved" && (
+                    {item.status === "suspended" && (
                       <View style={styles.statusPill}>
-                        <Text style={styles.statusPillText}>{item.status === "rejected" ? "Rejected" : "Pending approval"}</Text>
+                        <Text style={styles.statusPillText}>Suspended</Text>
                       </View>
                     )}
                   </View>

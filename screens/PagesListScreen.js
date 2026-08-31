@@ -10,6 +10,21 @@ import { COLORS } from "../theme";
 
 const COUNTY_STORAGE_KEY = "pagesBrowseCounty";
 
+// One icon per top-level category, by exact name — falls back to a generic
+// briefcase for anything an admin adds later that isn't in this list, so
+// the grid never breaks for an unrecognized category.
+const CATEGORY_ICONS = {
+  "Beauty & Hair Services": "cut-outline",
+  "Body & Personal Care Services": "fitness-outline",
+  "Home Care Services": "home-outline",
+  "Errands & Delivery": "bicycle-outline",
+  "Business & Marketing Services": "briefcase-outline",
+  "Other Businesses": "ellipsis-horizontal-circle-outline",
+};
+function iconForCategory(name) {
+  return CATEGORY_ICONS[name] || "storefront-outline";
+}
+
 const FILTERS = [
   { key: null, label: "All Pages", icon: "flag-outline", desc: "Active Pages across the app" },
   { key: "mine", label: "Pages I Follow/Manage", icon: "checkmark-circle-outline", desc: "Pages you're a team member of" },
@@ -26,6 +41,7 @@ export default function PagesListScreen({ navigation }) {
   const [loadedCounty, setLoadedCounty] = useState(false);
   const [categoryId, setCategoryId] = useState(null);
   const [categoryName, setCategoryName] = useState(null);
+  const [expandedCategoryId, setExpandedCategoryId] = useState(null);
   const [busyFollowIds, setBusyFollowIds] = useState({});
 
   async function handleToggleFollow(item) {
@@ -69,6 +85,17 @@ export default function PagesListScreen({ navigation }) {
     setCategoryName(name);
   }
 
+  // Tapping a top-level category tile: no subcategories -> browse it
+  // directly (e.g. "Other Businesses"); has subcategories -> reveal them
+  // as a chip row instead of immediately filtering, so a specific
+  // subcategory ("Hair Styling & Barbering") is still reachable, not just
+  // the broad top-level bucket.
+  function tapCategoryTile(cat) {
+    if (!county) return;
+    if (!cat.subcategories.length) return browseCategory(cat.id, cat.name);
+    setExpandedCategoryId((prev) => (prev === cat.id ? null : cat.id));
+  }
+
   const load = useCallback(() => {
     if (!county) {
       setPages([]);
@@ -96,6 +123,7 @@ export default function PagesListScreen({ navigation }) {
   function clearCategory() {
     setCategoryId(null);
     setCategoryName(null);
+    setExpandedCategoryId(null);
   }
 
   const activeFilter = FILTERS.find((f) => f.key === filter);
@@ -130,7 +158,7 @@ export default function PagesListScreen({ navigation }) {
             </View>
 
             <View style={styles.countyBox}>
-              <Text style={styles.countyLabel}>County:Get Services/Products Near You</Text>
+              <Text style={styles.countyLabel}>County: Find Services Near You</Text>
               <CountyPicker value={county} onChange={handleCountyChange} placeholder="Select your county" />
               {!county && loadedCounty && (
                 <Text style={styles.countyWarning}>Select a county above before browsing</Text>
@@ -147,22 +175,36 @@ export default function PagesListScreen({ navigation }) {
             ) : (
               <View style={styles.directory}>
                 <Text style={styles.directoryLabel}>Browse by category</Text>
-                {directory.map((cat) => (
-                  <View key={cat.id} style={styles.catBlock}>
-                    <TouchableOpacity onPress={() => browseCategory(cat.id, cat.name)}>
-                      <Text style={styles.catName}>{cat.name}</Text>
-                    </TouchableOpacity>
-                    {cat.subcategories.length > 0 && (
-                      <View style={styles.chipsRow}>
-                        {cat.subcategories.map((sub) => (
-                          <TouchableOpacity key={sub.id} style={styles.chip} onPress={() => browseCategory(sub.id, sub.name)}>
-                            <Text style={styles.chipText}>{sub.name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                ))}
+                <View style={styles.catGrid}>
+                  {directory.map((cat) => {
+                    const expanded = expandedCategoryId === cat.id;
+                    return (
+                      <TouchableOpacity key={cat.id} style={styles.catTile} onPress={() => tapCategoryTile(cat)}>
+                        <View style={[styles.catTileIcon, expanded && styles.catTileIconActive]}>
+                          <Ionicons name={iconForCategory(cat.name)} size={22} color={expanded ? "#fff" : COLORS.accentInk} />
+                        </View>
+                        <Text style={styles.catTileText} numberOfLines={2}>{cat.name}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {expandedCategoryId && (() => {
+                  const cat = directory.find((c) => c.id === expandedCategoryId);
+                  if (!cat) return null;
+                  return (
+                    <View style={styles.subChipsBox}>
+                      <TouchableOpacity style={styles.chip} onPress={() => browseCategory(cat.id, cat.name)}>
+                        <Text style={styles.chipText}>All {cat.name}</Text>
+                      </TouchableOpacity>
+                      {cat.subcategories.map((sub) => (
+                        <TouchableOpacity key={sub.id} style={styles.chip} onPress={() => browseCategory(sub.id, sub.name)}>
+                          <Text style={styles.chipText}>{sub.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  );
+                })()}
               </View>
             )}
           </View>
@@ -273,13 +315,19 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.wash, marginHorizontal: 12, marginTop: 12, borderRadius: 8, padding: 11,
   },
   browsingBannerText: { color: COLORS.ink, fontWeight: "700", fontSize: 13 },
-  directory: { paddingVertical: 20, paddingHorizontal: 20, alignItems: "center" },
-  directoryLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: COLORS.sub, marginBottom: 16 },
-  catBlock: { alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.border, borderStyle: "dashed", width: "100%" },
-  catName: { fontWeight: "700", color: COLORS.ink, fontSize: 14, marginBottom: 10, textAlign: "center" },
-  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 7, justifyContent: "center" },
+  directory: { paddingVertical: 18, paddingHorizontal: 14 },
+  directoryLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: COLORS.sub, marginBottom: 14, textAlign: "center" },
+  catGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  catTile: { width: "23%", alignItems: "center", marginBottom: 16 },
+  catTileIcon: {
+    width: 54, height: 54, borderRadius: 16, backgroundColor: COLORS.wash,
+    alignItems: "center", justifyContent: "center", marginBottom: 6,
+  },
+  catTileIconActive: { backgroundColor: COLORS.accentInk },
+  catTileText: { fontSize: 10.5, fontWeight: "700", color: COLORS.ink, textAlign: "center", lineHeight: 13 },
+  subChipsBox: { flexDirection: "row", flexWrap: "wrap", gap: 7, justifyContent: "center", marginTop: 4 },
   chip: { backgroundColor: COLORS.wash, borderRadius: 12, paddingHorizontal: 11, paddingVertical: 5 },
-  chipText: { fontWeight: "400", fontSize: 11.5, color: COLORS.sub },
+  chipText: { fontWeight: "600", fontSize: 11.5, color: COLORS.ink },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },
   card: {
     backgroundColor: COLORS.surface, margin: 10, borderRadius: 14, overflow: "hidden",

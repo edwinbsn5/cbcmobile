@@ -23,6 +23,8 @@ export default function EditPostScreen({ route, navigation }) {
         ? `/pages/${post.pageId}/feed/${post.id}`
         : post.groupId
         ? `/groups/${post.groupId}/posts/${post.id}`
+        : post.eventId
+        ? `/events/${post.eventId}/posts/${post.id}`
         : post.collabGroupKind
         ? `/${post.collabGroupKind === "chama" ? "chama" : "projects"}/${post.collabGroupId}/posts/${post.id}`
         : `/feed/${post.id}`;

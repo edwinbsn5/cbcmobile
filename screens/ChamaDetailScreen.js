@@ -207,7 +207,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
 
         <View style={styles.tabBody}>
           {tab === "overview" && <OverviewTab chama={chama} chamaId={chamaId} myTotal={myTotal} isMember={isMember} defaulter={defaulter} isAdmin={isAdmin} userId={user?.id} navigation={navigation} />}
-          {tab === "feed" && <FeedTab chamaId={chamaId} chamaName={chama.name} isMember={isMember} userId={user?.id} navigation={navigation} />}
+          {tab === "feed" && <FeedTab chamaId={chamaId} chamaName={chama.name} isMember={isMember} isAdmin={isAdmin} userId={user?.id} navigation={navigation} />}
           {tab === "ledger" && (
             isMember ? (
               <View>
@@ -1298,14 +1298,44 @@ function ReportFraudModal({ groupPath, target, onClose, onDone }) {
   );
 }
 
-function FeedTab({ chamaId, chamaName, isMember, userId, navigation }) {
+const DISCUSSION_SUB_TABS = [
+  { key: "feed", label: "Feed" },
+  { key: "minutes", label: "Minutes" },
+];
+
+// "Discussions" is really two things sharing one top-level tab: the Feed
+// (member posts, unchanged) and Minutes (formal meeting records — its own
+// list + recording form, see MinutesList/RecordMinutesModal below).
+function FeedTab({ chamaId, chamaName, isMember, isAdmin, userId, navigation }) {
+  const [subTab, setSubTab] = useState("feed");
+
+  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view discussions.</Text>;
+
+  return (
+    <View>
+      <View style={styles.subTabRow}>
+        {DISCUSSION_SUB_TABS.map((t) => (
+          <TouchableOpacity key={t.key} style={[styles.subTab, subTab === t.key && styles.subTabActive]} onPress={() => setSubTab(t.key)}>
+            <Text style={[styles.subTabText, subTab === t.key && styles.subTabTextActive]}>{t.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {subTab === "feed" ? (
+        <PostsFeed chamaId={chamaId} chamaName={chamaName} navigation={navigation} />
+      ) : (
+        <MinutesList chamaId={chamaId} isAdmin={isAdmin} userId={userId} />
+      )}
+    </View>
+  );
+}
+
+function PostsFeed({ chamaId, chamaName, navigation }) {
   const [posts, setPosts] = useState(null);
   const { isSaved, toggleSave, loadSaved } = useSaved();
 
   const load = useCallback(() => {
-    if (!isMember) return;
     client.get(`/chama/${chamaId}/posts`).then((r) => setPosts(r.data)).catch(() => setPosts([]));
-  }, [chamaId, isMember]);
+  }, [chamaId]);
   useFocusEffect(useCallback(() => { load(); loadSaved(); }, [load, loadSaved]));
 
   async function react(postId, reaction) {
@@ -1326,7 +1356,6 @@ function FeedTab({ chamaId, chamaName, isMember, userId, navigation }) {
     }
   }
 
-  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view discussions.</Text>;
   if (!posts) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
@@ -1350,6 +1379,209 @@ function FeedTab({ chamaId, chamaName, isMember, userId, navigation }) {
       ))}
       {!posts.length && <Text style={styles.gatedText}>No discussions yet — be the first to post.</Text>}
     </View>
+  );
+}
+
+function formatMinutesDate(dateStr) {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+}
+
+function MinutesList({ chamaId, isAdmin, userId }) {
+  const [minutes, setMinutes] = useState(null);
+  const [formVisible, setFormVisible] = useState(false);
+  const [detail, setDetail] = useState(null);
+
+  const load = useCallback(() => {
+    client.get(`/chama/${chamaId}/minutes`).then((r) => setMinutes(r.data)).catch(() => setMinutes([]));
+  }, [chamaId]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function handleDelete(id) {
+    Alert.alert("Delete these minutes?", "This cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete", style: "destructive",
+        onPress: async () => {
+          try {
+            await client.delete(`/chama/${chamaId}/minutes/${id}`);
+            setDetail(null);
+            load();
+          } catch (e) {
+            Alert.alert("Couldn't delete", e.response?.data?.error || e.message);
+          }
+        },
+      },
+    ]);
+  }
+
+  if (!minutes) return <ActivityIndicator color={COLORS.accent} />;
+  return (
+    <View>
+      <TouchableOpacity style={styles.composerTeaser} onPress={() => setFormVisible(true)}>
+        <Ionicons name="document-text-outline" size={18} color={COLORS.sub} />
+        <Text style={styles.composerTeaserText}>+ Record meeting minutes</Text>
+      </TouchableOpacity>
+      {minutes.map((m) => (
+        <TouchableOpacity key={m.id} style={styles.minutesRow} onPress={() => setDetail(m)}>
+          <View style={styles.minutesRowIcon}>
+            <Ionicons name="document-text-outline" size={18} color={COLORS.accent} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.minutesRowTitle} numberOfLines={1}>{m.title}</Text>
+            <Text style={styles.minutesRowMeta}>{formatMinutesDate(m.meetingDate)} · Recorded by {m.recordedByUser?.name || "a member"}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.sub} />
+        </TouchableOpacity>
+      ))}
+      {!minutes.length && <Text style={styles.gatedText}>No meeting minutes recorded yet.</Text>}
+
+      <RecordMinutesModal
+        visible={formVisible}
+        chamaId={chamaId}
+        onClose={() => setFormVisible(false)}
+        onSaved={() => { setFormVisible(false); load(); }}
+      />
+      <MinutesDetailModal
+        minutes={detail}
+        canDelete={!!detail && (detail.recordedBy === userId || isAdmin)}
+        onDelete={() => detail && handleDelete(detail.id)}
+        onClose={() => setDetail(null)}
+      />
+    </View>
+  );
+}
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+const MINUTES_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Fields chosen from how a chama secretary actually writes minutes: who
+// showed up (and who sent apologies), what was discussed, what was
+// decided, who owes a follow-up action, and when the group reconvenes.
+// meetingDate defaults to today (minutes are almost always typed up the
+// same day) but stays a plain editable YYYY-MM-DD field, same convention
+// as users.date_of_birth, so a late write-up can still backdate it.
+function RecordMinutesModal({ visible, chamaId, onClose, onSaved }) {
+  const [title, setTitle] = useState("");
+  const [meetingDate, setMeetingDate] = useState(todayISO());
+  const [attendees, setAttendees] = useState("");
+  const [apologies, setApologies] = useState("");
+  const [agenda, setAgenda] = useState("");
+  const [decisions, setDecisions] = useState("");
+  const [actionItems, setActionItems] = useState("");
+  const [nextMeetingDate, setNextMeetingDate] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (visible) {
+      setTitle(""); setMeetingDate(todayISO()); setAttendees(""); setApologies("");
+      setAgenda(""); setDecisions(""); setActionItems(""); setNextMeetingDate("");
+    }
+  }, [visible]);
+
+  async function submit() {
+    if (!title.trim()) return Alert.alert("Title required", "Give this meeting a title");
+    if (!MINUTES_DATE_RE.test(meetingDate)) return Alert.alert("Invalid date", "Meeting date must be in YYYY-MM-DD format");
+    if (!agenda.trim()) return Alert.alert("Agenda required", "Summarize what was discussed");
+    if (nextMeetingDate && !MINUTES_DATE_RE.test(nextMeetingDate)) return Alert.alert("Invalid date", "Next meeting date must be in YYYY-MM-DD format");
+
+    setSubmitting(true);
+    try {
+      await client.post(`/chama/${chamaId}/minutes`, {
+        title: title.trim(), meetingDate, attendees: attendees.trim(), apologies: apologies.trim(),
+        agenda: agenda.trim(), decisions: decisions.trim(), actionItems: actionItems.trim(),
+        nextMeetingDate: nextMeetingDate.trim() || undefined,
+      });
+      onSaved();
+    } catch (e) {
+      Alert.alert("Couldn't save minutes", e.response?.data?.error || e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.minutesSheetWrap}>
+        <ScrollView contentContainerStyle={styles.sheet} keyboardShouldPersistTaps="handled">
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>Record meeting minutes</Text>
+
+          <Text style={styles.fieldLabel}>Meeting title</Text>
+          <TextInput style={styles.input} placeholder="e.g. August General Meeting" value={title} onChangeText={setTitle} />
+
+          <Text style={styles.fieldLabel}>Meeting date</Text>
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={meetingDate} onChangeText={setMeetingDate} />
+
+          <Text style={styles.fieldLabel}>Attendees present</Text>
+          <TextInput style={[styles.input, styles.multilineInput]} placeholder="Names of members present" value={attendees} onChangeText={setAttendees} multiline />
+
+          <Text style={styles.fieldLabel}>Apologies / absent</Text>
+          <TextInput style={[styles.input, styles.multilineInput]} placeholder="Names of members who sent apologies (optional)" value={apologies} onChangeText={setApologies} multiline />
+
+          <Text style={styles.fieldLabel}>Agenda &amp; discussion</Text>
+          <TextInput style={[styles.input, styles.multilineInputLarge]} placeholder="What was discussed" value={agenda} onChangeText={setAgenda} multiline />
+
+          <Text style={styles.fieldLabel}>Decisions / resolutions</Text>
+          <TextInput style={[styles.input, styles.multilineInput]} placeholder="What the group decided (optional)" value={decisions} onChangeText={setDecisions} multiline />
+
+          <Text style={styles.fieldLabel}>Action items</Text>
+          <TextInput style={[styles.input, styles.multilineInput]} placeholder="Who's doing what before the next meeting (optional)" value={actionItems} onChangeText={setActionItems} multiline />
+
+          <Text style={styles.fieldLabel}>Next meeting date</Text>
+          <TextInput style={styles.input} placeholder="YYYY-MM-DD (optional)" value={nextMeetingDate} onChangeText={setNextMeetingDate} />
+
+          <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
+            <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Save minutes"}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+function MinutesDetailRow({ label, value }) {
+  if (!value) return null;
+  return (
+    <View style={styles.minutesDetailRow}>
+      <Text style={styles.minutesDetailLabel}>{label}</Text>
+      <Text style={styles.minutesDetailValue}>{value}</Text>
+    </View>
+  );
+}
+
+function MinutesDetailModal({ minutes, canDelete, onDelete, onClose }) {
+  return (
+    <Modal visible={!!minutes} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.minutesSheetWrap}>
+        <ScrollView contentContainerStyle={styles.sheet}>
+          <View style={styles.sheetHandle} />
+          {minutes && (
+            <>
+              <Text style={styles.sheetTitle}>{minutes.title}</Text>
+              <Text style={styles.minutesRowMeta}>{formatMinutesDate(minutes.meetingDate)} · Recorded by {minutes.recordedByUser?.name || "a member"}</Text>
+              <MinutesDetailRow label="Attendees present" value={minutes.attendees} />
+              <MinutesDetailRow label="Apologies / absent" value={minutes.apologies} />
+              <MinutesDetailRow label="Agenda & discussion" value={minutes.agenda} />
+              <MinutesDetailRow label="Decisions / resolutions" value={minutes.decisions} />
+              <MinutesDetailRow label="Action items" value={minutes.actionItems} />
+              <MinutesDetailRow label="Next meeting" value={minutes.nextMeetingDate ? formatMinutesDate(minutes.nextMeetingDate) : null} />
+              {canDelete && (
+                <TouchableOpacity style={styles.dangerButton} onPress={onDelete}>
+                  <Text style={styles.dangerButtonText}>Delete minutes</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 
@@ -1618,4 +1850,22 @@ const styles = StyleSheet.create({
   balanceRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 4 },
   balanceName: { color: COLORS.ink, fontSize: 13, fontWeight: "600" },
   balanceAmount: { color: "#D32F2F", fontSize: 13, fontWeight: "800" },
+  subTabRow: { flexDirection: "row", backgroundColor: COLORS.wash, borderRadius: 10, padding: 3, marginBottom: 14 },
+  subTab: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 8 },
+  subTabActive: { backgroundColor: COLORS.surface },
+  subTabText: { color: COLORS.sub, fontWeight: "700", fontSize: 13 },
+  subTabTextActive: { color: COLORS.accent },
+  minutesRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: COLORS.surface, borderRadius: 10, padding: 14, marginBottom: 10 },
+  minutesRowIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
+  minutesRowTitle: { color: COLORS.ink, fontWeight: "700", fontSize: 14 },
+  minutesRowMeta: { color: COLORS.sub, fontSize: 11.5, marginTop: 2 },
+  minutesSheetWrap: { maxHeight: "85%", marginTop: "auto" },
+  fieldLabel: { color: COLORS.sub, fontSize: 12, fontWeight: "700", marginBottom: 4, marginTop: 2 },
+  multilineInput: { minHeight: 60, textAlignVertical: "top" },
+  multilineInputLarge: { minHeight: 100, textAlignVertical: "top" },
+  minutesDetailRow: { marginTop: 12 },
+  minutesDetailLabel: { color: COLORS.sub, fontSize: 11, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 3 },
+  minutesDetailValue: { color: COLORS.ink, fontSize: 14, lineHeight: 20 },
+  dangerButton: { borderWidth: 1, borderColor: "#D32F2F", borderRadius: 8, padding: 12, alignItems: "center", marginTop: 20 },
+  dangerButtonText: { color: "#D32F2F", fontWeight: "700" },
 });

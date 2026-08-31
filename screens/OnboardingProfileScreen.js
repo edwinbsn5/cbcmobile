@@ -62,7 +62,10 @@ export default function OnboardingProfileScreen({ navigation }) {
         gender, bio: bio.trim(), campus, county, subCounty, yearOfJoining: year, dateOfBirth,
       });
       await updateUser(data.user);
-      navigation.navigate("OnboardingFollow");
+      const { data: completeData } = await client.post("/auth/onboarding/complete");
+      await updateUser(completeData.user);
+      // Gate() in App.js swaps to the main app automatically once
+      // onboardingCompletedAt is set — no navigation call needed here.
     } catch (e) {
       Alert.alert("Couldn't save your profile", e.response?.data?.error || e.message);
     } finally {
@@ -79,9 +82,8 @@ export default function OnboardingProfileScreen({ navigation }) {
         <View style={styles.stepDots}>
           <View style={[styles.dot, styles.dotFilled]} />
           <View style={[styles.dot, styles.dotFilled]} />
-          <View style={styles.dot} />
         </View>
-        <Text style={styles.stepLabel}>STEP 2 OF 3</Text>
+        <Text style={styles.stepLabel}>STEP 2 OF 2</Text>
       </View>
 
       <View style={styles.body}>
@@ -124,7 +126,7 @@ export default function OnboardingProfileScreen({ navigation }) {
       <DateOfBirthPicker value={dateOfBirth} onChange={setDateOfBirth} />
 
       <TouchableOpacity style={styles.button} onPress={handleContinue} disabled={submitting}>
-        {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : <Text style={styles.buttonText}>Continue</Text>}
+        {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : <Text style={styles.buttonText}>Complete Registration</Text>}
       </TouchableOpacity>
       <TouchableOpacity onPress={logout} style={styles.logoutLink}>
         <Text style={styles.logoutLinkText}>Not you? Log out</Text>

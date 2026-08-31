@@ -64,6 +64,7 @@ export default function MarketProductDetailScreen({ route, navigation }) {
 
   const myLiked = !!product.reactions?.[user?.id];
   const isOwn = product.seller?.id === user?.id;
+  const isSuspended = product.status === "suspended";
 
   return (
     <ScrollView style={styles.container}>
@@ -76,6 +77,15 @@ export default function MarketProductDetailScreen({ route, navigation }) {
       )}
 
       <View style={styles.body}>
+        {isSuspended && (
+          <View style={styles.suspendedBanner}>
+            <Text style={styles.suspendedBannerTitle}>⏸ SUSPENDED</Text>
+            <Text style={styles.suspendedBannerText}>
+              This listing was suspended by a platform admin. Liking, boosting, and inquiries are disabled.
+            </Text>
+            {!!product.moderationReason && <Text style={styles.suspendedBannerReason}>Reason: {product.moderationReason}</Text>}
+          </View>
+        )}
         {product.status === "sold" && (
           <View style={styles.soldBanner}><Text style={styles.soldBannerText}>This item has been marked as sold</Text></View>
         )}
@@ -105,14 +115,14 @@ export default function MarketProductDetailScreen({ route, navigation }) {
         </TouchableOpacity>
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.likeButton} onPress={handleLike}>
+          <TouchableOpacity style={styles.likeButton} onPress={handleLike} disabled={isSuspended}>
             <Ionicons name={myLiked ? "heart" : "heart-outline"} size={20} color={myLiked ? "#D32F2F" : COLORS.sub} />
             <Text style={styles.likeCount}>{product.likeCount}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.saveButton} onPress={() => toggleSave("product", product.id)}>
             <Ionicons name={isSaved("product", product.id) ? "bookmark" : "bookmark-outline"} size={20} color={COLORS.accent} />
           </TouchableOpacity>
-          {!isOwn && (
+          {!isOwn && !isSuspended && (
             <TouchableOpacity style={styles.inquireButton} onPress={handleInquire} disabled={starting}>
               <Ionicons name="chatbubble-outline" size={16} color={COLORS.accentInk} />
               <Text style={styles.inquireButtonText}>{starting ? "Starting..." : "Buy / Inquire"}</Text>
@@ -137,6 +147,10 @@ const styles = StyleSheet.create({
   notFoundHint: { fontSize: 13, color: COLORS.sub, textAlign: "center" },
   media: { width: "100%", height: 320, backgroundColor: "#000" },
   body: { padding: 16 },
+  suspendedBanner: { backgroundColor: "#D32F2F", padding: 14, borderRadius: 10, marginBottom: 12 },
+  suspendedBannerTitle: { color: "#fff", fontWeight: "800", fontSize: 15, letterSpacing: 0.5, marginBottom: 4 },
+  suspendedBannerText: { color: "#fff", fontWeight: "600", fontSize: 13, lineHeight: 18 },
+  suspendedBannerReason: { color: "#FFE0E0", fontSize: 12.5, marginTop: 8, fontStyle: "italic" },
   soldBanner: { backgroundColor: "#FDEDED", borderRadius: 8, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: "#F3C6C6" },
   soldBannerText: { color: "#7a1f1f", fontSize: 12.5, fontWeight: "700", textAlign: "center" },
   title: { fontSize: 20, fontWeight: "800", color: COLORS.ink },

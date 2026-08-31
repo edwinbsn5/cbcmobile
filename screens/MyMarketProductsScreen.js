@@ -6,8 +6,8 @@ import { Video, ResizeMode } from "expo-av";
 import client from "../api/client";
 import { COLORS } from "../theme";
 
-const STATUS_LABEL = { pending: "Pending review", approved: "Live", rejected: "Not approved", sold: "Sold" };
-const STATUS_BADGE = { pending: "pending", approved: "completed", rejected: "failed", sold: "failed" };
+const STATUS_LABEL = { approved: "Live", suspended: "Suspended", sold: "Sold" };
+const STATUS_BADGE = { approved: "completed", suspended: "failed", sold: "failed" };
 
 export default function MyMarketProductsScreen({ navigation }) {
   const [products, setProducts] = useState([]);

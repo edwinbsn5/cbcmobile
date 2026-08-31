@@ -83,7 +83,6 @@ import UserProfileScreen from "./screens/UserProfileScreen";
 import FollowListScreen from "./screens/FollowListScreen";
 import SearchScreen from "./screens/SearchScreen";
 import OnboardingProfileScreen from "./screens/OnboardingProfileScreen";
-import OnboardingFollowScreen from "./screens/OnboardingFollowScreen";
 import CreatePostScreen from "./screens/CreatePostScreen";
 import ReshareComposerScreen from "./screens/ReshareComposerScreen";
 import CreateStoryScreen from "./screens/CreateStoryScreen";
@@ -123,7 +122,6 @@ function OnboardingNavigator() {
   return (
     <OnboardingStack.Navigator screenOptions={{ headerShown: false }}>
       <OnboardingStack.Screen name="OnboardingProfile" component={OnboardingProfileScreen} />
-      <OnboardingStack.Screen name="OnboardingFollow" component={OnboardingFollowScreen} />
     </OnboardingStack.Navigator>
   );
 }

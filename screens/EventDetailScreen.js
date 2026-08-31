@@ -1,11 +1,13 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Alert } from "react-native";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import Avatar from "../components/Avatar";
+import PostCard from "../components/PostCard";
 import { useAuth } from "../context/AuthContext";
 import { useSaved } from "../hooks/useSaved";
 import { COLORS } from "../theme";
@@ -17,12 +19,44 @@ function formatWhen(startAt, endAt) {
   return `${start} – ${end}`;
 }
 
+async function pickMultiplePhotos() {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) {
+    Alert.alert("Permission needed", "Allow photo library access to attach photos");
+    return [];
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsMultipleSelection: true,
+    selectionLimit: 10,
+    quality: 0.7,
+  });
+  if (result.canceled || !result.assets?.length) return [];
+  return result.assets.map((a) => ({
+    uri: a.uri,
+    mimeType: a.mimeType || "image/jpeg",
+    fileName: a.fileName || `upload.${(a.mimeType || "image/jpeg").split("/")[1]}`,
+  }));
+}
+
+async function uploadPhoto(p) {
+  const form = new FormData();
+  form.append("file", { uri: p.uri, name: p.fileName, type: p.mimeType });
+  const { data } = await client.post("/upload", form, { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 });
+  return data.url;
+}
+
+const TABS = ["About", "Photos", "Discussions"];
+
 // Ported from Fundi Jikoni's own EventDetailScreen: navy back-bar, cover +
 // bookmark, host identity row, a status pill, Going/Interested as their own
-// counter buttons (tap again to clear), a Date cell, and a small tab row
-// (About / DM Organiser — the latter is an action, not a content tab, same
-// as the reference). Photos/Discussions tabs aren't ported — this app has
-// no event-photos or event-comments backend yet.
+// counter buttons (tap again to clear), a Date cell, and a small tab row.
+// Photos/Discussions go further than the reference: Photos is a plain
+// host-curated gallery, but Discussions is a full mini-feed (background-
+// colored text, photos/video, reactions, comments) via the same PostCard/
+// CreatePostScreen machinery Chama's own Discussion tab uses — not just
+// flat comments. DM Organiser sits alongside the tabs as an action, not a
+// content tab, same as the reference.
 export default function EventDetailScreen({ route, navigation }) {
   const { eventId } = route.params;
   const { user } = useAuth();
@@ -34,14 +68,22 @@ export default function EventDetailScreen({ route, navigation }) {
   const [responding, setResponding] = useState(null);
   const [cancelling, setCancelling] = useState(false);
   const [messaging, setMessaging] = useState(false);
+  const [activeTab, setActiveTab] = useState("About");
+  const [photos, setPhotos] = useState([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [discussionPosts, setDiscussionPosts] = useState([]);
 
   const load = useCallback(async () => {
-    const [eventRes, rsvpRes] = await Promise.all([
+    const [eventRes, rsvpRes, photosRes, postsRes] = await Promise.all([
       client.get(`/events/${eventId}`),
       client.get(`/events/${eventId}/my-rsvp`),
+      client.get(`/events/${eventId}/photos`),
+      client.get(`/events/${eventId}/posts`),
     ]);
     setEvent(eventRes.data);
     setMyStatus(rsvpRes.data.rsvp?.status || null);
+    setPhotos(photosRes.data);
+    setDiscussionPosts(postsRes.data);
     loadSaved();
   }, [eventId, loadSaved]);
 
@@ -101,6 +143,54 @@ export default function EventDetailScreen({ route, navigation }) {
     }
   }
 
+  // Host-only, multi-select — mirrors CreateEventScreen's own cover-photo
+  // upload, just looped for a whole batch and posted one at a time to
+  // POST /:id/photos (backend rejects a non-host with 403 regardless).
+  async function handleAddPhotos() {
+    const picked = await pickMultiplePhotos();
+    if (!picked.length) return;
+    setUploadingPhotos(true);
+    try {
+      for (const p of picked) {
+        const url = await uploadPhoto(p);
+        await client.post(`/events/${eventId}/photos`, { url });
+      }
+      const { data } = await client.get(`/events/${eventId}/photos`);
+      setPhotos(data);
+    } catch (e) {
+      Alert.alert("Couldn't add photos", e.response?.data?.error || e.message);
+    } finally {
+      setUploadingPhotos(false);
+    }
+  }
+
+  function handleRemovePhoto(photoId) {
+    setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+    client.delete(`/events/${eventId}/photos/${photoId}`).catch(() => {
+      client.get(`/events/${eventId}/photos`).then((r) => setPhotos(r.data));
+    });
+  }
+
+  async function handleReactDiscussion(postId, reaction) {
+    try {
+      await client.post(`/events/${eventId}/posts/${postId}/react`, { reaction });
+      const { data } = await client.get(`/events/${eventId}/posts`);
+      setDiscussionPosts(data);
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
+  }
+
+  async function handleDeleteDiscussionPost(postId) {
+    try {
+      await client.delete(`/events/${eventId}/posts/${postId}`);
+      const { data } = await client.get(`/events/${eventId}/posts`);
+      setDiscussionPosts(data);
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
+    }
+  }
+
   if (loading || !event) {
     return (
       <View style={styles.container}>
@@ -115,7 +205,8 @@ export default function EventDetailScreen({ route, navigation }) {
   }
 
   const isHost = event.host?.id === user?.id;
-  const canRsvp = event.status !== "cancelled";
+  const isSuspended = event.status === "suspended";
+  const canRsvp = event.status !== "cancelled" && !isSuspended;
   const saved = isSaved("event", event.id);
 
   return (
@@ -127,6 +218,15 @@ export default function EventDetailScreen({ route, navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: insets.bottom + 40 }}>
+        {isSuspended && (
+          <View style={styles.suspendedBanner}>
+            <Text style={styles.suspendedBannerTitle}>⏸ SUSPENDED</Text>
+            <Text style={styles.suspendedBannerText}>
+              This event was suspended by a platform admin. RSVPs, boosting, and messaging the organiser are disabled.
+            </Text>
+            {!!event.moderationReason && <Text style={styles.suspendedBannerReason}>Reason: {event.moderationReason}</Text>}
+          </View>
+        )}
         {event.status === "cancelled" && (
           <View style={styles.cancelledBanner}><Text style={styles.cancelledBannerText}>This event has been cancelled.</Text></View>
         )}
@@ -162,11 +262,11 @@ export default function EventDetailScreen({ route, navigation }) {
           <View style={styles.pillRow}>
             <View style={styles.locationPill}>
               <Ionicons name="location-outline" size={12} color={COLORS.sub} />
-              <Text style={styles.locationPillText}>{event.location}{event.county ? ` · ${event.county}` : ""}</Text>
+              <Text style={styles.locationPillText}>Venue: {event.location}{event.county ? ` · ${event.county}` : ""}</Text>
             </View>
-            <View style={[styles.statusPill, event.status === "cancelled" ? styles.statusPillCancelled : styles.statusPillActive]}>
-              <Text style={[styles.statusPillText, { color: event.status === "cancelled" ? "#C4433C" : "#2E7D32" }]}>
-                ● {event.status === "cancelled" ? "Cancelled" : "Upcoming"}
+            <View style={[styles.statusPill, event.status === "cancelled" || isSuspended ? styles.statusPillCancelled : styles.statusPillActive]}>
+              <Text style={[styles.statusPillText, { color: event.status === "cancelled" || isSuspended ? "#C4433C" : "#2E7D32" }]}>
+                ● {isSuspended ? "Suspended" : event.status === "cancelled" ? "Cancelled" : "Upcoming"}
               </Text>
             </View>
           </View>
@@ -207,19 +307,25 @@ export default function EventDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         ) : null}
 
-        {isHost && !event.isBoosted && event.status !== "cancelled" && (
+        {isHost && !event.isBoosted && event.status !== "cancelled" && !isSuspended && (
           <TouchableOpacity style={styles.outlineButton} onPress={() => navigation.navigate("BoostEvent", { event })}>
             <Text style={styles.outlineButtonText}>⚡ Boost this event</Text>
           </TouchableOpacity>
         )}
 
         <View style={styles.tabRow}>
-          <View style={styles.tabChip}>
-            <Ionicons name="information-circle-outline" size={16} color={COLORS.accent} />
-            <Text style={[styles.tabChipText, styles.tabChipTextActive]}>About</Text>
-            <View style={[styles.tabUnderline, styles.tabUnderlineActive]} />
-          </View>
-          {!isHost && (
+          {TABS.map((t) => {
+            const icon = t === "About" ? "information-circle-outline" : t === "Photos" ? "images-outline" : "chatbubbles-outline";
+            const active = activeTab === t;
+            return (
+              <TouchableOpacity key={t} style={styles.tabChip} onPress={() => setActiveTab(t)}>
+                <Ionicons name={icon} size={16} color={active ? COLORS.accent : COLORS.sub} />
+                <Text style={[styles.tabChipText, active && styles.tabChipTextActive]}>{t}</Text>
+                <View style={[styles.tabUnderline, active && styles.tabUnderlineActive]} />
+              </TouchableOpacity>
+            );
+          })}
+          {!isHost && !isSuspended && (
             <TouchableOpacity style={styles.tabChip} onPress={handleDmOrganiser} disabled={messaging}>
               <Ionicons name="chatbubble-outline" size={16} color={COLORS.ink} />
               <Text style={[styles.tabChipText, styles.tabChipTextDm]}>{messaging ? "..." : "DM Organiser"}</Text>
@@ -228,23 +334,80 @@ export default function EventDetailScreen({ route, navigation }) {
           )}
         </View>
 
-        <View style={styles.aboutCard}>
-          {!!event.description && <Text style={styles.description}>{event.description}</Text>}
-          <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={13} color={COLORS.sub} />
-            <Text style={styles.detailText}>{formatWhen(event.startAt, event.endAt)}</Text>
-          </View>
-          {!!event.location && (
+        {activeTab === "About" && (
+          <View style={styles.aboutCard}>
+            {!!event.description && <Text style={styles.description}>{event.description}</Text>}
             <View style={styles.detailRow}>
-              <Ionicons name="location-outline" size={13} color={COLORS.sub} />
-              <Text style={styles.detailText}>{event.location}</Text>
+              <Ionicons name="calendar-outline" size={13} color={COLORS.sub} />
+              <Text style={styles.detailText}>{formatWhen(event.startAt, event.endAt)}</Text>
             </View>
-          )}
-          <View style={styles.detailRow}>
-            <Ionicons name="people-outline" size={13} color={COLORS.sub} />
-            <Text style={styles.detailText}>Hosted by {event.host?.name}</Text>
+            {!!event.location && (
+              <View style={styles.detailRow}>
+                <Ionicons name="location-outline" size={13} color={COLORS.sub} />
+                <Text style={styles.detailText}>Venue: {event.location}</Text>
+              </View>
+            )}
+            <View style={styles.detailRow}>
+              <Ionicons name="people-outline" size={13} color={COLORS.sub} />
+              <Text style={styles.detailText}>Hosted by {event.host?.name}</Text>
+            </View>
           </View>
-        </View>
+        )}
+
+        {activeTab === "Photos" && (
+          <View style={styles.aboutCard}>
+            {isHost && !isSuspended && (
+              <TouchableOpacity style={styles.outlineButton} onPress={handleAddPhotos} disabled={uploadingPhotos}>
+                <Text style={styles.outlineButtonText}>{uploadingPhotos ? "Uploading..." : "+ Add photos"}</Text>
+              </TouchableOpacity>
+            )}
+            {photos.length === 0 ? (
+              <View style={styles.photosEmpty}>
+                <Ionicons name="images-outline" size={26} color={COLORS.sub} />
+                <Text style={styles.empty}>{isHost ? "No photos yet — add some above." : "No photos yet."}</Text>
+              </View>
+            ) : (
+              <View style={styles.photoGrid}>
+                {photos.map((p, i) => (
+                  <View key={p.id} style={[styles.photoTile, (i + 1) % 3 !== 0 && styles.photoTileSpaced]}>
+                    <Image source={{ uri: p.url }} style={styles.photoImage} contentFit="cover" />
+                    {isHost && (
+                      <TouchableOpacity style={styles.photoRemoveBtn} onPress={() => handleRemovePhoto(p.id)} hitSlop={6}>
+                        <Ionicons name="close" size={11} color="#fff" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {activeTab === "Discussions" && (
+          <View>
+            {!isSuspended && (
+              <TouchableOpacity
+                style={styles.composerTeaser}
+                onPress={() => navigation.navigate("CreatePost", { eventId, eventLabel: event.name })}
+              >
+                <Ionicons name="create-outline" size={18} color={COLORS.sub} />
+                <Text style={styles.composerTeaserText}>Share something about this event...</Text>
+              </TouchableOpacity>
+            )}
+            {discussionPosts.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                onReact={handleReactDiscussion}
+                isSaved={isSaved("post", p.id)}
+                onToggleSave={() => toggleSave("post", p.id)}
+                onDelete={handleDeleteDiscussionPost}
+                onChanged={load}
+              />
+            ))}
+            {discussionPosts.length === 0 && <Text style={styles.empty}>No discussion posts yet — be the first to post.</Text>}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -254,6 +417,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   backBar: { backgroundColor: COLORS.accentInk, paddingHorizontal: 16, paddingBottom: 14 },
   backBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
+  suspendedBanner: { backgroundColor: "#D32F2F", padding: 14, borderRadius: 10, marginBottom: 12 },
+  suspendedBannerTitle: { color: "#fff", fontWeight: "800", fontSize: 15, letterSpacing: 0.5, marginBottom: 4 },
+  suspendedBannerText: { color: "#fff", fontWeight: "600", fontSize: 13, lineHeight: 18 },
+  suspendedBannerReason: { color: "#FFE0E0", fontSize: 12.5, marginTop: 8, fontStyle: "italic" },
   cancelledBanner: { backgroundColor: "#FDECEA", borderRadius: 10, padding: 10, marginBottom: 12 },
   cancelledBannerText: { color: "#C4433C", fontWeight: "700", fontSize: 12.5, textAlign: "center" },
   coverWrap: { marginBottom: 14 },
@@ -299,4 +466,13 @@ const styles = StyleSheet.create({
   description: { fontSize: 13.5, color: COLORS.ink, lineHeight: 20, marginBottom: 10 },
   detailRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 7, borderTopWidth: 1, borderTopColor: COLORS.bg },
   detailText: { fontSize: 12.5, color: COLORS.ink, flex: 1 },
+  empty: { fontSize: 12.5, color: COLORS.sub, textAlign: "center", marginVertical: 14 },
+  photosEmpty: { alignItems: "center", paddingVertical: 20, gap: 8 },
+  photoGrid: { flexDirection: "row", flexWrap: "wrap" },
+  photoTile: { width: "31.33%", aspectRatio: 1, borderRadius: 8, overflow: "hidden", position: "relative", backgroundColor: COLORS.bg, marginBottom: 8 },
+  photoTileSpaced: { marginRight: "3%" },
+  photoImage: { width: "100%", height: "100%" },
+  photoRemoveBtn: { position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(20,24,28,0.6)", alignItems: "center", justifyContent: "center" },
+  composerTeaser: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 4 },
+  composerTeaserText: { color: COLORS.sub, fontSize: 13.5 },
 });

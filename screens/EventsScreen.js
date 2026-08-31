@@ -176,12 +176,15 @@ export default function EventsScreen({ navigation }) {
               </View>
               <Text style={styles.when}>{formatWhen(item.startAt)}</Text>
               {!!item.location && (
-                <Text style={styles.location}>{item.location}{item.county ? ` · ${item.county}` : ""}</Text>
+                <Text style={styles.location}>Venue: {item.location}{item.county ? ` · ${item.county}` : ""}</Text>
               )}
               <View style={styles.footerRow}>
                 <Text style={styles.host}>Hosted by {item.host?.name}</Text>
                 <Text style={styles.counts}>{item.goingCount} going · {item.interestedCount} interested</Text>
               </View>
+              {item.status === "suspended" && (
+                <View style={styles.cancelledBadge}><Text style={styles.cancelledBadgeText}>Suspended</Text></View>
+              )}
               {item.status === "cancelled" && (
                 <View style={styles.cancelledBadge}><Text style={styles.cancelledBadgeText}>Cancelled</Text></View>
               )}

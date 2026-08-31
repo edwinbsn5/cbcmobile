@@ -113,7 +113,7 @@ export default function CreateMarketProductScreen({ navigation }) {
         title: title.trim(), description: description.trim(), priceKES: price, mediaType,
         photoUrls, mediaUrl, thumbnailUrl, categoryIds,
       });
-      Alert.alert("Listing submitted", "Your product will appear in MarketPlace once an admin approves it.");
+      Alert.alert("Listing created", "Your product is live in MarketPlace.");
       navigation.replace("MyMarketProducts");
       void data;
     } catch (e) {
@@ -185,9 +185,9 @@ export default function CreateMarketProductScreen({ navigation }) {
         <CategoryPicker selectedIds={categoryIds} onChange={setCategoryIds} endpoint="/market/categories/tree" />
 
         <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{uploading ? "Uploading..." : "Submit for review"}</Text>}
+          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{uploading ? "Uploading..." : "Create listing"}</Text>}
         </TouchableOpacity>
-        <Text style={styles.hint}>New listings are reviewed by an admin before they appear in MarketPlace.</Text>
+        <Text style={styles.hint}>Your listing goes live immediately and is visible in MarketPlace right away.</Text>
       </View>
     </ScrollView>
   );

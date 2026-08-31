@@ -257,6 +257,7 @@ export default function PageDetailScreen({ route, navigation }) {
   const isOwner = myRole === "Owner";
   const isTeamMember = !!myRole;
   const pendingInvite = page?.myPendingInvite || null;
+  const isSuspended = page?.status === "suspended";
 
   async function load() {
     const pageRes = await client.get(`/pages/${pageId}`);
@@ -572,39 +573,58 @@ export default function PageDetailScreen({ route, navigation }) {
         <View>
           <View style={styles.coverWrap}>
             <Image source={{ uri: page.coverUrl }} style={styles.cover} contentFit="cover" />
-            <View style={styles.coverShade} pointerEvents="none" />
             {canManageTeam && (
               <TouchableOpacity style={styles.changeCoverButton} onPress={handleChangeCover} disabled={changingCover}>
                 <Ionicons name="camera-outline" size={13} color="#fff" />
                 <Text style={styles.changeCoverText}>{changingCover ? "Uploading..." : "Change cover"}</Text>
               </TouchableOpacity>
             )}
-            <View style={styles.coverIdentity}>
-              <Avatar uri={page.avatarUrl} name={page.name} style={styles.coverAvatar} />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <View style={styles.coverNameLine}>
-                  <Text style={styles.coverName} numberOfLines={1}>{page.name}</Text>
-                  {page.isVerified && <Ionicons name="checkmark-circle" size={16} color="#4C9AFF" style={{ marginLeft: 4 }} />}
-                </View>
-                <Text style={styles.coverMeta} numberOfLines={1}>
-                  {page.totalCount > 0 ? `★ ${page.avgRating.toFixed(1)} (${page.totalCount})` : "★ New"}
-                  {page.county ? `  ·  📍 ${page.county}` : ""}
-                </Text>
+          </View>
+
+          <View style={styles.identityStrip}>
+            <Avatar uri={page.avatarUrl} name={page.name} style={styles.identityAvatar} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={styles.coverNameLine}>
+                <Text style={styles.identityName} numberOfLines={1}>{page.name}</Text>
+                {page.isVerified && <Ionicons name="checkmark-circle" size={16} color="#4C9AFF" style={{ marginLeft: 4 }} />}
               </View>
+              <Text style={styles.identityMeta} numberOfLines={1}>
+                {page.totalCount > 0 ? `★ ${page.avgRating.toFixed(1)} (${page.totalCount})` : "★ New"}
+                {page.county ? `  ·  📍 ${page.county}` : ""}
+              </Text>
             </View>
           </View>
 
-          {photos.length > 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
-              {photos.slice(0, 8).map((p) => (
-                <TouchableOpacity key={p.id} onPress={() => setActiveTab("Photos")} activeOpacity={0.85}>
-                  <Image source={{ uri: p.url }} style={styles.photoStripItem} contentFit="cover" />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-
           <View style={styles.body}>
+            {isSuspended && (
+              <View style={styles.suspendedBanner}>
+                <Text style={styles.suspendedBannerTitle}>⏸ SUSPENDED</Text>
+                <Text style={styles.suspendedBannerText}>
+                  {page.moderatedAt
+                    ? "This Page was suspended by a platform admin. Posting, following, and reviews are disabled."
+                    : `This Page is suspended${canManageTeam ? " — reactivate it below" : ""}. Posting, following, and reviews are disabled.`}
+                </Text>
+                {!!page.moderationReason && <Text style={styles.suspendedBannerReason}>Reason: {page.moderationReason}</Text>}
+              </View>
+            )}
+
+            <View style={styles.statStrip}>
+              <View style={styles.statCell}>
+                <Text style={styles.statCellValue}>{page.followerCount >= 1000 ? `${(page.followerCount / 1000).toFixed(1)}k` : page.followerCount}</Text>
+                <Text style={styles.statCellLabel}>Followers</Text>
+              </View>
+              <View style={styles.statCellDivider} />
+              <View style={styles.statCell}>
+                <Text style={styles.statCellValue}>{page.totalCount}</Text>
+                <Text style={styles.statCellLabel}>Reviews</Text>
+              </View>
+              <View style={styles.statCellDivider} />
+              <View style={styles.statCell}>
+                <Text style={styles.statCellValue}>{page.totalCount > 0 ? `${page.recommendPct}%` : "—"}</Text>
+                <Text style={styles.statCellLabel}>Recommend</Text>
+              </View>
+            </View>
+
             <View style={styles.categoryRow}>
               {page.categories.map((c) => (
                 <View key={c.id} style={styles.categoryPill}>
@@ -615,11 +635,10 @@ export default function PageDetailScreen({ route, navigation }) {
             {!!page.description && <Text style={styles.desc}>{page.description}</Text>}
 
             <Text style={styles.memberCount}>
-              {page.memberCount} team member{page.memberCount === 1 ? "" : "s"} · {page.followerCount} follower{page.followerCount === 1 ? "" : "s"}
-              {page.totalCount > 0 ? ` · ${page.recommendPct}% recommend` : ""}
+              {page.memberCount} team member{page.memberCount === 1 ? "" : "s"}
             </Text>
 
-            {!isTeamMember && (
+            {!isTeamMember && !isSuspended && (
               <View style={styles.followRow}>
                 <TouchableOpacity
                   style={[styles.followButton, page.amIFollowing && styles.followingButton]}
@@ -633,12 +652,6 @@ export default function PageDetailScreen({ route, navigation }) {
                 <TouchableOpacity style={[styles.followButton, styles.messageButton]} onPress={handleMessagePage} disabled={messaging}>
                   <Text style={[styles.followButtonText, styles.messageButtonText]}>{messaging ? "..." : "Message"}</Text>
                 </TouchableOpacity>
-              </View>
-            )}
-
-            {page.status === "suspended" && (
-              <View style={styles.suspendedBanner}>
-                <Text style={styles.suspendedBannerText}>⏸ This Page is suspended{canManageTeam ? " — reactivate it below" : ""}</Text>
               </View>
             )}
 
@@ -687,7 +700,7 @@ export default function PageDetailScreen({ route, navigation }) {
               ))}
             </View>
 
-            {activeTab === "Feed" && canPost && (
+            {activeTab === "Feed" && canPost && !isSuspended && (
               <View style={styles.composer}>
                 <View style={styles.postAsRow}>
                   <TouchableOpacity style={[styles.postAsButton, postAs === "page" && styles.postAsButtonActive]} onPress={() => setPostAs("page")}>
@@ -746,14 +759,14 @@ export default function PageDetailScreen({ route, navigation }) {
               </View>
             )}
 
-            {activeTab === "Photos" && canPost && (
+            {activeTab === "Photos" && canPost && !isSuspended && (
               <TouchableOpacity style={styles.attachButton} onPress={handleAddPhoto} disabled={uploading}>
                 <Ionicons name="images-outline" size={18} color={COLORS.accent} />
                 <Text style={styles.attachButtonText}>{uploading ? "Uploading..." : "Add photo"}</Text>
               </TouchableOpacity>
             )}
 
-            {activeTab === "Videos" && canPost && (
+            {activeTab === "Videos" && canPost && !isSuspended && (
               <TouchableOpacity style={styles.attachButton} onPress={handleAddVideo} disabled={uploading}>
                 <Ionicons name="videocam-outline" size={18} color={COLORS.accent} />
                 <Text style={styles.attachButtonText}>{uploading ? "Uploading..." : "Add video"}</Text>
@@ -766,7 +779,7 @@ export default function PageDetailScreen({ route, navigation }) {
               )
             )}
 
-            {activeTab === "Reviews" && !isTeamMember && (
+            {activeTab === "Reviews" && !isTeamMember && !isSuspended && (
               <View style={styles.composer}>
                 <Text style={styles.reviewFormLabel}>Your rating</Text>
                 <StarRow value={myRating} size={28} onRate={setMyRating} />
@@ -805,28 +818,30 @@ const styles = StyleSheet.create({
     position: "absolute", left: 14, width: 34, height: 34, borderRadius: 17,
     backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center",
   },
-  coverWrap: { height: 190, backgroundColor: "#eee" },
+  coverWrap: { height: 150, backgroundColor: "#eee" },
   cover: { width: "100%", height: "100%" },
-  coverShade: {
-    position: "absolute", left: 0, right: 0, bottom: 0, height: 90,
-    backgroundColor: "rgba(8,21,39,0.55)",
-  },
   changeCoverButton: {
     position: "absolute", right: 10, top: 34, flexDirection: "row", alignItems: "center", gap: 5,
     backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6,
   },
   changeCoverText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-  coverIdentity: {
-    position: "absolute", left: 16, right: 16, bottom: 14,
-    flexDirection: "row", alignItems: "center", gap: 10,
+  identityStrip: {
+    backgroundColor: COLORS.accentInk, paddingHorizontal: 16, paddingVertical: 14,
+    flexDirection: "row", alignItems: "center", gap: 12,
   },
-  coverAvatar: { width: 42, height: 42, borderRadius: 13, borderWidth: 2, borderColor: "rgba(255,255,255,0.7)" },
+  identityAvatar: { width: 44, height: 44, borderRadius: 14 },
   coverNameLine: { flexDirection: "row", alignItems: "center" },
-  coverName: { color: "#fff", fontSize: 18, fontWeight: "800", flexShrink: 1 },
-  coverMeta: { color: "#E9EEF7", fontSize: 11.5, fontWeight: "700", marginTop: 3 },
-  photoStrip: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 14 },
-  photoStripItem: { width: 74, height: 74, borderRadius: 10, backgroundColor: COLORS.wash },
-  body: { paddingHorizontal: 16, paddingBottom: 16 },
+  identityName: { color: "#fff", fontSize: 16, fontWeight: "800", flexShrink: 1 },
+  identityMeta: { color: "#B9C6DC", fontSize: 11.5, fontWeight: "700", marginTop: 3 },
+  body: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
+  statStrip: {
+    flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: COLORS.border,
+    borderRadius: 10, marginBottom: 16,
+  },
+  statCell: { flex: 1, alignItems: "center", paddingVertical: 10 },
+  statCellValue: { color: COLORS.ink, fontSize: 15, fontWeight: "800" },
+  statCellLabel: { color: COLORS.sub, fontSize: 10, fontWeight: "700", marginTop: 2 },
+  statCellDivider: { width: 1, alignSelf: "stretch", backgroundColor: COLORS.border },
   categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   categoryPill: { backgroundColor: COLORS.wash, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
   categoryPillText: { color: COLORS.accent, fontSize: 11.5, fontWeight: "600" },
@@ -839,8 +854,10 @@ const styles = StyleSheet.create({
   followingButtonText: { color: COLORS.ink },
   messageButton: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
   messageButtonText: { color: COLORS.ink },
-  suspendedBanner: { backgroundColor: "#FFF3CD", padding: 10, borderRadius: 8, marginTop: 12 },
-  suspendedBannerText: { color: "#856404", fontWeight: "600" },
+  suspendedBanner: { backgroundColor: "#D32F2F", padding: 14, borderRadius: 10, marginBottom: 4 },
+  suspendedBannerTitle: { color: "#fff", fontWeight: "800", fontSize: 15, letterSpacing: 0.5, marginBottom: 4 },
+  suspendedBannerText: { color: "#fff", fontWeight: "600", fontSize: 13, lineHeight: 18 },
+  suspendedBannerReason: { color: "#FFE0E0", fontSize: 12.5, marginTop: 8, fontStyle: "italic" },
   inviteBanner: { backgroundColor: "#E9F8EE", padding: 12, borderRadius: 8, marginTop: 12 },
   inviteBannerText: { color: "#2E7D32", fontWeight: "600", marginBottom: 8 },
   inviteBannerActions: { flexDirection: "row", gap: 10 },

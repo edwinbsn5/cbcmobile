@@ -135,6 +135,7 @@ export default function GroupDetailScreen({ route, navigation }) {
 
   const isMember = !!mySub?.subscribed || group?.adminId === user?.id;
   const isAdmin = group?.adminId === user?.id;
+  const isSuspended = group?.status === "suspended";
 
   async function load() {
     const [groupRes, subRes, reviewsRes] = await Promise.all([
@@ -539,6 +540,16 @@ export default function GroupDetailScreen({ route, navigation }) {
             )}
           </View>
           <View style={styles.body}>
+            {isSuspended && (
+              <View style={styles.suspendedBanner}>
+                <Text style={styles.suspendedBannerTitle}>⏸ SUSPENDED</Text>
+                <Text style={styles.suspendedBannerText}>
+                  This group was suspended by a platform admin. Posting, subscribing, and reviews are disabled.
+                </Text>
+                {!!group.moderationReason && <Text style={styles.suspendedBannerReason}>Reason: {group.moderationReason}</Text>}
+              </View>
+            )}
+
             <TouchableOpacity
               activeOpacity={isAdmin ? 0.8 : 1}
               onPress={isAdmin ? handleChangeAvatar : undefined}
@@ -590,17 +601,6 @@ export default function GroupDetailScreen({ route, navigation }) {
               </TouchableOpacity>
             )}
 
-            {group.status === "pending" && (
-              <View style={styles.pendingBanner}>
-                <Text style={styles.pendingBannerText}>⏳ Awaiting admin approval — only you can see this group until then</Text>
-              </View>
-            )}
-            {group.status === "rejected" && (
-              <View style={styles.rejectedBanner}>
-                <Text style={styles.rejectedBannerText}>This group was not approved. Contact support for details.</Text>
-              </View>
-            )}
-
             {mySub?.subscribed && (
               <View style={styles.activeBanner}>
                 <Text style={styles.activeBannerText}>
@@ -609,7 +609,7 @@ export default function GroupDetailScreen({ route, navigation }) {
               </View>
             )}
 
-            {!isAdmin && (
+            {!isAdmin && !isSuspended && (
               <View style={styles.ctaRow}>
                 <TouchableOpacity style={styles.subscribeCta} onPress={handleScrollToTiers}>
                   <Text style={styles.subscribeCtaText}>{mySub?.subscribed ? "Manage subscription" : "Subscribe"}</Text>
@@ -633,13 +633,15 @@ export default function GroupDetailScreen({ route, navigation }) {
                       <Text key={i} style={styles.perk}>• {perk}</Text>
                     ))}
                     <TouchableOpacity
-                      style={[styles.subscribeButton, group.adminId === user?.id && styles.disabledButton]}
-                      disabled={group.adminId === user?.id || subscribing === tier.id}
+                      style={[styles.subscribeButton, (group.adminId === user?.id || isSuspended) && styles.disabledButton]}
+                      disabled={group.adminId === user?.id || isSuspended || subscribing === tier.id}
                       onPress={() => handleSubscribe(tier)}
                     >
                       <Text style={styles.subscribeButtonText}>
                         {group.adminId === user?.id
                           ? "You're the admin"
+                          : isSuspended
+                          ? "Suspended"
                           : subscribing === tier.id
                           ? "Processing..."
                           : mySub?.subscribed
@@ -661,7 +663,11 @@ export default function GroupDetailScreen({ route, navigation }) {
             </View>
 
             {activeTab === "Feed" &&
-              (isMember ? (
+              (isSuspended ? (
+                <View style={styles.lockedBox}>
+                  <Text style={styles.lockedText}>⏸ This group is suspended — posting is disabled.</Text>
+                </View>
+              ) : isMember ? (
                 <View style={styles.composer}>
                   <TextInput
                     style={styles.composerInput}
@@ -719,7 +725,11 @@ export default function GroupDetailScreen({ route, navigation }) {
               ))}
 
             {activeTab === "Blogs" &&
-              (!isMember ? (
+              (isSuspended && isAdmin ? (
+                <View style={styles.lockedBox}>
+                  <Text style={styles.lockedText}>⏸ This group is suspended — publishing is disabled.</Text>
+                </View>
+              ) : !isMember ? (
                 <View style={styles.lockedBox}>
                   <Text style={styles.lockedText}>🔒 The blog is private to subscribers. Subscribe to a tier above to read it.</Text>
                 </View>
@@ -778,7 +788,11 @@ export default function GroupDetailScreen({ route, navigation }) {
               ))}
 
             {activeTab === "Videos" &&
-              (!isMember ? (
+              (isSuspended && isAdmin ? (
+                <View style={styles.lockedBox}>
+                  <Text style={styles.lockedText}>⏸ This group is suspended — uploading is disabled.</Text>
+                </View>
+              ) : !isMember ? (
                 <View style={styles.lockedBox}>
                   <Text style={styles.lockedText}>🔒 Videos are private to subscribers. Subscribe to a tier above to watch them.</Text>
                 </View>
@@ -819,7 +833,7 @@ export default function GroupDetailScreen({ route, navigation }) {
                 <Text style={styles.blogReadOnlyHint}>Only the group admin can upload videos.</Text>
               ))}
 
-            {activeTab === "Reviews" && isMember && (
+            {activeTab === "Reviews" && isMember && !isSuspended && (
               <View style={styles.composer}>
                 <Text style={styles.reviewFormLabel}>Your rating</Text>
                 <StarRow value={myRating} size={28} onRate={setMyRating} />
@@ -894,10 +908,10 @@ const styles = StyleSheet.create({
   ratingText: { color: COLORS.sub, fontSize: 12, fontWeight: "600" },
   activeBanner: { backgroundColor: "#E9F8EE", padding: 10, borderRadius: 8, marginTop: 12 },
   activeBannerText: { color: "#2E7D32", fontWeight: "600" },
-  pendingBanner: { backgroundColor: "#FFF3CD", padding: 10, borderRadius: 8, marginTop: 12 },
-  pendingBannerText: { color: "#856404", fontWeight: "600" },
-  rejectedBanner: { backgroundColor: "#F8D7DA", padding: 10, borderRadius: 8, marginTop: 12 },
-  rejectedBannerText: { color: "#721C24", fontWeight: "600" },
+  suspendedBanner: { backgroundColor: "#D32F2F", padding: 14, borderRadius: 10, marginBottom: 12 },
+  suspendedBannerTitle: { color: "#fff", fontWeight: "800", fontSize: 15, letterSpacing: 0.5, marginBottom: 4 },
+  suspendedBannerText: { color: "#fff", fontWeight: "600", fontSize: 13, lineHeight: 18 },
+  suspendedBannerReason: { color: "#FFE0E0", fontSize: 12.5, marginTop: 8, fontStyle: "italic" },
   sectionTitle: { color: COLORS.ink, fontSize: 16, fontWeight: "700", marginTop: 20, marginBottom: 10 },
   tierCard: { width: 210, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 14 },
   tierHeader: { marginBottom: 8 },

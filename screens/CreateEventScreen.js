@@ -102,7 +102,7 @@ export default function CreateEventScreen({ navigation }) {
         <Text style={styles.label}>Description</Text>
         <TextInput style={[styles.input, styles.multiline]} value={description} onChangeText={setDescription} placeholder="What's this event about?" multiline />
 
-        <Text style={styles.label}>Location</Text>
+        <Text style={styles.label}>Venue</Text>
         <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="Venue or address" />
 
         <Text style={styles.label}>County</Text>

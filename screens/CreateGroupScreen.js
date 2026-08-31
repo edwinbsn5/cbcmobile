@@ -78,7 +78,7 @@ export default function CreateGroupScreen({ navigation }) {
         coverUrl,
         tiers: [{ name: tierName.trim(), priceKES: price, periodDays: period, perks: [] }],
       });
-      Alert.alert("Group submitted", "Your group has been submitted and will appear once an admin approves it.");
+      Alert.alert("Group created", "Your group is live and open to subscribers.");
       navigation.replace("GroupDetail", { groupId: data.id });
     } catch (e) {
       Alert.alert("Couldn't create group", e.response?.data?.error || e.message);
@@ -138,9 +138,9 @@ export default function CreateGroupScreen({ navigation }) {
         <TextInput style={styles.input} value={periodDays} onChangeText={setPeriodDays} placeholder="30" keyboardType="number-pad" />
 
         <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{uploading ? "Uploading photos..." : "Submit for approval"}</Text>}
+          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{uploading ? "Uploading photos..." : "Create group"}</Text>}
         </TouchableOpacity>
-        <Text style={styles.hint}>New groups are reviewed by an admin before they appear publicly.</Text>
+        <Text style={styles.hint}>Your group goes live immediately and is open to subscribers right away.</Text>
       </View>
     </ScrollView>
   );
