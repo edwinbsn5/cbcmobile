@@ -32,8 +32,6 @@ export default function CreateChamaScreen({ navigation }) {
   const [contributionFrequency, setContributionFrequency] = useState("weekly");
   const [contributionLateFeeRate, setContributionLateFeeRate] = useState("10");
   const [goalAmount, setGoalAmount] = useState("");
-  // Investment Groups are table-banking only now — no picker, nothing to change.
-  const payoutModel = "table_banking";
   // 3 fixed repayment plans — more time, more interest. Rate/days are each
   // editable per tier; the borrower picks one of these 3 per loan request.
   const [loanTiers, setLoanTiers] = useState([{ rate: "10", days: "30" }, { rate: "25", days: "60" }, { rate: "40", days: "90" }]);
@@ -75,16 +73,14 @@ export default function CreateChamaScreen({ navigation }) {
     if (contributionType === "goal_based" && (!parseInt(goalAmount, 10) || parseInt(goalAmount, 10) <= 0)) {
       return Alert.alert("Invalid goal", "Enter a savings goal in KES");
     }
-    if (payoutModel === "table_banking") {
-      for (const t of loanTiers) {
-        if (t.rate === "" || isNaN(parseFloat(t.rate)) || parseFloat(t.rate) < 0) return Alert.alert("Invalid tier rate", "Each repayment plan needs an interest percentage (0 or more)");
-        if (!parseInt(t.days, 10) || parseInt(t.days, 10) <= 0) return Alert.alert("Invalid tier term", "Each repayment plan needs a positive number of days");
-      }
-      if (!parseFloat(loanMaxMultiplier) || parseFloat(loanMaxMultiplier) <= 0) return Alert.alert("Invalid multiplier", "Enter how many times a member's savings they can borrow");
-      if (latePenaltyRate === "" || isNaN(parseFloat(latePenaltyRate)) || parseFloat(latePenaltyRate) < 0) return Alert.alert("Invalid penalty", "Enter a late-penalty percentage (0 or more)");
-      if (loanEligibilityDays !== "" && (!Number.isInteger(parseInt(loanEligibilityDays, 10)) || parseInt(loanEligibilityDays, 10) < 0)) {
-        return Alert.alert("Invalid incubation period", "Enter a non-negative number of days, or leave blank for none");
-      }
+    for (const t of loanTiers) {
+      if (t.rate === "" || isNaN(parseFloat(t.rate)) || parseFloat(t.rate) < 0) return Alert.alert("Invalid tier rate", "Each repayment plan needs an interest percentage (0 or more)");
+      if (!parseInt(t.days, 10) || parseInt(t.days, 10) <= 0) return Alert.alert("Invalid tier term", "Each repayment plan needs a positive number of days");
+    }
+    if (!parseFloat(loanMaxMultiplier) || parseFloat(loanMaxMultiplier) <= 0) return Alert.alert("Invalid multiplier", "Enter how many times a member's savings they can borrow");
+    if (latePenaltyRate === "" || isNaN(parseFloat(latePenaltyRate)) || parseFloat(latePenaltyRate) < 0) return Alert.alert("Invalid penalty", "Enter a late-penalty percentage (0 or more)");
+    if (loanEligibilityDays !== "" && (!Number.isInteger(parseInt(loanEligibilityDays, 10)) || parseInt(loanEligibilityDays, 10) < 0)) {
+      return Alert.alert("Invalid incubation period", "Enter a non-negative number of days, or leave blank for none");
     }
     if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county your Chama meets in");
 
@@ -106,11 +102,11 @@ export default function CreateChamaScreen({ navigation }) {
         contributionFrequency: contributionType === "fixed_recurring" ? contributionFrequency : undefined,
         contributionLateFeeRate: contributionType === "fixed_recurring" ? parseFloat(contributionLateFeeRate) : undefined,
         goalAmount: contributionType === "goal_based" ? parseInt(goalAmount, 10) : undefined,
-        payoutModel, joinPolicy, membersVisibleToMembers: membersVisible,
-        loanTiers: payoutModel === "table_banking" ? loanTiers.map((t) => ({ rate: parseFloat(t.rate), days: parseInt(t.days, 10) })) : undefined,
-        loanMaxMultiplier: payoutModel === "table_banking" ? parseFloat(loanMaxMultiplier) : undefined,
-        latePenaltyRate: payoutModel === "table_banking" ? parseFloat(latePenaltyRate) : undefined,
-        loanEligibilityDays: payoutModel === "table_banking" && loanEligibilityDays !== "" ? parseInt(loanEligibilityDays, 10) : undefined,
+        joinPolicy, membersVisibleToMembers: membersVisible,
+        loanTiers: loanTiers.map((t) => ({ rate: parseFloat(t.rate), days: parseInt(t.days, 10) })),
+        loanMaxMultiplier: parseFloat(loanMaxMultiplier),
+        latePenaltyRate: parseFloat(latePenaltyRate),
+        loanEligibilityDays: loanEligibilityDays !== "" ? parseInt(loanEligibilityDays, 10) : undefined,
         county, subCounty,
       });
       Alert.alert("Chama created!", "You're the admin — start inviting members.");

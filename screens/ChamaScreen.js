@@ -245,7 +245,6 @@ export default function ChamaScreen({ navigation }) {
               {item.contributionType === "fixed_recurring"
                 ? `KES ${item.contributionAmount?.toLocaleString()} / ${item.contributionFrequency}`
                 : `Goal: KES ${item.goalAmount?.toLocaleString()}`}
-              {" · "}{item.payoutModel === "merry_go_round" ? "Merry-go-round" : item.payoutModel === "table_banking" ? "Table banking" : "Pooled savings"}
             </Text>
             {!!item.subCounty && (
               <View style={styles.locationPill}>

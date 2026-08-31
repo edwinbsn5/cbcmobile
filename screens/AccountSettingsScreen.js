@@ -7,7 +7,7 @@ import Avatar from "../components/Avatar";
 import { COLORS } from "../theme";
 
 export default function AccountSettingsScreen() {
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser, updateToken, logout } = useAuth();
   const navigation = useNavigation();
 
   const [name, setName] = useState(user?.name || "");
@@ -44,10 +44,11 @@ export default function AccountSettingsScreen() {
     if (!currentPassword || !newPassword) return Alert.alert("Missing fields", "Enter your current and new password");
     setChangingPassword(true);
     try {
-      await client.post("/auth/change-password", { currentPassword, newPassword });
+      const { data } = await client.post("/auth/change-password", { currentPassword, newPassword });
+      await updateToken(data.token);
       setCurrentPassword("");
       setNewPassword("");
-      Alert.alert("Password updated", "Use your new password next time you log in");
+      Alert.alert("Password updated", "Your other devices have been signed out — you'll need the new password there.");
     } catch (e) {
       Alert.alert("Change failed", e.response?.data?.error || e.message);
     } finally {

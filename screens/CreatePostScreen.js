@@ -24,8 +24,8 @@ export default function CreatePostScreen({ navigation, route }) {
   // own Discussions tab, instead of the main feed. Same composer, same
   // media/background-color support; only the submit target and header
   // title change.
-  const { collabGroupKind, collabGroupId, collabGroupLabel, eventId, eventLabel, autoAction } = route?.params || {};
-  const targetLabel = collabGroupLabel || eventLabel;
+  const { collabGroupKind, collabGroupId, collabGroupLabel, eventId, eventLabel, partnersFeed, autoAction } = route?.params || {};
+  const targetLabel = collabGroupLabel || eventLabel || (partnersFeed ? "Partners" : null);
 
   useEffect(() => {
     if (targetLabel) navigation.setOptions({ title: `Post to ${targetLabel}` });
@@ -167,6 +167,8 @@ export default function CreatePostScreen({ navigation, route }) {
         ? `/${collabGroupKind === "chama" ? "chama" : "projects"}/${collabGroupId}/posts`
         : eventId
         ? `/events/${eventId}/posts`
+        : partnersFeed
+        ? "/feed/partners"
         : "/feed";
       await client.post(path, {
         content: composerText.trim(),

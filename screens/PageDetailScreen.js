@@ -235,6 +235,7 @@ export default function PageDetailScreen({ route, navigation }) {
   const [changingCover, setChangingCover] = useState(false);
   const [followSubmitting, setFollowSubmitting] = useState(false);
   const [messaging, setMessaging] = useState(false);
+  const [manageMenuOpen, setManageMenuOpen] = useState(false);
 
   const [composerText, setComposerText] = useState("");
   const [postAs, setPostAs] = useState("page");
@@ -593,6 +594,48 @@ export default function PageDetailScreen({ route, navigation }) {
                 {page.county ? `  ·  📍 ${page.county}` : ""}
               </Text>
             </View>
+            {canManageTeam && (
+              <View style={styles.identityMenuWrap}>
+                <TouchableOpacity style={styles.identityMenuTrigger} onPress={() => setManageMenuOpen((v) => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="ellipsis-vertical" size={18} color="#fff" />
+                </TouchableOpacity>
+                {manageMenuOpen && (
+                  <View style={styles.identityMenuDropdown}>
+                    <TouchableOpacity
+                      style={styles.identityMenuItem}
+                      onPress={() => { setManageMenuOpen(false); navigation.navigate("PageTeamManagement", { pageId }); }}
+                    >
+                      <Ionicons name="people-outline" size={16} color={COLORS.accent} />
+                      <Text style={styles.identityMenuItemText}>Manage Team</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.identityMenuItem}
+                      onPress={() => { setManageMenuOpen(false); navigation.navigate("BoostPage", { page }); }}
+                    >
+                      <Ionicons name="megaphone-outline" size={16} color={COLORS.accent} />
+                      <Text style={styles.identityMenuItemText}>Boost this Page</Text>
+                    </TouchableOpacity>
+                    <View style={styles.identityMenuDivider} />
+                    <TouchableOpacity
+                      style={styles.identityMenuItem}
+                      onPress={() => { setManageMenuOpen(false); handleToggleSuspend(); }}
+                    >
+                      <Ionicons name={page.status === "suspended" ? "play-outline" : "pause-outline"} size={16} color={COLORS.accent} />
+                      <Text style={styles.identityMenuItemText}>{page.status === "suspended" ? "Reactivate" : "Suspend"}</Text>
+                    </TouchableOpacity>
+                    {isOwner && (
+                      <TouchableOpacity
+                        style={styles.identityMenuItem}
+                        onPress={() => { setManageMenuOpen(false); handleDeletePage(); }}
+                      >
+                        <Ionicons name="trash-outline" size={16} color="#D32F2F" />
+                        <Text style={[styles.identityMenuItemText, { color: "#D32F2F" }]}>Delete</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           <View style={styles.body}>
@@ -602,7 +645,7 @@ export default function PageDetailScreen({ route, navigation }) {
                 <Text style={styles.suspendedBannerText}>
                   {page.moderatedAt
                     ? "This Page was suspended by a platform admin. Posting, following, and reviews are disabled."
-                    : `This Page is suspended${canManageTeam ? " — reactivate it below" : ""}. Posting, following, and reviews are disabled.`}
+                    : `This Page is suspended${canManageTeam ? " — reactivate it from the ⋮ menu above" : ""}. Posting, following, and reviews are disabled.`}
                 </Text>
                 {!!page.moderationReason && <Text style={styles.suspendedBannerReason}>Reason: {page.moderationReason}</Text>}
               </View>
@@ -625,13 +668,13 @@ export default function PageDetailScreen({ route, navigation }) {
               </View>
             </View>
 
-            <View style={styles.categoryRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow} contentContainerStyle={styles.categoryRowContent}>
               {page.categories.map((c) => (
                 <View key={c.id} style={styles.categoryPill}>
                   <Text style={styles.categoryPillText}>{c.name}</Text>
                 </View>
               ))}
-            </View>
+            </ScrollView>
             {!!page.description && <Text style={styles.desc}>{page.description}</Text>}
 
             <Text style={styles.memberCount}>
@@ -669,28 +712,6 @@ export default function PageDetailScreen({ route, navigation }) {
               </View>
             )}
 
-            {canManageTeam && (
-              <View style={styles.manageRow}>
-                <TouchableOpacity style={styles.manageButton} onPress={() => navigation.navigate("PageTeamManagement", { pageId })}>
-                  <Ionicons name="people-outline" size={16} color={COLORS.accent} />
-                  <Text style={styles.manageButtonText}>Manage Team</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.manageButton} onPress={() => navigation.navigate("BoostPage", { page })}>
-                  <Ionicons name="megaphone-outline" size={16} color={COLORS.accent} />
-                  <Text style={styles.manageButtonText}>Boost this Page</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.manageButton} onPress={handleToggleSuspend}>
-                  <Ionicons name={page.status === "suspended" ? "play-outline" : "pause-outline"} size={16} color={COLORS.accent} />
-                  <Text style={styles.manageButtonText}>{page.status === "suspended" ? "Reactivate" : "Suspend"}</Text>
-                </TouchableOpacity>
-                {isOwner && (
-                  <TouchableOpacity style={styles.manageButton} onPress={handleDeletePage}>
-                    <Ionicons name="trash-outline" size={16} color="#D32F2F" />
-                    <Text style={[styles.manageButtonText, { color: "#D32F2F" }]}>Delete</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
 
             <View style={styles.tabRow}>
               {TABS.map((t) => (
@@ -833,6 +854,16 @@ const styles = StyleSheet.create({
   coverNameLine: { flexDirection: "row", alignItems: "center" },
   identityName: { color: "#fff", fontSize: 16, fontWeight: "800", flexShrink: 1 },
   identityMeta: { color: "#B9C6DC", fontSize: 11.5, fontWeight: "700", marginTop: 3 },
+  identityMenuWrap: { position: "relative", flex: 0, alignSelf: "flex-start" },
+  identityMenuTrigger: { width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.14)", alignItems: "center", justifyContent: "center" },
+  identityMenuDropdown: {
+    position: "absolute", top: "100%", right: 0, marginTop: 6, backgroundColor: COLORS.surface, borderRadius: 12,
+    paddingVertical: 6, minWidth: 190, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2,
+    shadowRadius: 12, elevation: 8, zIndex: 20,
+  },
+  identityMenuItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  identityMenuItemText: { color: COLORS.ink, fontWeight: "700", fontSize: 13 },
+  identityMenuDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: 4 },
   body: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
   statStrip: {
     flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: COLORS.border,
@@ -842,7 +873,8 @@ const styles = StyleSheet.create({
   statCellValue: { color: COLORS.ink, fontSize: 15, fontWeight: "800" },
   statCellLabel: { color: COLORS.sub, fontSize: 10, fontWeight: "700", marginTop: 2 },
   statCellDivider: { width: 1, alignSelf: "stretch", backgroundColor: COLORS.border },
-  categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  categoryRow: { flexGrow: 0 },
+  categoryRowContent: { flexDirection: "row", gap: 6 },
   categoryPill: { backgroundColor: COLORS.wash, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
   categoryPillText: { color: COLORS.accent, fontSize: 11.5, fontWeight: "600" },
   desc: { color: COLORS.sub, marginTop: 8, fontSize: 14 },
@@ -865,9 +897,6 @@ const styles = StyleSheet.create({
   inviteAcceptText: { color: "#fff", fontWeight: "700", fontSize: 12.5 },
   inviteDeclineButton: { borderWidth: 1, borderColor: "#2E7D32", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 6 },
   inviteDeclineText: { color: "#2E7D32", fontWeight: "700", fontSize: 12.5 },
-  manageRow: { flexDirection: "row", gap: 10, marginTop: 14, flexWrap: "wrap" },
-  manageButton: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: COLORS.wash, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7 },
-  manageButtonText: { color: COLORS.accent, fontWeight: "700", fontSize: 12.5 },
   tabRow: { flexDirection: "row", marginTop: 22, borderTopWidth: 1, borderTopColor: COLORS.border },
   tab: { flex: 1, alignItems: "center", paddingVertical: 12 },
   tabActive: { borderBottomWidth: 2, borderBottomColor: COLORS.accent },

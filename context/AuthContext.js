@@ -69,8 +69,17 @@ export function AuthProvider({ children }) {
     setUser(freshUser);
   }
 
+  // Changing your own password invalidates every previously-issued token
+  // for the account server-side (see requireAuth's pca check in
+  // services/auth.js) — including the one this very session is using. The
+  // change-password response carries a freshly-signed replacement so this
+  // call swaps it in before the old one can 401 on the next request.
+  async function updateToken(token) {
+    await AsyncStorage.setItem("token", token);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateWalletBalance, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateWalletBalance, updateUser, updateToken }}>
       {children}
     </AuthContext.Provider>
   );

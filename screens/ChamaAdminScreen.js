@@ -289,7 +289,6 @@ function LoansTab({ chamaId, chama }) {
     }
   }
 
-  if (chama.payoutModel !== "table_banking") return <Text style={styles.empty}>This Chama isn't set up for table banking.</Text>;
   if (!loans) return <ActivityIndicator color={COLORS.accent} />;
   const pending = loans.filter((l) => l.status === "requested");
   const active = loans.filter((l) => l.status === "active");
@@ -413,15 +412,13 @@ function SettingsTab({ chamaId, chama, onChange }) {
         const feeRate = parseFloat(contributionLateFeeRate);
         if (!isNaN(feeRate) && feeRate !== chama.contributionLateFeeRate) body.contributionLateFeeRate = feeRate;
       }
-      if (chama.payoutModel === "table_banking") {
-        const parsedTiers = loanTiers.map((t) => ({ rate: parseFloat(t.rate), days: parseInt(t.days, 10) }));
-        if (parsedTiers.every((t) => !isNaN(t.rate) && t.rate >= 0 && t.days > 0)) body.loanTiers = parsedTiers;
-        const mult = parseFloat(loanMaxMultiplier);
-        if (!isNaN(mult) && mult !== chama.loanMaxMultiplier) body.loanMaxMultiplier = mult;
-        const penalty = parseFloat(latePenaltyRate);
-        if (!isNaN(penalty) && penalty !== chama.latePenaltyRate) body.latePenaltyRate = penalty;
-        body.loanEligibilityDays = loanEligibilityDays !== "" ? parseInt(loanEligibilityDays, 10) : null;
-      }
+      const parsedTiers = loanTiers.map((t) => ({ rate: parseFloat(t.rate), days: parseInt(t.days, 10) }));
+      if (parsedTiers.every((t) => !isNaN(t.rate) && t.rate >= 0 && t.days > 0)) body.loanTiers = parsedTiers;
+      const mult = parseFloat(loanMaxMultiplier);
+      if (!isNaN(mult) && mult !== chama.loanMaxMultiplier) body.loanMaxMultiplier = mult;
+      const penalty = parseFloat(latePenaltyRate);
+      if (!isNaN(penalty) && penalty !== chama.latePenaltyRate) body.latePenaltyRate = penalty;
+      body.loanEligibilityDays = loanEligibilityDays !== "" ? parseInt(loanEligibilityDays, 10) : null;
       await client.patch(`/chama/${chamaId}`, body);
       Alert.alert("Saved", "Settings updated");
       onChange();
@@ -483,38 +480,34 @@ function SettingsTab({ chamaId, chama, onChange }) {
           <TextInput style={styles.input} value={contributionLateFeeRate} onChangeText={setContributionLateFeeRate} keyboardType="decimal-pad" />
         </>
       )}
-      {chama.payoutModel === "table_banking" && (
-        <>
-          <Text style={styles.label}>Repayment plans — more time, more interest</Text>
-          {loanTiers.map((t, i) => (
-            <View key={i} style={styles.tierRow}>
-              <Text style={styles.tierRowLabel}>Plan {i + 1}</Text>
-              <View style={styles.tierRowFields}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Interest %</Text>
-                  <TextInput
-                    style={styles.input} value={t.rate} keyboardType="decimal-pad"
-                    onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, rate: v } : x)))}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Days</Text>
-                  <TextInput
-                    style={styles.input} value={t.days} keyboardType="number-pad"
-                    onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, days: v } : x)))}
-                  />
-                </View>
-              </View>
+      <Text style={styles.label}>Repayment plans — more time, more interest</Text>
+      {loanTiers.map((t, i) => (
+        <View key={i} style={styles.tierRow}>
+          <Text style={styles.tierRowLabel}>Plan {i + 1}</Text>
+          <View style={styles.tierRowFields}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Interest %</Text>
+              <TextInput
+                style={styles.input} value={t.rate} keyboardType="decimal-pad"
+                onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, rate: v } : x)))}
+              />
             </View>
-          ))}
-          <Text style={styles.label}>Max loan size (× savings)</Text>
-          <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" />
-          <Text style={styles.label}>Late penalty (% of outstanding balance)</Text>
-          <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" />
-          <Text style={styles.label}>Incubation period — days a member must belong before requesting a loan (blank = none)</Text>
-          <TextInput style={styles.input} value={loanEligibilityDays} onChangeText={setLoanEligibilityDays} keyboardType="number-pad" placeholder="e.g. 90" />
-        </>
-      )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Days</Text>
+              <TextInput
+                style={styles.input} value={t.days} keyboardType="number-pad"
+                onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, days: v } : x)))}
+              />
+            </View>
+          </View>
+        </View>
+      ))}
+      <Text style={styles.label}>Max loan size (× savings)</Text>
+      <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" />
+      <Text style={styles.label}>Late penalty (% of outstanding balance)</Text>
+      <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" />
+      <Text style={styles.label}>Incubation period — days a member must belong before requesting a loan (blank = none)</Text>
+      <TextInput style={styles.input} value={loanEligibilityDays} onChangeText={setLoanEligibilityDays} keyboardType="number-pad" placeholder="e.g. 90" />
       <View style={styles.switchRow}>
         <Text style={styles.rowName}>Members can see each other</Text>
         <Switch value={membersVisible} onValueChange={setMembersVisible} trackColor={{ true: COLORS.accent }} />

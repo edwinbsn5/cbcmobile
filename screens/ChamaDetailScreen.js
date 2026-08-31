@@ -214,10 +214,8 @@ export default function ChamaDetailScreen({ route, navigation }) {
                 <Text style={styles.sectionHeading}>Ledger</Text>
                 <LedgerTab chamaId={chamaId} isMember={isMember} chama={chama} />
                 <View style={styles.sectionDivider} />
-                <Text style={styles.sectionHeading}>
-                  {chama.payoutModel === "merry_go_round" ? "Payouts" : chama.payoutModel === "table_banking" ? "Loans" : "Withdrawals"}
-                </Text>
-                <PayoutsTab chamaId={chamaId} chama={chama} isMember={isMember} userId={user?.id} />
+                <Text style={styles.sectionHeading}>Loans</Text>
+                <LoansTab chamaId={chamaId} chama={chama} />
                 <View style={styles.sectionDivider} />
                 <Text style={styles.sectionHeading}>Members</Text>
                 <MembersTab chamaId={chamaId} isMember={isMember} chama={chama} myUserId={user?.id} isAdmin={isAdmin} />
@@ -265,10 +263,10 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
   const [posting, setPosting] = useState(false);
 
   useFocusEffect(useCallback(() => {
-    if (!isMember || chama.payoutModel !== "table_banking") return;
+    if (!isMember) return;
     client.get(`/chama/${chamaId}/loans/mine`).then((r) => setLoanInfo(r.data)).catch(() => setLoanInfo(null));
     client.get(`/chama/${chamaId}/loans`).then((r) => setAllLoans(r.data)).catch(() => setAllLoans([]));
-  }, [chamaId, isMember, chama.payoutModel]));
+  }, [chamaId, isMember]));
 
   const loadAnnouncements = useCallback(() => {
     if (!isMember) return;
@@ -383,7 +381,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
         </View>
       )}
 
-      {isMember && chama.payoutModel === "table_banking" && (
+      {isMember && (
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Your unpaid loan</Text>
           {!loanInfo ? (
@@ -396,7 +394,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
         </View>
       )}
 
-      {isMember && chama.payoutModel === "table_banking" && (
+      {isMember && (
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>You're a guarantor for</Text>
           {!loanInfo ? (
@@ -415,7 +413,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
         </View>
       )}
 
-      {isMember && chama.payoutModel === "table_banking" && (
+      {isMember && (
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Active loans in this chama</Text>
           {!allLoans ? (
@@ -437,10 +435,6 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
       <View style={styles.infoCard}>
         <Text style={styles.infoLabel}>Join policy</Text>
         <Text style={styles.infoValue}>{chama.joinPolicy === "open" ? "Open until positions fill" : "Requires admin approval"}</Text>
-      </View>
-      <View style={styles.infoCard}>
-        <Text style={styles.infoLabel}>Current cycle</Text>
-        <Text style={styles.infoValue}>Cycle {chama.currentCycle}</Text>
       </View>
       {chama.frozenAt && (
         <View style={styles.frozenBanner}>
@@ -507,89 +501,6 @@ function LedgerTab({ chamaId, isMember, chama }) {
         </View>
       ))}
       {!items.length && <Text style={styles.gatedText}>No contributions recorded yet.</Text>}
-    </View>
-  );
-}
-
-function PayoutsTab({ chamaId, chama, isMember, userId }) {
-  const [rotation, setRotation] = useState(null);
-  const [payouts, setPayouts] = useState([]);
-  const [pendingPayouts, setPendingPayouts] = useState([]);
-  const [withdrawVisible, setWithdrawVisible] = useState(false);
-  const [flagTarget, setFlagTarget] = useState(null);
-
-  const load = useCallback(() => {
-    if (!isMember) return;
-    if (chama.payoutModel === "merry_go_round") {
-      client.get(`/chama/${chamaId}/rotation`).then((r) => setRotation(r.data)).catch(() => setRotation([]));
-      client.get(`/chama/${chamaId}/payouts/pending`).then((r) => setPendingPayouts(r.data)).catch(() => setPendingPayouts([]));
-    }
-    client.get(`/chama/${chamaId}/payouts`).then((r) => setPayouts(r.data)).catch(() => setPayouts([]));
-  }, [chamaId, isMember, chama.payoutModel]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-
-  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view payouts.</Text>;
-
-  if (chama.payoutModel === "table_banking") return <LoansTab chamaId={chamaId} chama={chama} />;
-
-  if (chama.payoutModel === "merry_go_round") {
-    if (!rotation) return <ActivityIndicator color={COLORS.accent} />;
-    const nextUp = rotation.filter((s) => s.cycle === chama.currentCycle && !s.paidAt).sort((a, b) => a.position - b.position)[0];
-    return (
-      <View>
-        {!!nextUp && !!chama.nextPayoutDueAt && (
-          <Text style={styles.tabHint}>Next in line: {nextUp.user?.name} — expected {new Date(chama.nextPayoutDueAt).toLocaleDateString()}</Text>
-        )}
-        {!!pendingPayouts.length && (
-          <View style={{ marginBottom: 16 }}>
-            <Text style={styles.tabHint}>Scheduled payouts — you can flag one within its cooling-off window</Text>
-            {pendingPayouts.map((p) => (
-              <View key={p.id} style={styles.pendingPayoutCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.ledgerName}>{p.recipient?.name} — {formatKES(p.amount)}</Text>
-                  <Text style={styles.ledgerMeta}>
-                    {p.status === "flagged" ? "Flagged — awaiting admin review" : `Executes ${new Date(p.executeAt).toLocaleString()}`}
-                  </Text>
-                </View>
-                {p.status === "scheduled" && (
-                  <TouchableOpacity style={styles.flagButton} onPress={() => setFlagTarget(p)}>
-                    <Ionicons name="flag-outline" size={14} color="#D32F2F" />
-                    <Text style={styles.flagButtonText}>Flag</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
-        <FlagPayoutModal chamaId={chamaId} pending={flagTarget} onClose={() => setFlagTarget(null)} onDone={() => { setFlagTarget(null); load(); }} />
-        <Text style={styles.tabHint}>Rotation order for cycle {chama.currentCycle}</Text>
-        {nextUp && <Text style={styles.nextUpBanner}>Next up: {nextUp.user?.name}</Text>}
-        {rotation.filter((s) => s.cycle === chama.currentCycle).sort((a, b) => a.position - b.position).map((s) => (
-          <View key={s.id} style={styles.rotationRow}>
-            <View style={styles.rotationPosition}><Text style={styles.rotationPositionText}>{s.position}</Text></View>
-            <Text style={[styles.ledgerName, { flex: 1 }]}>{s.user?.name}{s.memberId === userId ? " (you)" : ""}</Text>
-            {s.paidAt ? <Text style={styles.paidBadge}>Paid</Text> : <Text style={styles.pendingBadge}>Pending</Text>}
-          </View>
-        ))}
-        <Text style={[styles.tabHint, { marginTop: 16 }]}>Payout history</Text>
-        {payouts.map((p) => (
-          <View key={p.id} style={styles.ledgerRow}>
-            <Text style={styles.ledgerName}>{p.recipient?.name}</Text>
-            <Text style={styles.ledgerAmount}>{formatKES(p.amount)}</Text>
-          </View>
-        ))}
-        {!payouts.length && <Text style={styles.gatedText}>No payouts yet.</Text>}
-      </View>
-    );
-  }
-
-  return (
-    <View>
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => setWithdrawVisible(true)}>
-        <Text style={styles.secondaryButtonText}>Request a withdrawal</Text>
-      </TouchableOpacity>
-      <WithdrawalRequestModal visible={withdrawVisible} onClose={() => setWithdrawVisible(false)} baseUrl={`/chama/${chamaId}`} onDone={() => { setWithdrawVisible(false); load(); }} />
-      <WithdrawalList baseUrl={`/chama/${chamaId}`} />
     </View>
   );
 }
@@ -892,96 +803,6 @@ function LoanRepayModal({ loan, chamaId, onClose, onDone }) {
   );
 }
 
-function WithdrawalList({ baseUrl }) {
-  const [items, setItems] = useState(null);
-  useFocusEffect(useCallback(() => { client.get(`${baseUrl}/withdrawals`).then((r) => setItems(r.data)).catch(() => setItems([])); }, [baseUrl]));
-  if (!items) return <ActivityIndicator color={COLORS.accent} style={{ marginTop: 12 }} />;
-  return (
-    <View style={{ marginTop: 12 }}>
-      {items.map((w) => (
-        <View key={w.id} style={styles.ledgerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.ledgerName}>{w.requester?.name} — {formatKES(w.amount)}</Text>
-            <Text style={styles.ledgerMeta}>{w.reason || "No reason given"}</Text>
-          </View>
-          <Text style={[styles.statusBadge, w.status === "paid" && styles.statusPaid, w.status === "rejected" && styles.statusRejected]}>{w.status}</Text>
-        </View>
-      ))}
-      {!items.length && <Text style={styles.gatedText}>No withdrawal requests yet.</Text>}
-    </View>
-  );
-}
-
-function FlagPayoutModal({ chamaId, pending, onClose, onDone }) {
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function submit() {
-    setSubmitting(true);
-    try {
-      await client.post(`/chama/${chamaId}/payouts/pending/${pending.id}/flag`, { reason: reason.trim() || undefined });
-      setReason("");
-      onDone();
-    } catch (e) {
-      Alert.alert("Couldn't flag", e.response?.data?.error || e.message);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <Modal visible={!!pending} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
-      <View style={styles.sheet}>
-        <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Flag this payout</Text>
-        <Text style={styles.tabHint}>This pauses the payout until an admin reviews it. Say what looks wrong.</Text>
-        <TextInput style={[styles.input, styles.multiline]} placeholder="What looks wrong?" value={reason} onChangeText={setReason} multiline />
-        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: "#D32F2F" }]} onPress={submit} disabled={submitting}>
-          <Text style={styles.primaryButtonText}>{submitting ? "Flagging..." : "Flag payout"}</Text>
-        </TouchableOpacity>
-      </View>
-    </Modal>
-  );
-}
-
-function WithdrawalRequestModal({ visible, onClose, baseUrl, onDone }) {
-  const [amount, setAmount] = useState("");
-  const [reason, setReason] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function submit() {
-    const amt = parseInt(amount, 10);
-    if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
-    setSubmitting(true);
-    try {
-      await client.post(`${baseUrl}/withdrawals`, { amount: amt, reason });
-      Alert.alert("Request submitted", "Admins will review your withdrawal request.");
-      setAmount(""); setReason("");
-      onDone();
-    } catch (e) {
-      Alert.alert("Couldn't submit", e.response?.data?.error || e.message);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
-      <View style={styles.sheet}>
-        <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Request a withdrawal</Text>
-        <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
-        <TextInput style={styles.input} placeholder="Reason (optional)" value={reason} onChangeText={setReason} />
-        <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
-          <Text style={styles.primaryButtonText}>{submitting ? "Submitting..." : "Submit request"}</Text>
-        </TouchableOpacity>
-      </View>
-    </Modal>
-  );
-}
-
 function MembersTab({ chamaId, isMember, chama, myUserId, isAdmin }) {
   const [members, setMembers] = useState(null);
   const [error, setError] = useState(null);
@@ -1055,7 +876,6 @@ function MembersTab({ chamaId, isMember, chama, myUserId, isAdmin }) {
             <Text style={styles.ledgerName}>{m.user?.name}{m.userId === chama.creatorId ? " (Creator)" : ""}</Text>
             <Text style={styles.ledgerMeta}>{m.role === "treasurer" ? "Treasurer" : m.role === "admin" ? "Admin" : "Member"} · Trust {m.trust?.score ?? "—"}</Text>
           </View>
-          {m.alreadyPaidOutThisCycle && <Text style={styles.defaulterPill}>Already paid this cycle</Text>}
           {m.defaulter?.isDefaulter && <Text style={styles.defaulterPill}>{m.defaulter.daysLate}d late</Text>}
           {m.defaulter?.isDefaulter && m.userId !== myUserId && (
             <TouchableOpacity style={styles.reportButton} onPress={() => setVoteTarget(m)}>
@@ -1789,18 +1609,6 @@ const styles = StyleSheet.create({
   ledgerAmount: { color: COLORS.accent, fontWeight: "800", fontSize: 13.5 },
   ledgerAmountVoided: { color: COLORS.sub, textDecorationLine: "line-through" },
   notContributedBadge: { color: "#D32F2F", fontWeight: "700", fontSize: 10.5, marginLeft: 8 },
-  nextUpBanner: { backgroundColor: COLORS.accent, color: COLORS.accentInk, padding: 10, borderRadius: 8, fontWeight: "700", marginBottom: 10, overflow: "hidden" },
-  pendingPayoutCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFF3CD", borderRadius: 8, padding: 12, marginBottom: 8 },
-  flagButton: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FBE7E7", borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 },
-  flagButtonText: { color: "#D32F2F", fontWeight: "700", fontSize: 11.5 },
-  rotationRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8 },
-  rotationPosition: { width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
-  rotationPositionText: { fontWeight: "800", color: COLORS.ink, fontSize: 12 },
-  paidBadge: { color: "#2E7D32", fontWeight: "700", fontSize: 11.5 },
-  pendingBadge: { color: "#8A6D00", fontWeight: "700", fontSize: 11.5 },
-  statusBadge: { fontSize: 11.5, fontWeight: "700", color: COLORS.sub, textTransform: "uppercase" },
-  statusPaid: { color: "#2E7D32" },
-  statusRejected: { color: "#D32F2F" },
   memberRow: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginBottom: 8 },
   defaulterPill: { backgroundColor: "#FFF3CD", color: "#8A6D00", fontSize: 11, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginLeft: 6 },
   reportButton: { padding: 6, marginLeft: 6 },

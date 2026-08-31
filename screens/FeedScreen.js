@@ -44,6 +44,10 @@ export default function FeedScreen({ navigation, route }) {
   const isFocused = useIsFocused();
   const [activeTab, setActiveTab] = useState(DEFAULT_TAB);
   const [feed, setFeed] = useState([]);
+  // Partners is gated behind having an active boost — a 403 from
+  // GET /feed/partners means "not eligible right now", not a real error, so
+  // it's tracked separately from a genuinely-empty feed (see load() below).
+  const [partnersLocked, setPartnersLocked] = useState(false);
   const [storyGroups, setStoryGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -73,14 +77,22 @@ export default function FeedScreen({ navigation, route }) {
   });
 
   const load = useCallback(async () => {
-    const [feedRes, storiesRes] = await Promise.all([
-      client.get(activeTab === "forYou" ? "/feed/for-you" : "/feed"),
-      client.get("/stories"),
-    ]);
-    setFeed(feedRes.data);
-    setStoryGroups(storiesRes.data);
-    loadSaved();
-    loadReshared();
+    const endpoint = activeTab === "partners" ? "/feed/partners" : activeTab === "forYou" ? "/feed/for-you" : "/feed";
+    try {
+      const [feedRes, storiesRes] = await Promise.all([client.get(endpoint), client.get("/stories")]);
+      setPartnersLocked(false);
+      setFeed(feedRes.data);
+      setStoryGroups(storiesRes.data);
+      loadSaved();
+      loadReshared();
+    } catch (e) {
+      if (activeTab === "partners" && e.response?.status === 403) {
+        setPartnersLocked(true);
+        setFeed([]);
+        return;
+      }
+      throw e;
+    }
   }, [activeTab, loadSaved, loadReshared]);
 
   useFocusEffect(
@@ -213,6 +225,10 @@ export default function FeedScreen({ navigation, route }) {
           />
 
           <View style={styles.feedTabs}>
+            <TouchableOpacity style={styles.feedTab} onPress={() => switchTab("partners")}>
+              <Text style={[styles.feedTabText, activeTab === "partners" && styles.feedTabTextActive]}>Partners</Text>
+              {activeTab === "partners" && <View style={styles.feedTabUnderline} />}
+            </TouchableOpacity>
             <TouchableOpacity style={styles.feedTab} onPress={() => switchTab("following")}>
               <Text style={[styles.feedTabText, activeTab === "following" && styles.feedTabTextActive]}>Following</Text>
               {activeTab === "following" && <View style={styles.feedTabUnderline} />}
@@ -223,35 +239,56 @@ export default function FeedScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.composer}>
-            <TouchableOpacity style={styles.composerMain} onPress={() => navigation.navigate("CreatePost")}>
-              <Avatar uri={user?.avatar} name={user?.name} style={styles.avatar} />
-              <Text style={styles.composerText} numberOfLines={1}>
-                What's on your mind{user?.name ? `, ${user.name.split(" ")[0]}` : ""}?
+          {activeTab === "partners" && partnersLocked ? (
+            <View style={styles.partnersLockWrap}>
+              <View style={styles.partnersLockIconWrap}>
+                <Ionicons name="ribbon-outline" size={22} color={COLORS.accent} />
+              </View>
+              <Text style={styles.partnersLockTitle}>Partners is for boosted businesses</Text>
+              <Text style={styles.partnersLockText}>
+                Boost a Page, post, group, event, or Marketplace listing to unlock this space — swap marketing tips and experiences with other boosted members.
               </Text>
-            </TouchableOpacity>
-            <View style={styles.composerIcons}>
-              <TouchableOpacity
-                style={styles.composerIconCircle}
-                onPress={() => navigation.navigate("CreatePost", { autoAction: "photo" })}
-              >
-                <Ionicons name="image-outline" size={18} color={COLORS.ink} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.composerIconCircle}
-                onPress={() => navigation.navigate("CreatePost", { autoAction: "textStyle" })}
-              >
-                <Text style={styles.composerAaText}>Aa</Text>
-              </TouchableOpacity>
             </View>
-          </View>
+          ) : (
+            <>
+              <View style={styles.composer}>
+                <TouchableOpacity
+                  style={styles.composerMain}
+                  onPress={() => navigation.navigate("CreatePost", activeTab === "partners" ? { partnersFeed: true } : undefined)}
+                >
+                  <Avatar uri={user?.avatar} name={user?.name} style={styles.avatar} />
+                  <Text style={styles.composerText} numberOfLines={1}>
+                    {activeTab === "partners"
+                      ? "Share a marketing tip or experience..."
+                      : `What's on your mind${user?.name ? `, ${user.name.split(" ")[0]}` : ""}?`}
+                  </Text>
+                </TouchableOpacity>
+                <View style={styles.composerIcons}>
+                  <TouchableOpacity
+                    style={styles.composerIconCircle}
+                    onPress={() => navigation.navigate("CreatePost", { autoAction: "photo", ...(activeTab === "partners" ? { partnersFeed: true } : {}) })}
+                  >
+                    <Ionicons name="image-outline" size={18} color={COLORS.ink} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.composerIconCircle}
+                    onPress={() => navigation.navigate("CreatePost", { autoAction: "textStyle", ...(activeTab === "partners" ? { partnersFeed: true } : {}) })}
+                  >
+                    <Text style={styles.composerAaText}>Aa</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-          {!hasRealContent && (
-            <Text style={styles.empty}>
-              {activeTab === "following"
-                ? "Your Following feed is empty — it only shows your own posts and posts from people you follow. Visit a profile and tap Follow to see more here."
-                : "Nothing to show yet — check back once more people are posting."}
-            </Text>
+              {!hasRealContent && (
+                <Text style={styles.empty}>
+                  {activeTab === "following"
+                    ? "Your Following feed is empty — it only shows your own posts and posts from people you follow. Visit a profile and tap Follow to see more here."
+                    : activeTab === "partners"
+                    ? "Nothing here yet — be the first to share a marketing tip or experience with other boosted members."
+                    : "Nothing to show yet — check back once more people are posting."}
+                </Text>
+              )}
+            </>
           )}
         </>
       }
@@ -374,6 +411,10 @@ const styles = StyleSheet.create({
   feedTabText: { fontSize: 14, fontWeight: "700", color: COLORS.sub },
   feedTabTextActive: { color: COLORS.ink },
   feedTabUnderline: { marginTop: 8, height: 3, width: 40, borderRadius: 2, backgroundColor: COLORS.accent },
+  partnersLockWrap: { alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 14, margin: 10, padding: 22 },
+  partnersLockIconWrap: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  partnersLockTitle: { fontSize: 15, fontWeight: "700", color: COLORS.ink, marginBottom: 6, textAlign: "center" },
+  partnersLockText: { fontSize: 13, color: COLORS.sub, textAlign: "center", lineHeight: 19 },
   reshareHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginHorizontal: 20, marginTop: 6 },
   reshareHeaderText: { fontSize: 12, fontWeight: "700", color: COLORS.sub },
   reshareCaption: { fontSize: 14, color: COLORS.ink, marginHorizontal: 20, marginTop: 4, lineHeight: 19 },
