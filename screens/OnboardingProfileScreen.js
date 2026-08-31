@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -71,10 +71,20 @@ export default function OnboardingProfileScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 20 + insets.bottom }}>
-      <Text style={styles.title}>Tell us about yourself</Text>
-      <Text style={styles.subtitle}>Step 2 of 3 — this appears on your profile</Text>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 20 + insets.bottom }}>
+      <View style={styles.heroBand}>
+        <Image source={require("../assets/icon.png")} style={styles.logo} />
+        <Text style={styles.heroTitle}>Tell us about yourself</Text>
+        <Text style={styles.heroSubtitle}>This appears on your profile</Text>
+        <View style={styles.stepDots}>
+          <View style={[styles.dot, styles.dotFilled]} />
+          <View style={[styles.dot, styles.dotFilled]} />
+          <View style={styles.dot} />
+        </View>
+        <Text style={styles.stepLabel}>STEP 2 OF 3</Text>
+      </View>
 
+      <View style={styles.body}>
       <Text style={styles.label}>Gender</Text>
       <View style={styles.chipRow}>
         {GENDER_OPTIONS.map((g) => (
@@ -119,19 +129,30 @@ export default function OnboardingProfileScreen({ navigation }) {
       <TouchableOpacity onPress={logout} style={styles.logoutLink}>
         <Text style={styles.logoutLinkText}>Not you? Log out</Text>
       </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.surface },
-  title: { color: COLORS.ink, fontSize: 22, fontWeight: "800" },
-  subtitle: { color: COLORS.sub, marginTop: 4, marginBottom: 20 },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  heroBand: {
+    backgroundColor: COLORS.accentInk, paddingVertical: 30, paddingHorizontal: 24, alignItems: "center",
+    borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
+  },
+  logo: { width: 46, height: 46, borderRadius: 12 },
+  heroTitle: { color: "#fff", fontSize: 18, fontWeight: "800", marginTop: 12, textAlign: "center" },
+  heroSubtitle: { color: "#B9C6DC", fontSize: 11.5, marginTop: 5, textAlign: "center" },
+  stepDots: { flexDirection: "row", gap: 6, marginTop: 14 },
+  dot: { width: 26, height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.25)" },
+  dotFilled: { backgroundColor: COLORS.accent },
+  stepLabel: { color: "#8FA0C2", fontSize: 10, fontWeight: "700", letterSpacing: 0.3, marginTop: 6 },
+  body: { padding: 20 },
   label: { fontSize: 13, color: COLORS.sub, marginBottom: 6, marginTop: 14 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 15, color: COLORS.ink },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 15, color: COLORS.ink, backgroundColor: COLORS.surface },
   multiline: { minHeight: 70, textAlignVertical: "top" },
   chipRow: { flexDirection: "row", flexWrap: "wrap" },
-  chip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, marginBottom: 8 },
+  chip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, marginBottom: 8, backgroundColor: COLORS.surface },
   chipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
   chipText: { color: COLORS.ink, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: COLORS.accentInk },

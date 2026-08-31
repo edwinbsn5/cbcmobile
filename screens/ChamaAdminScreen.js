@@ -8,7 +8,7 @@ import { COLORS } from "../theme";
 
 function formatKES(n) { return `KES ${Math.round(n || 0).toLocaleString()}`; }
 
-const TABS = ["Requests", "Members", "Contributions", "Payouts", "Loans", "Withdrawals", "Votes", "Settings", "Audit"];
+const TABS = ["Requests", "Members", "Contributions", "Loans", "Votes", "Settings", "Audit"];
 
 export default function ChamaAdminScreen({ route }) {
   const { chamaId } = route.params;
@@ -33,9 +33,7 @@ export default function ChamaAdminScreen({ route }) {
         {tab === "Requests" && <RequestsTab chamaId={chamaId} onChange={load} />}
         {tab === "Members" && <MembersTab chamaId={chamaId} chama={chama} onChange={load} />}
         {tab === "Contributions" && <ContributionsTab chamaId={chamaId} chama={chama} />}
-        {tab === "Payouts" && <PayoutsTab chamaId={chamaId} chama={chama} onChange={load} />}
         {tab === "Loans" && <LoansTab chamaId={chamaId} chama={chama} onChange={load} />}
-        {tab === "Withdrawals" && <WithdrawalsTab chamaId={chamaId} />}
         {tab === "Votes" && <VotesTab chamaId={chamaId} />}
         {tab === "Settings" && <SettingsTab chamaId={chamaId} chama={chama} onChange={load} />}
         {tab === "Audit" && <AuditTab chamaId={chamaId} />}
@@ -267,99 +265,6 @@ function ContributionsTab({ chamaId, chama }) {
   );
 }
 
-function PayoutsTab({ chamaId, chama, onChange }) {
-  const [rotation, setRotation] = useState(null);
-  const [pendingPayouts, setPendingPayouts] = useState([]);
-  const load = useCallback(() => {
-    client.get(`/chama/${chamaId}/rotation`).then((r) => setRotation(r.data)).catch(() => setRotation([]));
-    client.get(`/chama/${chamaId}/payouts/pending`).then((r) => setPendingPayouts(r.data)).catch(() => setPendingPayouts([]));
-  }, [chamaId]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-
-  async function schedule(slotId) {
-    try {
-      const { data } = await client.post(`/chama/${chamaId}/payouts/trigger`, { slotId });
-      Alert.alert("Payout scheduled", `Will execute in ${data.coolingOffHours}h unless flagged or released early`);
-      load(); onChange();
-    } catch (e) {
-      Alert.alert("Couldn't schedule", e.response?.data?.error || e.message);
-    }
-  }
-
-  async function release(pendingId) {
-    try {
-      const { data } = await client.post(`/chama/${chamaId}/payouts/pending/${pendingId}/release`, {});
-      Alert.alert("Payout recorded", `${formatKES(data.payout.amount)} marked as paid — hand it over to them directly`);
-      load(); onChange();
-    } catch (e) {
-      Alert.alert("Couldn't release", e.response?.data?.error || e.message);
-    }
-  }
-
-  async function cancel(pendingId) {
-    try { await client.post(`/chama/${chamaId}/payouts/pending/${pendingId}/cancel`, {}); load(); }
-    catch (e) { Alert.alert("Couldn't cancel", e.response?.data?.error || e.message); }
-  }
-
-  async function shuffle() {
-    try { await client.post(`/chama/${chamaId}/rotation/shuffle`); load(); }
-    catch (e) { Alert.alert("Couldn't shuffle", e.response?.data?.error || e.message); }
-  }
-
-  async function completeCycle() {
-    try {
-      await client.post(`/chama/${chamaId}/cycle/complete`);
-      Alert.alert("Cycle complete", "A new cycle has started");
-      load(); onChange();
-    } catch (e) {
-      Alert.alert("Couldn't complete cycle", e.response?.data?.error || e.message);
-    }
-  }
-
-  if (chama.payoutModel === "pooled_savings") return <Text style={styles.empty}>This Chama uses pooled savings — see the Withdrawals tab.</Text>;
-  if (chama.payoutModel === "table_banking") return <Text style={styles.empty}>This Chama uses table banking — see the Loans tab.</Text>;
-  if (!rotation) return <ActivityIndicator color={COLORS.accent} />;
-  const current = rotation.filter((s) => s.cycle === chama.currentCycle).sort((a, b) => a.position - b.position);
-  const allPaid = current.length > 0 && current.every((s) => s.paidAt);
-  const pendingBySlot = new Map(pendingPayouts.map((p) => [p.slotId, p]));
-  const nextUp = current.filter((s) => !s.paidAt).sort((a, b) => a.position - b.position)[0];
-
-  return (
-    <View>
-      <Text style={styles.tabHint}>Pool balance: {formatKES(chama.poolBalance)} · Cycle {chama.currentCycle}</Text>
-      {!!nextUp && !!chama.nextPayoutDueAt && (
-        <Text style={styles.tabHint}>Next in line: {nextUp.user?.name} — expected {new Date(chama.nextPayoutDueAt).toLocaleDateString()}</Text>
-      )}
-      <View style={styles.rowActions}>
-        <TouchableOpacity style={styles.smallBtn} onPress={shuffle}><Text style={styles.smallBtnText}>Shuffle order</Text></TouchableOpacity>
-        {allPaid && <TouchableOpacity style={styles.approveBtn} onPress={completeCycle}><Text style={styles.approveBtnText}>Start next cycle</Text></TouchableOpacity>}
-      </View>
-      {current.map((s) => {
-        const pending = pendingBySlot.get(s.id);
-        return (
-          <View key={s.id} style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowName}>#{s.position} {s.user?.name}</Text>
-              {pending?.status === "flagged" && <Text style={[styles.rowSub, { color: "#D32F2F" }]}>Flagged: {pending.flagReason || "no reason given"}</Text>}
-              {pending?.status === "scheduled" && <Text style={styles.rowSub}>Executes {new Date(pending.executeAt).toLocaleString()}</Text>}
-            </View>
-            {s.paidAt ? (
-              <Text style={styles.paidBadge}>Paid</Text>
-            ) : pending ? (
-              <View style={styles.rowActions}>
-                <TouchableOpacity style={styles.approveBtn} onPress={() => release(pending.id)}><Text style={styles.approveBtnText}>Release now</Text></TouchableOpacity>
-                <TouchableOpacity style={styles.rejectBtn} onPress={() => cancel(pending.id)}><Text style={styles.rejectBtnText}>Cancel</Text></TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity style={styles.approveBtn} onPress={() => schedule(s.id)}><Text style={styles.approveBtnText}>Schedule payout</Text></TouchableOpacity>
-            )}
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
 function LoansTab({ chamaId, chama }) {
   const [loans, setLoans] = useState(null);
   const load = useCallback(() => { client.get(`/chama/${chamaId}/loans`).then((r) => setLoans(r.data)).catch(() => setLoans([])); }, [chamaId]);
@@ -459,38 +364,6 @@ function VotesTab({ chamaId }) {
         </View>
       ))}
       {!votes.length && <Text style={styles.empty}>No votes yet</Text>}
-    </View>
-  );
-}
-
-function WithdrawalsTab({ chamaId }) {
-  const [items, setItems] = useState(null);
-  const load = useCallback(() => { client.get(`/chama/${chamaId}/withdrawals`).then((r) => setItems(r.data)).catch(() => setItems([])); }, [chamaId]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-
-  async function decide(reqId, action) {
-    try { await client.post(`/chama/${chamaId}/withdrawals/${reqId}/${action}`); load(); }
-    catch (e) { Alert.alert("Action failed", e.response?.data?.error || e.message); }
-  }
-
-  if (!items) return <ActivityIndicator color={COLORS.accent} />;
-  const pending = items.filter((w) => w.status === "pending");
-  return (
-    <View>
-      <Text style={styles.sectionTitle}>Pending ({pending.length})</Text>
-      {pending.map((w) => (
-        <View key={w.id} style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.rowName}>{w.requester?.name} — {formatKES(w.amount)}</Text>
-            <Text style={styles.rowSub}>{w.reason || "No reason"} · {w.approvals.length}/{w.approvalsRequired} approvals</Text>
-          </View>
-          <View style={styles.rowActions}>
-            <TouchableOpacity style={styles.approveBtn} onPress={() => decide(w.id, "approve")}><Text style={styles.approveBtnText}>Approve</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.rejectBtn} onPress={() => decide(w.id, "reject")}><Text style={styles.rejectBtnText}>Reject</Text></TouchableOpacity>
-          </View>
-        </View>
-      ))}
-      {!pending.length && <Text style={styles.empty}>Nothing pending</Text>}
     </View>
   );
 }
@@ -713,7 +586,6 @@ const styles = StyleSheet.create({
   rejectBtnText: { color: "#D32F2F", fontWeight: "700", fontSize: 12 },
   smallBtn: { borderWidth: 1, borderColor: COLORS.accent, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 },
   smallBtnText: { color: COLORS.accent, fontWeight: "700", fontSize: 12 },
-  paidBadge: { color: "#2E7D32", fontWeight: "700", fontSize: 12 },
   empty: { color: COLORS.sub, textAlign: "center", marginVertical: 12 },
   tabHint: { color: COLORS.sub, fontSize: 12, marginBottom: 10 },
   input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, marginBottom: 10, color: COLORS.ink },
