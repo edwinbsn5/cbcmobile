@@ -471,13 +471,13 @@ function SettingsTab({ chamaId, chama, onChange }) {
       )}
 
       <Text style={styles.label}>Max members</Text>
-      <TextInput style={styles.input} value={maxMembers} onChangeText={setMaxMembers} keyboardType="number-pad" />
+      <TextInput style={styles.input} value={maxMembers} onChangeText={setMaxMembers} keyboardType="number-pad" placeholder="10" />
       {chama.contributionType === "fixed_recurring" && (
         <>
           <Text style={styles.label}>Contribution amount (KES)</Text>
-          <TextInput style={styles.input} value={contributionAmount} onChangeText={setContributionAmount} keyboardType="number-pad" />
+          <TextInput style={styles.input} value={contributionAmount} onChangeText={setContributionAmount} keyboardType="number-pad" placeholder="500" />
           <Text style={styles.label}>Late fee (% of the missed contribution)</Text>
-          <TextInput style={styles.input} value={contributionLateFeeRate} onChangeText={setContributionLateFeeRate} keyboardType="decimal-pad" />
+          <TextInput style={styles.input} value={contributionLateFeeRate} onChangeText={setContributionLateFeeRate} keyboardType="decimal-pad" placeholder="10" />
         </>
       )}
       <Text style={styles.label}>Repayment plans — more time, more interest</Text>
@@ -488,14 +488,14 @@ function SettingsTab({ chamaId, chama, onChange }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Interest %</Text>
               <TextInput
-                style={styles.input} value={t.rate} keyboardType="decimal-pad"
+                style={styles.input} value={t.rate} keyboardType="decimal-pad" placeholder="10"
                 onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, rate: v } : x)))}
               />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Days</Text>
               <TextInput
-                style={styles.input} value={t.days} keyboardType="number-pad"
+                style={styles.input} value={t.days} keyboardType="number-pad" placeholder="30"
                 onChangeText={(v) => setLoanTiers((prev) => prev.map((x, idx) => (idx === i ? { ...x, days: v } : x)))}
               />
             </View>
@@ -503,9 +503,9 @@ function SettingsTab({ chamaId, chama, onChange }) {
         </View>
       ))}
       <Text style={styles.label}>Max loan size (× savings)</Text>
-      <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" />
+      <TextInput style={styles.input} value={loanMaxMultiplier} onChangeText={setLoanMaxMultiplier} keyboardType="decimal-pad" placeholder="3" />
       <Text style={styles.label}>Late penalty (% of outstanding balance)</Text>
-      <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" />
+      <TextInput style={styles.input} value={latePenaltyRate} onChangeText={setLatePenaltyRate} keyboardType="decimal-pad" placeholder="5" />
       <Text style={styles.label}>Incubation period — days a member must belong before requesting a loan (blank = none)</Text>
       <TextInput style={styles.input} value={loanEligibilityDays} onChangeText={setLoanEligibilityDays} keyboardType="number-pad" placeholder="e.g. 90" />
       <View style={styles.switchRow}>
