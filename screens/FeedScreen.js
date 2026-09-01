@@ -57,6 +57,13 @@ export default function FeedScreen({ navigation, route }) {
   const [partnersLocked, setPartnersLocked] = useState(false);
   const [storyGroups, setStoryGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Whether this screen has EVER completed a load, on any tab — distinct
+  // from feed.length, which can legitimately be 0 for a reason that has
+  // nothing to do with "still loading for the first time" (an empty
+  // Following feed, a locked/empty Partners tab). Using feed.length for
+  // that check meant switching away from an empty tab re-triggered the
+  // full-screen spinner as if the whole screen were loading from scratch.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   // Arriving here via a "commented/reshared your post" notification tap —
   // scroll to that post and pop its comments open once the feed loads.
@@ -102,6 +109,8 @@ export default function FeedScreen({ navigation, route }) {
         return;
       }
       throw e;
+    } finally {
+      setHasLoadedOnce(true);
     }
   }, [activeTab, loadSaved, loadReshared]);
 
@@ -210,7 +219,7 @@ export default function FeedScreen({ navigation, route }) {
   // screen — switching tabs keeps the header (incl. the tab buttons
   // themselves) mounted and just leaves the previous tab's content up until
   // the new tab's data arrives, so the buttons never flicker away.
-  if (loading && !feed.length) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
+  if (loading && !hasLoadedOnce) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   const hasRealContent = feed.some((item) => item.kind === "post" || item.kind === "reshare");
 
