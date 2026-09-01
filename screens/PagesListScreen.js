@@ -43,6 +43,11 @@ export default function PagesListScreen({ navigation }) {
   const [categoryName, setCategoryName] = useState(null);
   const [expandedCategoryId, setExpandedCategoryId] = useState(null);
   const [busyFollowIds, setBusyFollowIds] = useState({});
+  // Collapsed by default — "Browse by category" is a tap-to-expand
+  // accordion now instead of always-visible, to keep the chrome above the
+  // list short. Separate from expandedCategoryId, which controls a single
+  // tapped category tile's own sub-category chips once this is open.
+  const [categoryAccordionOpen, setCategoryAccordionOpen] = useState(false);
 
   async function handleToggleFollow(item) {
     setBusyFollowIds((prev) => ({ ...prev, [item.id]: true }));
@@ -131,39 +136,42 @@ export default function PagesListScreen({ navigation }) {
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   return (
-    <>
+    <View style={styles.screen}>
+      <View style={styles.ribbon}>
+        <Text style={styles.ribbonText}>✦ FIND BSN &amp; SERVICES ✦</Text>
+      </View>
+
+      <View style={styles.stickyBar}>
+        <CountyPicker
+          value={county}
+          onChange={handleCountyChange}
+          renderTrigger={({ value, onPress }) => (
+            <TouchableOpacity style={styles.stickyPill} onPress={onPress}>
+              <Ionicons name="location-outline" size={13} color={COLORS.ink} />
+              <Text style={styles.stickyPillText} numberOfLines={1}>{value || "Select county"}</Text>
+              <Ionicons name="chevron-down" size={11} color={COLORS.sub} />
+            </TouchableOpacity>
+          )}
+        />
+        <TouchableOpacity style={styles.stickyPill} onPress={() => setPickerOpen(true)}>
+          <Ionicons name="filter-outline" size={13} color={COLORS.ink} />
+          <Text style={styles.stickyPillText} numberOfLines={1}>{activeFilter?.key ? activeFilter.label : "All Pages"}</Text>
+          <Ionicons name="chevron-down" size={11} color={COLORS.sub} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.stickyIconBtn} onPress={() => navigation.navigate("CreatePage")}>
+          <Ionicons name="add" size={18} color={COLORS.ink} />
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         style={styles.container}
         data={pages}
         keyExtractor={(p) => p.id}
         ListHeaderComponent={
           <View>
-            <View style={styles.actionBar}>
-              <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("CreatePage")}>
-                <Ionicons name="add-circle-outline" size={20} color={COLORS.accent} />
-                <Text style={styles.actionLabel}>Create Page</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton} onPress={() => setPickerOpen(true)}>
-                <Ionicons name="filter-outline" size={20} color={COLORS.accent} />
-                <Text style={styles.actionLabel}>{activeFilter?.key ? activeFilter.label : "Filter Pages"}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.hero}>
-              <Text style={styles.heroBadge}>✦ Find BSN & Services! ✦</Text>
-              <Text style={styles.heroTitle}>Reliable Services, Just When You Need It</Text>
-              <Text style={styles.heroSubtitle}>
-                Mama Fua, Hair Stylists, Sales &amp; Marketers, Errand Services, Electricians, Gardeners, Massage Services.. ETC...
-              </Text>
-            </View>
-
-            <View style={styles.countyBox}>
-              <Text style={styles.countyLabel}>County: Find Services Near You</Text>
-              <CountyPicker value={county} onChange={handleCountyChange} placeholder="Select your county" />
-              {!county && loadedCounty && (
-                <Text style={styles.countyWarning}>Select a county above before browsing</Text>
-              )}
-            </View>
+            {!county && loadedCounty && (
+              <Text style={styles.countyWarning}>Select a county above before browsing</Text>
+            )}
 
             {categoryId ? (
               <View style={styles.browsingBanner}>
@@ -173,38 +181,45 @@ export default function PagesListScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.directory}>
-                <Text style={styles.directoryLabel}>Browse by category</Text>
-                <View style={styles.catGrid}>
-                  {directory.map((cat) => {
-                    const expanded = expandedCategoryId === cat.id;
-                    return (
-                      <TouchableOpacity key={cat.id} style={styles.catTile} onPress={() => tapCategoryTile(cat)}>
-                        <View style={[styles.catTileIcon, expanded && styles.catTileIconActive]}>
-                          <Ionicons name={iconForCategory(cat.name)} size={22} color={expanded ? "#fff" : COLORS.accentInk} />
-                        </View>
-                        <Text style={styles.catTileText} numberOfLines={2}>{cat.name}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {expandedCategoryId && (() => {
-                  const cat = directory.find((c) => c.id === expandedCategoryId);
-                  if (!cat) return null;
-                  return (
-                    <View style={styles.subChipsBox}>
-                      <TouchableOpacity style={styles.chip} onPress={() => browseCategory(cat.id, cat.name)}>
-                        <Text style={styles.chipText}>All {cat.name}</Text>
-                      </TouchableOpacity>
-                      {cat.subcategories.map((sub) => (
-                        <TouchableOpacity key={sub.id} style={styles.chip} onPress={() => browseCategory(sub.id, sub.name)}>
-                          <Text style={styles.chipText}>{sub.name}</Text>
-                        </TouchableOpacity>
-                      ))}
+              <View>
+                <TouchableOpacity style={styles.accordionHead} onPress={() => setCategoryAccordionOpen((o) => !o)}>
+                  <Text style={styles.accordionTitle}>Browse by category</Text>
+                  <Ionicons name={categoryAccordionOpen ? "chevron-up" : "chevron-down"} size={16} color={COLORS.sub} />
+                </TouchableOpacity>
+                {categoryAccordionOpen && (
+                  <View style={styles.directory}>
+                    <View style={styles.catGrid}>
+                      {directory.map((cat) => {
+                        const expanded = expandedCategoryId === cat.id;
+                        return (
+                          <TouchableOpacity key={cat.id} style={styles.catTile} onPress={() => tapCategoryTile(cat)}>
+                            <View style={[styles.catTileIcon, expanded && styles.catTileIconActive]}>
+                              <Ionicons name={iconForCategory(cat.name)} size={22} color={expanded ? "#fff" : COLORS.accentInk} />
+                            </View>
+                            <Text style={styles.catTileText} numberOfLines={2}>{cat.name}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
                     </View>
-                  );
-                })()}
+
+                    {expandedCategoryId && (() => {
+                      const cat = directory.find((c) => c.id === expandedCategoryId);
+                      if (!cat) return null;
+                      return (
+                        <View style={styles.subChipsBox}>
+                          <TouchableOpacity style={styles.chip} onPress={() => browseCategory(cat.id, cat.name)}>
+                            <Text style={styles.chipText}>All {cat.name}</Text>
+                          </TouchableOpacity>
+                          {cat.subcategories.map((sub) => (
+                            <TouchableOpacity key={sub.id} style={styles.chip} onPress={() => browseCategory(sub.id, sub.name)}>
+                              <Text style={styles.chipText}>{sub.name}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      );
+                    })()}
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -294,29 +309,38 @@ export default function PagesListScreen({ navigation }) {
           </View>
         </TouchableOpacity>
       </Modal>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1, backgroundColor: COLORS.bg },
-  actionBar: { flexDirection: "row", backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  actionButton: { flex: 1, alignItems: "center", gap: 4, paddingVertical: 14 },
-  actionLabel: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink },
-  hero: { backgroundColor: COLORS.accentInk, paddingVertical: 26, paddingHorizontal: 22, alignItems: "center" },
-  heroBadge: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
-  heroTitle: { color: "#fff", fontSize: 19, fontWeight: "800", textAlign: "center", marginTop: 10, lineHeight: 25 },
-  heroSubtitle: { color: "#B9C6DC", fontSize: 12, marginTop: 8, textAlign: "center", lineHeight: 18 },
-  countyBox: { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, marginHorizontal: 12, marginTop: 12 },
-  countyLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub, marginBottom: 6 },
-  countyWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 8 },
+  ribbon: { backgroundColor: COLORS.accentInk, paddingVertical: 8, paddingHorizontal: 14, alignItems: "center" },
+  ribbonText: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  stickyBar: {
+    flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 12,
+    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  stickyPill: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
+    backgroundColor: COLORS.wash, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
+  },
+  stickyPillText: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink, flexShrink: 1 },
+  stickyIconBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
+  countyWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 12, marginHorizontal: 14, textAlign: "center" },
   browsingBanner: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     backgroundColor: COLORS.wash, marginHorizontal: 12, marginTop: 12, borderRadius: 8, padding: 11,
   },
   browsingBannerText: { color: COLORS.ink, fontWeight: "700", fontSize: 13 },
-  directory: { paddingVertical: 18, paddingHorizontal: 14 },
-  directoryLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", color: COLORS.sub, marginBottom: 14, textAlign: "center" },
+  accordionHead: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingVertical: 12, paddingHorizontal: 16, backgroundColor: COLORS.surface,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  accordionTitle: { fontSize: 12.5, fontWeight: "700", color: COLORS.ink },
+  directory: { paddingVertical: 14, paddingHorizontal: 14 },
   catGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
   catTile: { width: "23%", alignItems: "center", marginBottom: 16 },
   catTileIcon: {

@@ -15,7 +15,11 @@ const COUNTY_NAMES = COUNTIES.map((c) => c.name);
  * Only picks the county itself — pair with SubCountyPicker for the
  * county's sub-county, filtered by whichever county is picked here.
  */
-export default function CountyPicker({ value, onChange, placeholder = "Select your county" }) {
+// renderTrigger?: ({ value, placeholder, onPress }) => ReactNode — an
+// optional custom trigger for a caller that wants its own compact styling
+// (e.g. a pill in a toolbar) instead of the default bordered-box trigger
+// below. The modal/search/select logic underneath is identical either way.
+export default function CountyPicker({ value, onChange, placeholder = "Select your county", renderTrigger }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -29,10 +33,14 @@ export default function CountyPicker({ value, onChange, placeholder = "Select yo
 
   return (
     <View>
-      <TouchableOpacity style={styles.trigger} onPress={() => setOpen(true)}>
-        <Text style={[styles.triggerText, !value && styles.triggerPlaceholder]}>{value || placeholder}</Text>
-        <Ionicons name="chevron-down" size={18} color={COLORS.sub} />
-      </TouchableOpacity>
+      {renderTrigger ? (
+        renderTrigger({ value, placeholder, onPress: () => setOpen(true) })
+      ) : (
+        <TouchableOpacity style={styles.trigger} onPress={() => setOpen(true)}>
+          <Text style={[styles.triggerText, !value && styles.triggerPlaceholder]}>{value || placeholder}</Text>
+          <Ionicons name="chevron-down" size={18} color={COLORS.sub} />
+        </TouchableOpacity>
+      )}
 
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={styles.modalContainer}>
