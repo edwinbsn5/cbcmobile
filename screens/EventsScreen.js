@@ -105,6 +105,7 @@ export default function EventsScreen({ navigation }) {
           value={county}
           onChange={handleCountyChange}
           placeholder="Any county"
+          style={styles.stickyPillFlex}
           renderTrigger={({ value, onPress }) => (
             <View style={styles.stickyPill}>
               <TouchableOpacity style={styles.stickyPillTap} onPress={onPress}>
@@ -143,7 +144,7 @@ export default function EventsScreen({ navigation }) {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow}>
             {FILTERS.map((f) => (
-              <TouchableOpacity key={f.key} style={styles.tab} onPress={() => setFilter(f.key)}>
+              <TouchableOpacity key={f.key} style={styles.tab} onPress={() => { setFilter(f.key); setFiltersOpen(false); }}>
                 <Text style={[styles.tabText, filter === f.key && styles.tabTextActive]}>{f.label}</Text>
                 <View style={[styles.tabMarker, filter === f.key && styles.tabMarkerActive]} />
               </TouchableOpacity>
@@ -232,6 +233,9 @@ const styles = StyleSheet.create({
     flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 12,
     backgroundColor: COLORS.wash, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
+  // Applied to CountyPicker itself (its `style` prop) — see CountyPicker's
+  // own comment on why this can't just live on the renderTrigger content.
+  stickyPillFlex: { flex: 1 },
   stickyPill: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
     backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,

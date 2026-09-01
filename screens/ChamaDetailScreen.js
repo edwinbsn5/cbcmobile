@@ -132,27 +132,36 @@ export default function ChamaDetailScreen({ route, navigation }) {
 
           {(() => {
             const isLow = chama.remaining > 0 && chama.remaining <= Math.ceil(chama.maxMembers * 0.25);
+            const isFull = chama.remaining === 0;
             return (
-              <View style={styles.positionsBlock}>
-                {isLow ? (
-                  <View style={styles.urgencyPill}>
-                    <Text style={styles.urgencyPillText}>🔥 Only {chama.remaining} spot{chama.remaining === 1 ? "" : "s"} left</Text>
+              <View style={styles.metaRow}>
+                <View style={styles.metaChip}>
+                  <Text style={styles.metaChipText}>
+                    {chama.contributionType === "fixed_recurring" ? `${formatKES(chama.contributionAmount)}/${chama.contributionFrequency}` : `Goal ${formatKES(chama.goalAmount)}`}
+                  </Text>
+                </View>
+                <View style={[styles.metaChip, isFull && styles.metaChipMuted]}>
+                  <Text style={[styles.metaChipText, isFull && styles.metaChipTextMuted]}>
+                    {chama.filled} of {chama.maxMembers} filled
+                  </Text>
+                </View>
+                {isLow && (
+                  <View style={[styles.metaChip, styles.metaChipUrgent]}>
+                    <Text style={[styles.metaChipText, styles.metaChipTextUrgent]}>
+                      🔥 {chama.remaining} spot{chama.remaining === 1 ? "" : "s"} left
+                    </Text>
                   </View>
-                ) : chama.remaining === 0 ? (
-                  <View style={styles.fullPill}>
-                    <Text style={styles.fullPillText}>{chama.joiningClosedReason === "manual" ? "Closed by admin" : "Full"}</Text>
+                )}
+                {isFull && (
+                  <View style={[styles.metaChip, styles.metaChipMuted]}>
+                    <Text style={[styles.metaChipText, styles.metaChipTextMuted]}>
+                      {chama.joiningClosedReason === "manual" ? "Closed by admin" : "Full"}
+                    </Text>
                   </View>
-                ) : null}
-                <Text style={styles.positionsFine}>{chama.filled} of {chama.maxMembers} positions filled</Text>
+                )}
               </View>
             );
           })()}
-
-          <View style={styles.metaRow}>
-            <View style={styles.metaChip}><Text style={styles.metaChipText}>
-              {chama.contributionType === "fixed_recurring" ? `${formatKES(chama.contributionAmount)}/${chama.contributionFrequency}` : `Goal ${formatKES(chama.goalAmount)}`}
-            </Text></View>
-          </View>
 
           {!membership && (
             <TouchableOpacity style={styles.primaryButton} onPress={() => setJoinModalVisible(true)}>
@@ -261,6 +270,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
   const [announcements, setAnnouncements] = useState(null);
   const [announceText, setAnnounceText] = useState("");
   const [posting, setPosting] = useState(false);
+  const [announceModalVisible, setAnnounceModalVisible] = useState(false);
 
   useFocusEffect(useCallback(() => {
     if (!isMember) return;
@@ -280,6 +290,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
     try {
       await client.post(`/chama/${chamaId}/announcements`, { content: announceText.trim() });
       setAnnounceText("");
+      setAnnounceModalVisible(false);
       loadAnnouncements();
     } catch (e) {
       Alert.alert("Couldn't post", e.response?.data?.error || e.message);
@@ -338,21 +349,15 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
 
       {isMember && (
         <View style={styles.announcementsCard}>
-          <Text style={styles.sectionHeading}>Announcements</Text>
-          {isAdmin && (
-            <View style={styles.announceComposer}>
-              <TextInput
-                style={styles.announceInput}
-                placeholder="Meeting date, reschedule, other news..."
-                value={announceText}
-                onChangeText={setAnnounceText}
-                multiline
-              />
-              <TouchableOpacity style={styles.announcePostBtn} onPress={postAnnouncement} disabled={posting || !announceText.trim()}>
-                <Text style={styles.announcePostBtnText}>{posting ? "Posting..." : "Post"}</Text>
+          <View style={styles.announcementsHeadRow}>
+            <Text style={[styles.sectionHeading, styles.sectionHeadingNoMargin]}>Announcements</Text>
+            {isAdmin && (
+              <TouchableOpacity style={styles.announceTeaserBtn} onPress={() => setAnnounceModalVisible(true)}>
+                <Ionicons name="add" size={13} color={COLORS.accent} />
+                <Text style={styles.announceTeaserBtnText}>Post</Text>
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+          </View>
           {!announcements ? (
             <ActivityIndicator size="small" color={COLORS.accent} />
           ) : announcements.length ? (
@@ -366,6 +371,27 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
             <Text style={styles.infoValue}>No announcements yet.</Text>
           )}
         </View>
+      )}
+
+      {isAdmin && (
+        <Modal visible={announceModalVisible} transparent animationType="slide" onRequestClose={() => setAnnounceModalVisible(false)}>
+          <TouchableWithoutFeedback onPress={() => setAnnounceModalVisible(false)}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Post an announcement</Text>
+            <TextInput
+              style={[styles.input, styles.multiline]}
+              placeholder="Meeting date, reschedule, other news..."
+              value={announceText}
+              onChangeText={setAnnounceText}
+              multiline
+              autoFocus
+            />
+            <TouchableOpacity style={styles.primaryButton} onPress={postAnnouncement} disabled={posting || !announceText.trim()}>
+              <Text style={styles.primaryButtonText}>{posting ? "Posting..." : "Post"}</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
       )}
 
       {isMember && chama.contributionType === "fixed_recurring" && (
@@ -1540,15 +1566,17 @@ const styles = StyleSheet.create({
   headerBody: { padding: 16, backgroundColor: COLORS.surface },
   name: { fontSize: 20, fontWeight: "800", color: COLORS.ink },
   desc: { color: COLORS.sub, marginTop: 4 },
-  positionsBlock: { marginTop: 14 },
-  urgencyPill: { alignSelf: "flex-start", backgroundColor: "#FDECEA", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 6 },
-  urgencyPillText: { color: "#C4433C", fontWeight: "800", fontSize: 12.5 },
-  fullPill: { alignSelf: "flex-start", backgroundColor: COLORS.wash, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 6 },
-  fullPillText: { color: COLORS.sub, fontWeight: "800", fontSize: 12.5 },
-  positionsFine: { color: COLORS.sub, fontSize: 12 },
-  metaRow: { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
+  // Contribution/goal, positions-filled, and (when relevant) the
+  // urgency/full callout all live in this one wrapping row now — was
+  // previously two separate stacked blocks (a pill+fine-text block, then a
+  // second row below it just for the contribution chip).
+  metaRow: { flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap" },
   metaChip: { backgroundColor: COLORS.wash, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },
   metaChipText: { color: COLORS.ink, fontWeight: "700", fontSize: 11.5 },
+  metaChipUrgent: { backgroundColor: "#FDECEA" },
+  metaChipTextUrgent: { color: "#C4433C" },
+  metaChipMuted: { backgroundColor: COLORS.wash },
+  metaChipTextMuted: { color: COLORS.sub },
   primaryButton: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 12, alignItems: "center", marginTop: 14 },
   primaryButtonText: { color: COLORS.accentInk, fontWeight: "700" },
   accessBlockedContainer: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, backgroundColor: COLORS.bg },
@@ -1567,10 +1595,13 @@ const styles = StyleSheet.create({
   cautionBanner: { flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginBottom: 12 },
   cautionText: { color: "#6B5300", fontSize: 12, lineHeight: 18, flex: 1 },
   announcementsCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 8 },
-  announceComposer: { marginBottom: 10 },
-  announceInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, minHeight: 60, textAlignVertical: "top", color: COLORS.ink, fontSize: 13, marginBottom: 8 },
-  announcePostBtn: { alignSelf: "flex-end", backgroundColor: COLORS.accent, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 },
-  announcePostBtnText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 12.5 },
+  // A small "+ Post" trigger next to the heading, opening a bottom-sheet
+  // modal (same pattern as every other composer in this file) — was
+  // previously an always-visible multi-line box + button taking up
+  // permanent space whether or not anyone was about to write something.
+  announcementsHeadRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  announceTeaserBtn: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: COLORS.wash, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  announceTeaserBtnText: { color: COLORS.accent, fontWeight: "700", fontSize: 11.5 },
   announcementRow: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: COLORS.border },
   announcementContent: { color: COLORS.ink, fontSize: 13.5, lineHeight: 19 },
   announcementMeta: { color: COLORS.sub, fontSize: 11, marginTop: 4 },
@@ -1585,6 +1616,7 @@ const styles = StyleSheet.create({
   gatedText: { color: COLORS.sub, textAlign: "center", marginTop: 20 },
   tabHint: { color: COLORS.sub, fontSize: 12, marginBottom: 8 },
   sectionHeading: { fontSize: 11, fontWeight: "800", color: "#B4881C", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 },
+  sectionHeadingNoMargin: { marginBottom: 0 },
   sectionDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: 14 },
   guarantorStatusPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#E8F5E9", borderRadius: 8, padding: 8, marginBottom: 8 },
   guarantorStatusPillWarn: { backgroundColor: "#FFF3CD" },

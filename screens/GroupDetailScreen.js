@@ -586,14 +586,16 @@ export default function GroupDetailScreen({ route, navigation }) {
 
             {!!group.description && <Text style={styles.desc}>{group.description}</Text>}
 
-            <View style={styles.chipsRow}>
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>🕐 Since {new Date(group.createdAt).getFullYear()}</Text>
-              </View>
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>📌 {group.tiers.length} plan{group.tiers.length === 1 ? "" : "s"}</Text>
-              </View>
-            </View>
+            {!!group.tiers.length && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.tierChipsContent}>
+                {group.tiers.map((tier) => (
+                  <TouchableOpacity key={tier.id} style={styles.tierChip} onPress={handleScrollToTiers}>
+                    <Text style={styles.tierChipText}>{tier.name}</Text>
+                    <Text style={styles.tierChipPrice}>KES {tier.priceKES}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
 
             {isAdmin && (
               <TouchableOpacity style={styles.boostRow} onPress={() => navigation.navigate("BoostGroup", { group })}>
@@ -896,9 +898,15 @@ const styles = StyleSheet.create({
   statValue: { color: COLORS.ink, fontSize: 15, fontWeight: "800" },
   statLabel: { color: COLORS.sub, fontSize: 10.5, fontWeight: "600", marginTop: 2 },
   statDivider: { width: 1, height: 26, backgroundColor: COLORS.border },
-  chipsRow: { flexDirection: "row", gap: 8, marginTop: 14 },
-  chip: { backgroundColor: COLORS.wash, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999 },
-  chipText: { color: COLORS.ink, fontSize: 11.5, fontWeight: "700" },
+  // Was "Since {year}" / "N plans" — two generic, non-actionable chips.
+  // Now one chip per real membership tier (name + price), tappable to jump
+  // straight to that tier's full card below — more useful at a glance and
+  // saves the round trip of scrolling down just to see what tiers exist.
+  chipsRow: { marginTop: 14 },
+  tierChipsContent: { flexDirection: "row", gap: 8 },
+  tierChip: { backgroundColor: COLORS.wash, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6, alignItems: "center" },
+  tierChipText: { color: COLORS.ink, fontSize: 11.5, fontWeight: "700" },
+  tierChipPrice: { color: COLORS.accent, fontSize: 10, fontWeight: "800", marginTop: 1 },
   ctaRow: { flexDirection: "row", gap: 10, marginTop: 16 },
   subscribeCta: { flex: 1, backgroundColor: COLORS.accent, borderRadius: 10, paddingVertical: 12, alignItems: "center" },
   subscribeCtaText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 13.5 },

@@ -141,6 +141,7 @@ export default function PagesListScreen({ navigation }) {
         <CountyPicker
           value={county}
           onChange={handleCountyChange}
+          style={styles.stickyPillFlex}
           renderTrigger={({ value, onPress }) => (
             <TouchableOpacity style={styles.stickyPill} onPress={onPress}>
               <Ionicons name="location-outline" size={13} color={COLORS.ink} />
@@ -317,6 +318,9 @@ const styles = StyleSheet.create({
     flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 12,
     backgroundColor: COLORS.wash, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
+  // Applied to CountyPicker itself (its `style` prop) — see CountyPicker's
+  // own comment on why this can't just live on the renderTrigger content.
+  stickyPillFlex: { flex: 1 },
   stickyPill: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
     backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,

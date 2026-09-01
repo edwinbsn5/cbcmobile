@@ -19,7 +19,17 @@ const COUNTY_NAMES = COUNTIES.map((c) => c.name);
 // optional custom trigger for a caller that wants its own compact styling
 // (e.g. a pill in a toolbar) instead of the default bordered-box trigger
 // below. The modal/search/select logic underneath is identical either way.
-export default function CountyPicker({ value, onChange, placeholder = "Select your county", renderTrigger }) {
+//
+// style?: passed onto this component's own wrapping View — needed any time
+// a caller's renderTrigger content relies on flexbox to size itself (e.g.
+// `flex: 1` to fill a toolbar row). Without it, that flex:1 lands on an
+// element whose immediate parent (this wrapping View) is NOT the flex
+// container the caller actually meant to fill — React Native's default
+// flexDirection is "column", so a `flex: 1` meant to stretch horizontally
+// inside a `row` toolbar has no effect there, and the trigger shrinks to
+// hug its own text instead of filling the available space (looks
+// "collapsed" next to a sibling that isn't wrapped this way).
+export default function CountyPicker({ value, onChange, placeholder = "Select your county", renderTrigger, style }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -32,7 +42,7 @@ export default function CountyPicker({ value, onChange, placeholder = "Select yo
   }
 
   return (
-    <View>
+    <View style={style}>
       {renderTrigger ? (
         renderTrigger({ value, placeholder, onPress: () => setOpen(true) })
       ) : (

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert, Modal, TouchableWithoutFeedback } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -243,6 +243,10 @@ export default function PageDetailScreen({ route, navigation }) {
   const [attachedMedia, setAttachedMedia] = useState(null);
   const [attachedPhotos, setAttachedPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
+  // Composer is a compact teaser row by default — full post-as/attach/text
+  // controls only mount once tapped, in a modal, instead of always sitting
+  // open and taking up permanent space above the Feed tab's post list.
+  const [feedComposerOpen, setFeedComposerOpen] = useState(false);
 
   const [myRating, setMyRating] = useState(0);
   const [myRecommendation, setMyRecommendation] = useState(null);
@@ -332,6 +336,7 @@ export default function PageDetailScreen({ route, navigation }) {
       setComposerText("");
       setAttachedMedia(null);
       setAttachedPhotos([]);
+      setFeedComposerOpen(false);
       load();
     } catch (e) {
       Alert.alert("Couldn't post", e.response?.data?.error || e.message);
@@ -582,7 +587,7 @@ export default function PageDetailScreen({ route, navigation }) {
             )}
           </View>
 
-          <View style={styles.identityStrip}>
+          <View style={[styles.identityStrip, manageMenuOpen && styles.identityStripElevated]}>
             <Avatar uri={page.avatarUrl} name={page.name} style={styles.identityAvatar} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={styles.coverNameLine}>
@@ -722,62 +727,13 @@ export default function PageDetailScreen({ route, navigation }) {
             </View>
 
             {activeTab === "Feed" && canPost && !isSuspended && (
-              <View style={styles.composer}>
-                <View style={styles.postAsRow}>
-                  <TouchableOpacity style={[styles.postAsButton, postAs === "page" && styles.postAsButtonActive]} onPress={() => setPostAs("page")}>
-                    <Text style={[styles.postAsText, postAs === "page" && styles.postAsTextActive]}>Post as {page.name}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.postAsButton, postAs === "user" && styles.postAsButtonActive]} onPress={() => setPostAs("user")}>
-                    <Text style={[styles.postAsText, postAs === "user" && styles.postAsTextActive]}>Post as {user?.name}</Text>
-                  </TouchableOpacity>
-                </View>
-                <MentionTextInput
-                  style={styles.composerInput}
-                  placeholder={`Share something as ${postAs === "page" ? page.name : "yourself"}...`}
-                  value={composerText}
-                  onChangeText={setComposerText}
-                  multiline
-                />
-                {attachedMedia && (
-                  <View style={styles.previewWrap}>
-                    <Video source={{ uri: attachedMedia.uri }} style={styles.preview} useNativeControls resizeMode={ResizeMode.CONTAIN} />
-                    <TouchableOpacity style={styles.removeButton} onPress={() => setAttachedMedia(null)}>
-                      <Ionicons name="close" size={16} color="#fff" />
-                    </TouchableOpacity>
-                  </View>
-                )}
-                {attachedPhotos.length > 0 && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow}>
-                    {attachedPhotos.map((p, i) => (
-                      <View key={i} style={styles.photoThumbWrap}>
-                        <Image source={{ uri: p.uri }} style={styles.photoThumb} contentFit="cover" />
-                        <TouchableOpacity style={styles.removeButtonSmall} onPress={() => setAttachedPhotos((prev) => prev.filter((_, idx) => idx !== i))}>
-                          <Ionicons name="close" size={12} color="#fff" />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </ScrollView>
-                )}
-                <View style={styles.attachRow}>
-                  <TouchableOpacity style={styles.attachButton} onPress={handleAttachPhotos} disabled={posting || uploading || !!attachedMedia}>
-                    <Ionicons name="images-outline" size={18} color={attachedMedia ? COLORS.sub : COLORS.accent} />
-                    <Text style={[styles.attachButtonText, attachedMedia && styles.attachButtonTextDisabled]}>
-                      {attachedPhotos.length ? `Add more photos (${attachedPhotos.length}/10)` : "Add photos"}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.attachButton} onPress={handleAttachVideo} disabled={posting || uploading || attachedPhotos.length > 0}>
-                    <Ionicons name="videocam-outline" size={18} color={attachedPhotos.length ? COLORS.sub : COLORS.accent} />
-                    <Text style={[styles.attachButtonText, attachedPhotos.length > 0 && styles.attachButtonTextDisabled]}>Add video</Text>
-                  </TouchableOpacity>
-                </View>
-                <TouchableOpacity
-                  style={styles.postButton}
-                  onPress={handlePost}
-                  disabled={posting || uploading || (!composerText.trim() && !attachedMedia && !attachedPhotos.length)}
-                >
-                  <Text style={styles.postButtonText}>{uploading ? "Uploading..." : posting ? "Posting..." : "Post"}</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity style={styles.composerTeaser} onPress={() => setFeedComposerOpen(true)}>
+                <Avatar uri={postAs === "page" ? page.avatarUrl : user?.avatar} name={postAs === "page" ? page.name : user?.name} style={styles.composerTeaserAvatar} />
+                <Text style={styles.composerTeaserText} numberOfLines={1}>
+                  Share something as {postAs === "page" ? page.name : "yourself"}...
+                </Text>
+                <Ionicons name="image-outline" size={18} color={COLORS.sub} />
+              </TouchableOpacity>
             )}
 
             {activeTab === "Photos" && canPost && !isSuspended && (
@@ -829,6 +785,70 @@ export default function PageDetailScreen({ route, navigation }) {
     <TouchableOpacity style={[styles.backBtn, { top: insets.top + 8 }]} onPress={() => navigation.goBack()}>
       <Ionicons name="chevron-back" size={20} color="#fff" />
     </TouchableOpacity>
+
+    {canPost && !isSuspended && (
+      <Modal visible={feedComposerOpen} transparent animationType="slide" onRequestClose={() => setFeedComposerOpen(false)}>
+        <TouchableWithoutFeedback onPress={() => setFeedComposerOpen(false)}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+        <View style={styles.sheet}>
+          <View style={styles.sheetHandle} />
+          <View style={styles.postAsRow}>
+            <TouchableOpacity style={[styles.postAsButton, postAs === "page" && styles.postAsButtonActive]} onPress={() => setPostAs("page")}>
+              <Text style={[styles.postAsText, postAs === "page" && styles.postAsTextActive]}>Post as {page.name}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.postAsButton, postAs === "user" && styles.postAsButtonActive]} onPress={() => setPostAs("user")}>
+              <Text style={[styles.postAsText, postAs === "user" && styles.postAsTextActive]}>Post as {user?.name}</Text>
+            </TouchableOpacity>
+          </View>
+          <MentionTextInput
+            style={styles.composerInput}
+            placeholder={`Share something as ${postAs === "page" ? page.name : "yourself"}...`}
+            value={composerText}
+            onChangeText={setComposerText}
+            multiline
+            autoFocus
+          />
+          {attachedMedia && (
+            <View style={styles.previewWrap}>
+              <Video source={{ uri: attachedMedia.uri }} style={styles.preview} useNativeControls resizeMode={ResizeMode.CONTAIN} />
+              <TouchableOpacity style={styles.removeButton} onPress={() => setAttachedMedia(null)}>
+                <Ionicons name="close" size={16} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          )}
+          {attachedPhotos.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow}>
+              {attachedPhotos.map((p, i) => (
+                <View key={i} style={styles.photoThumbWrap}>
+                  <Image source={{ uri: p.uri }} style={styles.photoThumb} contentFit="cover" />
+                  <TouchableOpacity style={styles.removeButtonSmall} onPress={() => setAttachedPhotos((prev) => prev.filter((_, idx) => idx !== i))}>
+                    <Ionicons name="close" size={12} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+          <View style={styles.attachRow}>
+            <TouchableOpacity style={styles.attachButton} onPress={handleAttachPhotos} disabled={posting || uploading || !!attachedMedia}>
+              <Ionicons name="images-outline" size={18} color={attachedMedia ? COLORS.sub : COLORS.accent} />
+              <Text style={[styles.attachButtonText, attachedMedia && styles.attachButtonTextDisabled]}>
+                {attachedPhotos.length ? `Add more photos (${attachedPhotos.length}/10)` : "Add photos"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.attachButton} onPress={handleAttachVideo} disabled={posting || uploading || attachedPhotos.length > 0}>
+              <Ionicons name="videocam-outline" size={18} color={attachedPhotos.length ? COLORS.sub : COLORS.accent} />
+              <Text style={[styles.attachButtonText, attachedPhotos.length > 0 && styles.attachButtonTextDisabled]}>Add video</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={styles.postButton}
+            onPress={handlePost}
+            disabled={posting || uploading || (!composerText.trim() && !attachedMedia && !attachedPhotos.length)}
+          >
+            <Text style={styles.postButtonText}>{uploading ? "Uploading..." : posting ? "Posting..." : "Post"}</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    )}
     </View>
   );
 }
@@ -850,6 +870,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accentInk, paddingHorizontal: 16, paddingVertical: 14,
     flexDirection: "row", alignItems: "center", gap: 12,
   },
+  // Only while the ⋮ menu is open — the dropdown is position:absolute
+  // inside this row, but identityStrip and `body` (categories/stats below)
+  // are SIBLINGS in the header's outer column. Without an explicit
+  // zIndex/elevation here, Android paints later siblings (body's category
+  // pills, stat cells) over the dropdown's visual overflow regardless of
+  // its own elevation, since that only ranks it among identityStrip's OWN
+  // children, not against identityStrip's siblings — the dropdown looked
+  // "see-through" because the categories/stat row were literally drawn on
+  // top of it. Conditional so the navy bar doesn't carry a permanent
+  // Android drop-shadow while the menu is closed.
+  identityStripElevated: { zIndex: 20, elevation: 8 },
   identityAvatar: { width: 44, height: 44, borderRadius: 14 },
   coverNameLine: { flexDirection: "row", alignItems: "center" },
   identityName: { color: "#fff", fontSize: 16, fontWeight: "800", flexShrink: 1 },
@@ -903,6 +934,15 @@ const styles = StyleSheet.create({
   tabText: { color: COLORS.sub, fontWeight: "700", fontSize: 14 },
   tabTextActive: { color: COLORS.accent },
   composer: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 4 },
+  // Compact teaser row replacing the always-open Feed composer — tapping
+  // it opens the same post-as/attach/text controls in a bottom-sheet modal
+  // instead of them sitting permanently expanded above the post list.
+  composerTeaser: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 4 },
+  composerTeaserAvatar: { width: 32, height: 32, borderRadius: 16 },
+  composerTeaserText: { flex: 1, color: COLORS.sub, fontSize: 13.5 },
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
+  sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16, paddingBottom: 28 },
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },
   postAsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
   postAsButton: { flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: 16, paddingVertical: 7, alignItems: "center" },
   postAsButtonActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
