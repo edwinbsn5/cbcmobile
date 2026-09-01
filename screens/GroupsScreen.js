@@ -52,33 +52,32 @@ export default function GroupsScreen({ navigation }) {
 
   return (
     <>
+      <View style={styles.ribbon}>
+        <Text style={styles.ribbonText}>✦ PLUGS &amp; MENTORS ✦</Text>
+      </View>
+
+      <View style={styles.stickyBar}>
+        <View style={styles.stickyPill}>
+          <TouchableOpacity style={styles.stickyPillTap} onPress={() => setPickerOpen(true)}>
+            <Ionicons name="filter-outline" size={13} color={COLORS.ink} />
+            <Text style={styles.stickyPillText} numberOfLines={1}>{activeFilter ? activeFilter.label : "Explore Groups"}</Text>
+            <Ionicons name="chevron-down" size={11} color={COLORS.sub} />
+          </TouchableOpacity>
+          {!!activeFilter && (
+            <TouchableOpacity onPress={() => selectFilter(null)} hitSlop={{ top: 6, bottom: 6, left: 4, right: 6 }}>
+              <Ionicons name="close-circle" size={14} color={COLORS.sub} />
+            </TouchableOpacity>
+          )}
+        </View>
+        <TouchableOpacity style={styles.stickyIconBtn} onPress={() => navigation.navigate("CreateGroup")}>
+          <Ionicons name="add" size={18} color={COLORS.ink} />
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         style={styles.container}
         data={groups}
         keyExtractor={(g) => g.id}
-        ListHeaderComponent={
-          <View>
-            <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate("CreateGroup")}>
-              <Text style={styles.createButtonText}>+ Create Group</Text>
-            </TouchableOpacity>
-
-            <View style={styles.hero}>
-              <Text style={styles.heroBadge}>✦ Plugs & Mentors ✦</Text>
-              <Text style={styles.heroTitle}>Find Plugs & Mentors</Text>
-              <Text style={styles.heroSubtitle}>Communities, causes &amp; interests worth joining on Tujijenge.</Text>
-            </View>
-
-            <TouchableOpacity style={styles.filterButton} onPress={() => setPickerOpen(true)}>
-              <Ionicons name="filter-outline" size={16} color={COLORS.accent} />
-              <Text style={styles.filterButtonText}>{activeFilter ? activeFilter.label : "Filter Groups"}</Text>
-            </TouchableOpacity>
-            {activeFilter && (
-              <TouchableOpacity onPress={() => selectFilter(null)}>
-                <Text style={styles.clearFilterText}>✕ Clear filter — showing all groups</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        }
         ListEmptyComponent={
           <Text style={styles.empty}>
             {filter === "joined"
@@ -155,18 +154,19 @@ export default function GroupsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  createButton: { backgroundColor: COLORS.accent, marginHorizontal: 12, marginTop: 12, borderRadius: 8, padding: 12, alignItems: "center" },
-  createButtonText: { color: COLORS.accentInk, fontWeight: "700" },
-  hero: { backgroundColor: COLORS.accentInk, marginHorizontal: 12, marginTop: 12, borderRadius: 12, paddingVertical: 22, paddingHorizontal: 20, alignItems: "center" },
-  heroBadge: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
-  heroTitle: { color: "#fff", fontSize: 19, fontWeight: "800", textAlign: "center", marginTop: 10 },
-  heroSubtitle: { color: "#B9C6DC", fontSize: 12, marginTop: 8, textAlign: "center", lineHeight: 18 },
-  filterButton: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.accent, marginHorizontal: 12, marginTop: 8, borderRadius: 8, padding: 11,
+  ribbon: { backgroundColor: COLORS.accentInk, paddingVertical: 8, paddingHorizontal: 14, alignItems: "center" },
+  ribbonText: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  stickyBar: {
+    flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 12,
+    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  filterButtonText: { color: COLORS.accent, fontWeight: "700" },
-  clearFilterText: { color: COLORS.sub, fontSize: 12, textAlign: "center", marginTop: 8, textDecorationLine: "underline" },
+  stickyPill: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
+    backgroundColor: COLORS.wash, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
+  },
+  stickyPillTap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
+  stickyPillText: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink, flexShrink: 1 },
+  stickyIconBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },
   card: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 14, overflow: "hidden", shadowColor: "#0B1F3A", shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
   cover: { width: "100%", height: 100, backgroundColor: "#eee" },

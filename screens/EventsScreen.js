@@ -41,6 +41,10 @@ export default function EventsScreen({ navigation }) {
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const { isSaved, toggleSave, loadSaved } = useSaved();
+  // Search + the full filter-tab row are collapsed behind the sticky
+  // filter pill by default — tapping the pill (or the county pill) is now
+  // how you get to them, instead of both always sitting open above the list.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
@@ -78,6 +82,8 @@ export default function EventsScreen({ navigation }) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  const activeFilterLabel = FILTERS.find((f) => f.key === filter)?.label || "Filter";
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
@@ -94,6 +100,33 @@ export default function EventsScreen({ navigation }) {
         </View>
       </View>
 
+      <View style={styles.stickyBar}>
+        <CountyPicker
+          value={county}
+          onChange={handleCountyChange}
+          placeholder="Any county"
+          renderTrigger={({ value, onPress }) => (
+            <View style={styles.stickyPill}>
+              <TouchableOpacity style={styles.stickyPillTap} onPress={onPress}>
+                <Ionicons name="location-outline" size={13} color={COLORS.ink} />
+                <Text style={styles.stickyPillText} numberOfLines={1}>{value || "Any county"}</Text>
+                <Ionicons name="chevron-down" size={11} color={COLORS.sub} />
+              </TouchableOpacity>
+              {!!value && (
+                <TouchableOpacity onPress={() => handleCountyChange("")} hitSlop={{ top: 6, bottom: 6, left: 4, right: 6 }}>
+                  <Ionicons name="close-circle" size={14} color={COLORS.sub} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        />
+        <TouchableOpacity style={styles.stickyPill} onPress={() => setFiltersOpen((o) => !o)}>
+          <Ionicons name="filter-outline" size={13} color={COLORS.ink} />
+          <Text style={styles.stickyPillText} numberOfLines={1}>{activeFilterLabel}</Text>
+          <Ionicons name={filtersOpen ? "chevron-up" : "chevron-down"} size={11} color={COLORS.sub} />
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         data={events}
         keyExtractor={(e) => e.id}
@@ -101,40 +134,30 @@ export default function EventsScreen({ navigation }) {
         onRefresh={load}
         contentContainerStyle={{ padding: 12, paddingBottom: insets.bottom + 90 }}
         ListHeaderComponent={
-          <View>
-            <View style={styles.searchRow}>
-              <Ionicons name="search-outline" size={16} color={COLORS.sub} />
-              <TextInput
-                style={styles.searchInput}
-                value={q}
-                onChangeText={setQ}
-                placeholder="Search events..."
-                placeholderTextColor={COLORS.sub}
-                returnKeyType="search"
-              />
-            </View>
-
-            <View style={styles.countyBox}>
-              <View style={styles.countyRow}>
-                <Text style={styles.countyLabel}>County: Find Events Near You</Text>
-                {!!county && (
-                  <TouchableOpacity onPress={() => handleCountyChange("")}>
-                    <Text style={styles.countyClear}>Clear</Text>
-                  </TouchableOpacity>
-                )}
+          filtersOpen ? (
+            <View>
+              <View style={styles.searchRow}>
+                <Ionicons name="search-outline" size={16} color={COLORS.sub} />
+                <TextInput
+                  style={styles.searchInput}
+                  value={q}
+                  onChangeText={setQ}
+                  placeholder="Search events..."
+                  placeholderTextColor={COLORS.sub}
+                  returnKeyType="search"
+                />
               </View>
-              <CountyPicker value={county} onChange={handleCountyChange} placeholder="Any county" />
-            </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow}>
-              {FILTERS.map((f) => (
-                <TouchableOpacity key={f.key} style={styles.tab} onPress={() => setFilter(f.key)}>
-                  <Text style={[styles.tabText, filter === f.key && styles.tabTextActive]}>{f.label}</Text>
-                  <View style={[styles.tabMarker, filter === f.key && styles.tabMarkerActive]} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow}>
+                {FILTERS.map((f) => (
+                  <TouchableOpacity key={f.key} style={styles.tab} onPress={() => setFilter(f.key)}>
+                    <Text style={[styles.tabText, filter === f.key && styles.tabTextActive]}>{f.label}</Text>
+                    <View style={[styles.tabMarker, filter === f.key && styles.tabMarkerActive]} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null
         }
         ListEmptyComponent={
           loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : (
@@ -206,12 +229,18 @@ const styles = StyleSheet.create({
   backBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 19, fontWeight: "800", color: "#fff" },
   headerSubtitle: { fontSize: 12, color: "#B9C6DC", marginTop: 3 },
+  stickyBar: {
+    flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 12,
+    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  stickyPill: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
+    backgroundColor: COLORS.wash, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
+  },
+  stickyPillTap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
+  stickyPillText: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink, flexShrink: 1 },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingHorizontal: 12, marginBottom: 12 },
   searchInput: { flex: 1, paddingVertical: 10, color: COLORS.ink },
-  countyBox: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 12 },
-  countyRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  countyLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub },
-  countyClear: { fontSize: 12, fontWeight: "700", color: COLORS.accent },
   tabRow: { borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 12 },
   tab: { marginRight: 22, paddingBottom: 9, alignItems: "center" },
   tabText: { fontSize: 12.5, fontWeight: "600", color: COLORS.sub },

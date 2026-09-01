@@ -49,6 +49,11 @@ export default function ChamaScreen({ navigation }) {
   const [subCounty, setSubCounty] = useState("");
   const [hasAccess, setHasAccess] = useState(true); // optimistic — avoids a flash of the banner before the check lands
   const [accessModalVisible, setAccessModalVisible] = useState(false);
+  // Search, sub-county, and the Random/Filled-Up/Unfilled sub-filter are
+  // collapsed behind this by default — county, Create, and the main
+  // Filter/Joined/My Groups/Achievements row stay always visible above the
+  // list (see topChrome below); this only gates the secondary controls.
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useFocusEffect(useCallback(() => {
     client.get("/access/status").then((r) => setHasAccess(!!r.data.access?.chama)).catch(() => {});
@@ -109,19 +114,44 @@ export default function ChamaScreen({ navigation }) {
 
   useFocusEffect(useCallback(() => { setLoading(true); load(); }, [load]));
 
-  const header = (
+  // Fixed above the list, never scrolls away — county (when relevant) +
+  // Create stay one tap away, same as the unlock banner and the main
+  // Filter/Joined/My Groups/Achievements row, which is how you switch INTO
+  // Achievements mode in the first place so it can't be hidden itself.
+  const topChrome = (
     <View>
-      <TouchableOpacity
-        style={styles.createButton}
-        onPress={() => (hasAccess ? navigation.navigate("CreateChama") : setAccessModalVisible(true))}
-      >
-        <Text style={styles.createButtonText}>+ Start an Investment Group</Text>
-      </TouchableOpacity>
+      <View style={styles.ribbon}>
+        <Text style={styles.ribbonText}>✦ INVESTMENT GROUPS ✦</Text>
+      </View>
 
-      <View style={styles.hero}>
-        <Text style={styles.heroBadge}>✦ Investment Groups ✦</Text>
-        <Text style={styles.heroTitle}>Welcome to Your Investment Groups</Text>
-        <Text style={styles.heroSubtitle}>Meet Friends who Push You to Grow.</Text>
+      <View style={styles.stickyBar}>
+        {!isFeedFilter && (
+          <CountyPicker
+            value={county}
+            onChange={handleCountyChange}
+            placeholder="Select your county"
+            renderTrigger={({ value, onPress }) => (
+              <View style={styles.stickyPill}>
+                <TouchableOpacity style={styles.stickyPillTap} onPress={onPress}>
+                  <Ionicons name="location-outline" size={13} color={COLORS.ink} />
+                  <Text style={styles.stickyPillText} numberOfLines={1}>{value || "Select county"}</Text>
+                  <Ionicons name="chevron-down" size={11} color={COLORS.sub} />
+                </TouchableOpacity>
+                {!!value && (
+                  <TouchableOpacity onPress={() => handleCountyChange("")} hitSlop={{ top: 6, bottom: 6, left: 4, right: 6 }}>
+                    <Ionicons name="close-circle" size={14} color={COLORS.sub} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          />
+        )}
+        <TouchableOpacity
+          style={styles.stickyIconBtn}
+          onPress={() => (hasAccess ? navigation.navigate("CreateChama") : setAccessModalVisible(true))}
+        >
+          <Ionicons name="add" size={18} color={COLORS.ink} />
+        </TouchableOpacity>
       </View>
 
       {!hasAccess && (
@@ -132,42 +162,6 @@ export default function ChamaScreen({ navigation }) {
         </TouchableOpacity>
       )}
 
-      {!isFeedFilter && (
-        <>
-          <View style={styles.locationBox}>
-            <View style={styles.locationRow}>
-              <Text style={styles.locationLabel}>County: Find Investment Groups Near You</Text>
-              {!!county && (
-                <TouchableOpacity onPress={() => handleCountyChange("")}>
-                  <Text style={styles.locationClear}>Clear</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <CountyPicker value={county} onChange={handleCountyChange} placeholder="Select your county" />
-            {!!county && (
-              <View style={{ marginTop: 8 }}>
-                <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} placeholder="Any sub-county" />
-              </View>
-            )}
-            {!county && loadedCounty && (
-              <Text style={styles.locationWarning}>Select a county above before browsing</Text>
-            )}
-          </View>
-
-          <View style={styles.searchRow}>
-            <Ionicons name="search-outline" size={16} color={COLORS.sub} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search Investment Groups"
-              value={search}
-              onChangeText={setSearch}
-              onSubmitEditing={() => { setLoading(true); load(); }}
-              returnKeyType="search"
-            />
-          </View>
-        </>
-      )}
-
       <View style={styles.filterRow}>
         {FILTERS.map((f) => (
           <TouchableOpacity key={f.key} style={[styles.filterChip, filter === f.key && styles.filterChipActive]} onPress={() => setFilter(f.key)}>
@@ -175,16 +169,6 @@ export default function ChamaScreen({ navigation }) {
           </TouchableOpacity>
         ))}
       </View>
-
-      {isBrowseFilter && (
-        <View style={styles.subFilterRow}>
-          {SUB_FILTERS.map((f) => (
-            <TouchableOpacity key={f.key} style={[styles.subFilterChip, subFilter === f.key && styles.subFilterChipActive]} onPress={() => setSubFilter(f.key)}>
-              <Text style={[styles.subFilterChipText, subFilter === f.key && styles.subFilterChipTextActive]}>{f.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
 
       <FeatureAccessModal
         visible={accessModalVisible}
@@ -196,28 +180,72 @@ export default function ChamaScreen({ navigation }) {
     </View>
   );
 
+  // Scrolls with the list (ListHeaderComponent) — search, sub-county, and
+  // the Random/Filled-Up/Unfilled sub-filter, collapsed by default. Not
+  // shown at all in Achievements mode, same as before.
+  const header = !isFeedFilter ? (
+    <View>
+      <TouchableOpacity style={styles.accordionHead} onPress={() => setMoreOpen((o) => !o)}>
+        <Text style={styles.accordionTitle}>Search &amp; sub-filters</Text>
+        <Ionicons name={moreOpen ? "chevron-up" : "chevron-down"} size={16} color={COLORS.sub} />
+      </TouchableOpacity>
+      {moreOpen && (
+        <View style={styles.accordionBody}>
+          {!!county && (
+            <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} placeholder="Any sub-county" />
+          )}
+          <View style={[styles.searchRow, county ? { marginTop: 8 } : null]}>
+            <Ionicons name="search-outline" size={16} color={COLORS.sub} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search Investment Groups"
+              value={search}
+              onChangeText={setSearch}
+              onSubmitEditing={() => { setLoading(true); load(); }}
+              returnKeyType="search"
+            />
+          </View>
+          {isBrowseFilter && (
+            <View style={styles.subFilterRow}>
+              {SUB_FILTERS.map((f) => (
+                <TouchableOpacity key={f.key} style={[styles.subFilterChip, subFilter === f.key && styles.subFilterChipActive]} onPress={() => setSubFilter(f.key)}>
+                  <Text style={[styles.subFilterChipText, subFilter === f.key && styles.subFilterChipTextActive]}>{f.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  ) : null;
+
   if (filter === "achievements") {
     return (
-      <FlatList
-        style={styles.container}
-        data={chamas}
-        keyExtractor={(a) => a.id}
-        ListHeaderComponent={header}
-        ListEmptyComponent={loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : <Text style={styles.empty}>No public achievements shared yet</Text>}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.feedCard} onPress={() => navigation.navigate("ChamaDetail", { chamaId: item.chama?.id })}>
-            <Text style={styles.feedName}>{item.user?.name}</Text>
-            <Text style={styles.feedMeta}>{item.chama?.name} · {new Date(item.createdAt).toLocaleDateString()}</Text>
-            <Text style={styles.feedContent}>{item.content}</Text>
-            {!!item.photoUrl && <Image source={{ uri: item.photoUrl }} style={styles.feedPhoto} contentFit="cover" />}
-          </TouchableOpacity>
-        )}
-      />
+      <>
+        {topChrome}
+        <FlatList
+          style={styles.container}
+          data={chamas}
+          keyExtractor={(a) => a.id}
+          ListHeaderComponent={header}
+          ListEmptyComponent={loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : <Text style={styles.empty}>No public achievements shared yet</Text>}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.feedCard} onPress={() => navigation.navigate("ChamaDetail", { chamaId: item.chama?.id })}>
+              <Text style={styles.feedName}>{item.user?.name}</Text>
+              <Text style={styles.feedMeta}>{item.chama?.name} · {new Date(item.createdAt).toLocaleDateString()}</Text>
+              <Text style={styles.feedContent}>{item.content}</Text>
+              {!!item.photoUrl && <Image source={{ uri: item.photoUrl }} style={styles.feedPhoto} contentFit="cover" />}
+            </TouchableOpacity>
+          )}
+        />
+      </>
     );
   }
 
   return (
-    <FlatList
+    <>
+      {topChrome}
+      <FlatList
       style={styles.container}
       data={displayedChamas}
       keyExtractor={(c) => c.id}
@@ -255,26 +283,41 @@ export default function ChamaScreen({ navigation }) {
           </View>
         </TouchableOpacity>
       )}
-    />
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  createButton: { backgroundColor: COLORS.accent, marginHorizontal: 12, marginTop: 12, borderRadius: 8, padding: 12, alignItems: "center" },
-  createButtonText: { color: COLORS.accentInk, fontWeight: "700" },
-  hero: { backgroundColor: COLORS.accentInk, marginHorizontal: 12, marginTop: 12, borderRadius: 12, paddingVertical: 22, paddingHorizontal: 20, alignItems: "center" },
-  heroBadge: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
-  heroTitle: { color: "#fff", fontSize: 19, fontWeight: "800", textAlign: "center", marginTop: 10 },
-  heroSubtitle: { color: "#B9C6DC", fontSize: 12, marginTop: 8, textAlign: "center", lineHeight: 18 },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, marginHorizontal: 12, marginTop: 12, borderRadius: 8, paddingHorizontal: 12 },
+  ribbon: { backgroundColor: COLORS.accentInk, paddingVertical: 8, paddingHorizontal: 14, alignItems: "center" },
+  ribbonText: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  stickyBar: {
+    flexDirection: "row", justifyContent: "flex-end", gap: 8, padding: 10, paddingHorizontal: 12,
+    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  stickyPill: {
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
+    backgroundColor: COLORS.wash, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
+  },
+  stickyPillTap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
+  stickyPillText: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink, flexShrink: 1 },
+  stickyIconBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
+  accordionHead: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingVertical: 12, paddingHorizontal: 16, backgroundColor: COLORS.surface,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+  },
+  accordionTitle: { fontSize: 12.5, fontWeight: "700", color: COLORS.ink },
+  accordionBody: { paddingHorizontal: 14, paddingVertical: 12, backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12 },
   searchInput: { flex: 1, paddingVertical: 10, color: COLORS.ink },
   filterRow: { flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 10 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: COLORS.wash },
   filterChipActive: { backgroundColor: COLORS.accent },
   filterChipText: { color: COLORS.ink, fontWeight: "600", fontSize: 12.5 },
   filterChipTextActive: { color: COLORS.accentInk },
-  subFilterRow: { flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 8, flexWrap: "wrap" },
+  subFilterRow: { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
   subFilterChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
   subFilterChipActive: { borderColor: COLORS.accent, backgroundColor: COLORS.wash },
   subFilterChipText: { color: COLORS.sub, fontWeight: "600", fontSize: 11.5 },
@@ -293,11 +336,6 @@ const styles = StyleSheet.create({
   pillFull: { backgroundColor: "#FBE7E7" },
   pillFullText: { color: "#D32F2F" },
   type: { color: COLORS.sub, fontSize: 12, marginTop: 8, fontWeight: "600" },
-  locationBox: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginHorizontal: 12, marginTop: 12 },
-  locationRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  locationLabel: { fontSize: 12.5, fontWeight: "700", color: COLORS.sub },
-  locationClear: { fontSize: 12, fontWeight: "700", color: COLORS.accent },
-  locationWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 8 },
   locationPill: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
   locationPillText: { color: COLORS.sub, fontSize: 11, fontWeight: "600" },
   accessBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginHorizontal: 12, marginTop: 12 },
