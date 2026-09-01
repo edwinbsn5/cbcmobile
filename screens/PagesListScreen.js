@@ -245,7 +245,7 @@ export default function PagesListScreen({ navigation }) {
                     {item.isVerified && <Ionicons name="checkmark-circle" size={14} color="#2563EB" style={{ marginLeft: 4 }} />}
                   </View>
                   <View style={styles.categoryPillRow}>
-                    {item.categories.slice(0, 3).map((c) => (
+                    {item.categories.slice(0, 2).map((c) => (
                       <View key={c.id} style={styles.categoryPill}>
                         <Text style={styles.categoryPillText}>{c.name}</Text>
                       </View>
@@ -353,11 +353,16 @@ const styles = StyleSheet.create({
   },
   cover: { width: "100%", height: 90, backgroundColor: "#eee" },
   body: { padding: 12 },
-  nameRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: -26 },
-  avatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: "#eee", borderWidth: 3, borderColor: COLORS.surface },
+  // Only the avatar overlaps the cover photo (a deliberate straddle, same
+  // as Instagram/Facebook profile headers) — the negative offset lives on
+  // the avatar alone, not the whole row, so the name/category text next to
+  // it stays fully inside the white body area instead of creeping up onto
+  // the image.
+  nameRow: { flexDirection: "row", alignItems: "flex-end", gap: 10 },
+  avatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: "#eee", borderWidth: 3, borderColor: COLORS.surface, marginTop: -26 },
   nameLine: { flexDirection: "row", alignItems: "center" },
   name: { color: COLORS.ink, fontSize: 15.5, fontWeight: "800", flexShrink: 1 },
-  categoryPillRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 3 },
+  categoryPillRow: { flexDirection: "row", flexWrap: "nowrap", overflow: "hidden", gap: 4, marginTop: 3 },
   categoryPill: { backgroundColor: COLORS.wash, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   categoryPillText: { color: COLORS.accent, fontSize: 10.5, fontWeight: "600" },
   followButton: { backgroundColor: COLORS.accent, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7, alignSelf: "center" },
