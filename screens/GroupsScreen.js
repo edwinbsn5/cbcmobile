@@ -52,10 +52,6 @@ export default function GroupsScreen({ navigation }) {
 
   return (
     <>
-      <View style={styles.ribbon}>
-        <Text style={styles.ribbonText}>✦ PLUGS &amp; MENTORS ✦</Text>
-      </View>
-
       <View style={styles.stickyBar}>
         <View style={styles.stickyPill}>
           <TouchableOpacity style={styles.stickyPillTap} onPress={() => setPickerOpen(true)}>
@@ -154,8 +150,6 @@ export default function GroupsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  ribbon: { backgroundColor: COLORS.accentInk, paddingVertical: 8, paddingHorizontal: 14, alignItems: "center" },
-  ribbonText: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
   stickyBar: {
     flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 12,
     backgroundColor: COLORS.wash, borderBottomWidth: 1, borderBottomColor: COLORS.border,
