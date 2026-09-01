@@ -72,6 +72,7 @@ export default function EventDetailScreen({ route, navigation }) {
   const [photos, setPhotos] = useState([]);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [discussionPosts, setDiscussionPosts] = useState([]);
+  const [manageMenuOpen, setManageMenuOpen] = useState(false);
 
   const load = useCallback(async () => {
     const [eventRes, rsvpRes, photosRes, postsRes] = await Promise.all([
@@ -208,6 +209,9 @@ export default function EventDetailScreen({ route, navigation }) {
   const isSuspended = event.status === "suspended";
   const canRsvp = event.status !== "cancelled" && !isSuspended;
   const saved = isSaved("event", event.id);
+  const canCancelEvent = isHost && event.status !== "cancelled";
+  const canBoostEvent = isHost && !event.isBoosted && event.status !== "cancelled" && !isSuspended;
+  const hasManageActions = canCancelEvent || canBoostEvent;
 
   return (
     <View style={styles.container}>
@@ -247,7 +251,42 @@ export default function EventDetailScreen({ route, navigation }) {
           )}
         </View>
 
-        <Text style={styles.eventTitle}>{event.name}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.eventTitle}>{event.name}</Text>
+          {hasManageActions && (
+            <View style={styles.manageMenuWrap}>
+              <TouchableOpacity style={styles.manageMenuTrigger} onPress={() => setManageMenuOpen((o) => !o)}>
+                <Ionicons name="ellipsis-vertical" size={18} color={COLORS.ink} />
+              </TouchableOpacity>
+              {manageMenuOpen && (
+                <View style={styles.manageMenuDropdown}>
+                  {canBoostEvent && (
+                    <TouchableOpacity
+                      style={styles.manageMenuItem}
+                      onPress={() => { setManageMenuOpen(false); navigation.navigate("BoostEvent", { event }); }}
+                    >
+                      <Ionicons name="flash-outline" size={16} color={COLORS.ink} />
+                      <Text style={styles.manageMenuItemText}>Boost this event</Text>
+                    </TouchableOpacity>
+                  )}
+                  {canBoostEvent && canCancelEvent && <View style={styles.manageMenuDivider} />}
+                  {canCancelEvent && (
+                    <TouchableOpacity
+                      style={styles.manageMenuItem}
+                      onPress={() => { setManageMenuOpen(false); handleCancel(); }}
+                      disabled={cancelling}
+                    >
+                      <Ionicons name="close-circle-outline" size={16} color="#D32F2F" />
+                      <Text style={[styles.manageMenuItemText, styles.manageMenuItemTextDanger]}>
+                        {cancelling ? "Cancelling..." : "Cancel event"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
         <Text style={styles.eventDateSub}>{formatWhen(event.startAt, event.endAt)}</Text>
 
         <View style={styles.identityRow}>
@@ -300,18 +339,6 @@ export default function EventDetailScreen({ route, navigation }) {
             <Text style={styles.dateLabel}>Date</Text>
           </View>
         </View>
-
-        {isHost && event.status !== "cancelled" ? (
-          <TouchableOpacity style={styles.outlineButton} onPress={handleCancel} disabled={cancelling}>
-            <Text style={styles.outlineButtonText}>{cancelling ? "Cancelling..." : "Cancel event"}</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {isHost && !event.isBoosted && event.status !== "cancelled" && !isSuspended && (
-          <TouchableOpacity style={styles.outlineButton} onPress={() => navigation.navigate("BoostEvent", { event })}>
-            <Text style={styles.outlineButtonText}>⚡ Boost this event</Text>
-          </TouchableOpacity>
-        )}
 
         <View style={styles.tabRow}>
           {TABS.map((t) => {
@@ -429,8 +456,20 @@ const styles = StyleSheet.create({
   coverBookmark: { position: "absolute", top: 10, right: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(20,24,28,0.4)", alignItems: "center", justifyContent: "center" },
   boostedBadge: { position: "absolute", top: 10, left: 10, backgroundColor: COLORS.accent, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 4 },
   boostedBadgeText: { color: COLORS.accentInk, fontSize: 11, fontWeight: "800" },
-  eventTitle: { fontSize: 19, fontWeight: "800", color: COLORS.ink, lineHeight: 25 },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
+  eventTitle: { flex: 1, fontSize: 19, fontWeight: "800", color: COLORS.ink, lineHeight: 25 },
   eventDateSub: { fontSize: 12.5, fontWeight: "600", color: COLORS.accent, marginTop: 4, marginBottom: 12 },
+  manageMenuWrap: { position: "relative", flexShrink: 0, marginTop: 2 },
+  manageMenuTrigger: { width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
+  manageMenuDropdown: {
+    position: "absolute", top: "100%", right: 0, marginTop: 6, backgroundColor: COLORS.surface, borderRadius: 12,
+    paddingVertical: 6, minWidth: 190, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2,
+    shadowRadius: 12, elevation: 8, zIndex: 20,
+  },
+  manageMenuItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  manageMenuItemText: { color: COLORS.ink, fontWeight: "700", fontSize: 13 },
+  manageMenuItemTextDanger: { color: "#D32F2F" },
+  manageMenuDivider: { height: 1, backgroundColor: COLORS.border, marginVertical: 4 },
   identityRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
   hostAvatar: { width: 48, height: 48, borderRadius: 14 },
   hostedByLabel: { fontSize: 10.5, color: COLORS.sub },
