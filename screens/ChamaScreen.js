@@ -252,34 +252,67 @@ export default function ChamaScreen({ navigation }) {
           <Text style={styles.empty}>{!county ? "Select a county above to see Investment Groups" : "No Investment Groups found"}</Text>
         )
       }
-      renderItem={({ item }) => (
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("ChamaDetail", { chamaId: item.id })}>
-          <Image source={{ uri: item.coverUrl }} style={styles.cover} contentFit="cover" />
-          <View style={styles.body}>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
-            <View style={styles.metaRow}>
-              <View style={styles.pill}><Text style={styles.pillText}>{item.filled} of {item.maxMembers} positions filled</Text></View>
-              <View style={[styles.pill, item.remaining > 0 ? styles.pillOpen : styles.pillFull]}>
-                <Text style={[styles.pillText, item.remaining > 0 ? styles.pillOpenText : styles.pillFullText]}>
-                  {item.remaining > 0 ? `${item.remaining} spots left` : "Full"}
-                </Text>
+      renderItem={({ item }) => {
+        // "Fill Gauge": a capacity bar is the card's focal point, answering
+        // "can I still get in?" at a glance — green with room to spare,
+        // amber once spots are genuinely scarce (≤20% of capacity left),
+        // grey once full. Same 3-tier read as the mockup this was built
+        // from, not just the old open/full 2-tier pill.
+        const fillState = item.remaining <= 0 ? "full" : item.remaining / item.maxMembers <= 0.2 ? "urgent" : "open";
+        const fillPct = Math.min(100, Math.round((item.filled / item.maxMembers) * 100));
+        return (
+          <TouchableOpacity style={styles.gCard} onPress={() => navigation.navigate("ChamaDetail", { chamaId: item.id })}>
+            <View style={styles.gTop}>
+              <Image source={{ uri: item.coverUrl }} style={styles.gThumb} contentFit="cover" />
+              <View style={styles.gTextBlock}>
+                <Text style={styles.gName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.gDesc} numberOfLines={2}>{item.description}</Text>
               </View>
             </View>
-            <Text style={styles.type}>
-              {item.contributionType === "fixed_recurring"
-                ? `KES ${item.contributionAmount?.toLocaleString()} / ${item.contributionFrequency}`
-                : `Goal: KES ${item.goalAmount?.toLocaleString()}`}
-            </Text>
-            {!!item.subCounty && (
-              <View style={styles.locationPill}>
-                <Ionicons name="location-outline" size={11} color={COLORS.sub} />
-                <Text style={styles.locationPillText}>{item.subCounty}, {item.county}</Text>
+
+            <View style={styles.gGaugeWrap}>
+              <View style={styles.gGaugeLabels}>
+                <Text style={styles.gFilledLabel}>{item.filled} of {item.maxMembers} filled</Text>
+                <Text
+                  style={[
+                    styles.gSpotsLabel,
+                    fillState === "open" && styles.gSpotsOpen,
+                    fillState === "urgent" && styles.gSpotsUrgent,
+                    fillState === "full" && styles.gSpotsFull,
+                  ]}
+                >
+                  {fillState === "full" ? "Full" : `${item.remaining} spot${item.remaining === 1 ? "" : "s"} left`}
+                </Text>
               </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      )}
+              <View style={styles.gTrack}>
+                <View
+                  style={[
+                    styles.gFill,
+                    { width: `${fillPct}%` },
+                    fillState === "open" && styles.gFillOpen,
+                    fillState === "urgent" && styles.gFillUrgent,
+                    fillState === "full" && styles.gFillFull,
+                  ]}
+                />
+              </View>
+            </View>
+
+            <View style={styles.gFoot}>
+              <Text style={styles.gMoney}>
+                {item.contributionType === "fixed_recurring"
+                  ? `KES ${item.contributionAmount?.toLocaleString()} / ${item.contributionFrequency}`
+                  : `Goal: KES ${item.goalAmount?.toLocaleString()}`}
+              </Text>
+              {!!item.subCounty && (
+                <View style={styles.gLoc}>
+                  <Ionicons name="location-outline" size={10} color={COLORS.sub} />
+                  <Text style={styles.gLocText}>{item.subCounty}, {item.county}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        );
+      }}
       />
     </>
   );
@@ -318,21 +351,32 @@ const styles = StyleSheet.create({
   subFilterChipText: { color: COLORS.sub, fontWeight: "600", fontSize: 11.5 },
   subFilterChipTextActive: { color: COLORS.accent, fontWeight: "700" },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },
-  card: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 10, overflow: "hidden" },
-  cover: { width: "100%", height: 110, backgroundColor: "#eee" },
-  body: { padding: 12 },
-  name: { color: COLORS.ink, fontSize: 17, fontWeight: "700" },
-  desc: { color: COLORS.sub, marginTop: 4 },
-  metaRow: { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
-  pill: { backgroundColor: COLORS.wash, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 4 },
-  pillText: { color: COLORS.ink, fontWeight: "700", fontSize: 11.5 },
-  pillOpen: { backgroundColor: "#E3F5E9" },
-  pillOpenText: { color: "#2E7D32" },
-  pillFull: { backgroundColor: "#FBE7E7" },
-  pillFullText: { color: "#D32F2F" },
-  type: { color: COLORS.sub, fontSize: 12, marginTop: 8, fontWeight: "600" },
-  locationPill: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
-  locationPillText: { color: COLORS.sub, fontSize: 11, fontWeight: "600" },
+  // ---------- Fill Gauge card ----------
+  gCard: {
+    backgroundColor: COLORS.surface, margin: 10, borderRadius: 14, overflow: "hidden",
+    shadowColor: "#0B1F3A", shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2,
+  },
+  gTop: { flexDirection: "row", gap: 10, padding: 12, paddingBottom: 0 },
+  gThumb: { width: 56, height: 56, borderRadius: 12, backgroundColor: COLORS.wash },
+  gTextBlock: { flex: 1, minWidth: 0 },
+  gName: { color: COLORS.ink, fontSize: 14.5, fontWeight: "700" },
+  gDesc: { color: COLORS.sub, fontSize: 12, marginTop: 3, lineHeight: 16 },
+  gGaugeWrap: { padding: 12 },
+  gGaugeLabels: { flexDirection: "row", justifyContent: "space-between", marginBottom: 5 },
+  gFilledLabel: { color: COLORS.sub, fontSize: 10.5, fontWeight: "700" },
+  gSpotsLabel: { fontSize: 10.5, fontWeight: "700" },
+  gSpotsOpen: { color: "#2E7D32" },
+  gSpotsUrgent: { color: "#B0730E" },
+  gSpotsFull: { color: "#8B9BB8" },
+  gTrack: { height: 8, borderRadius: 4, backgroundColor: COLORS.wash, overflow: "hidden" },
+  gFill: { height: "100%", borderRadius: 4 },
+  gFillOpen: { backgroundColor: "#2E7D32" },
+  gFillUrgent: { backgroundColor: "#B0730E" },
+  gFillFull: { backgroundColor: "#8B9BB8" },
+  gFoot: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingBottom: 12, marginTop: 4 },
+  gMoney: { color: COLORS.ink, fontSize: 11.5, fontWeight: "600" },
+  gLoc: { flexDirection: "row", alignItems: "center", gap: 3 },
+  gLocText: { color: COLORS.sub, fontSize: 10.5, fontWeight: "600" },
   accessBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginHorizontal: 12, marginTop: 12 },
   accessBannerText: { color: "#8A6D00", fontSize: 12, fontWeight: "600", flex: 1 },
   feedCard: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 10, padding: 14 },
