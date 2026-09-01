@@ -70,7 +70,7 @@ export default function GroupsScreen({ navigation }) {
           )}
         </View>
         <TouchableOpacity style={styles.stickyIconBtn} onPress={() => navigation.navigate("CreateGroup")}>
-          <Ionicons name="add" size={18} color={COLORS.ink} />
+          <Ionicons name="add" size={18} color={COLORS.accentInk} />
         </TouchableOpacity>
       </View>
 
@@ -158,15 +158,15 @@ const styles = StyleSheet.create({
   ribbonText: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
   stickyBar: {
     flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 12,
-    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.wash, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   stickyPill: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
-    backgroundColor: COLORS.wash, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
   },
   stickyPillTap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
   stickyPillText: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink, flexShrink: 1 },
-  stickyIconBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
+  stickyIconBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.accent, alignItems: "center", justifyContent: "center" },
   empty: { textAlign: "center", color: "#999", marginTop: 40 },
   card: { backgroundColor: COLORS.surface, margin: 10, borderRadius: 14, overflow: "hidden", shadowColor: "#0B1F3A", shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
   cover: { width: "100%", height: 100, backgroundColor: "#eee" },

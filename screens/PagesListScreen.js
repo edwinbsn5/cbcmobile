@@ -137,10 +137,6 @@ export default function PagesListScreen({ navigation }) {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.ribbon}>
-        <Text style={styles.ribbonText}>✦ FIND BSN &amp; SERVICES ✦</Text>
-      </View>
-
       <View style={styles.stickyBar}>
         <CountyPicker
           value={county}
@@ -159,7 +155,7 @@ export default function PagesListScreen({ navigation }) {
           <Ionicons name="chevron-down" size={11} color={COLORS.sub} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.stickyIconBtn} onPress={() => navigation.navigate("CreatePage")}>
-          <Ionicons name="add" size={18} color={COLORS.ink} />
+          <Ionicons name="add" size={18} color={COLORS.accentInk} />
         </TouchableOpacity>
       </View>
 
@@ -316,18 +312,16 @@ export default function PagesListScreen({ navigation }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1, backgroundColor: COLORS.bg },
-  ribbon: { backgroundColor: COLORS.accentInk, paddingVertical: 8, paddingHorizontal: 14, alignItems: "center" },
-  ribbonText: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
   stickyBar: {
     flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 12,
-    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.wash, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   stickyPill: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
-    backgroundColor: COLORS.wash, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
   },
   stickyPillText: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink, flexShrink: 1 },
-  stickyIconBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
+  stickyIconBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.accent, alignItems: "center", justifyContent: "center" },
   countyWarning: { fontSize: 11.5, color: "#D32F2F", fontWeight: "600", marginTop: 12, marginHorizontal: 14, textAlign: "center" },
   browsingBanner: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",

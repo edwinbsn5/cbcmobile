@@ -231,11 +231,11 @@ const styles = StyleSheet.create({
   headerSubtitle: { fontSize: 12, color: "#B9C6DC", marginTop: 3 },
   stickyBar: {
     flexDirection: "row", gap: 8, padding: 10, paddingHorizontal: 12,
-    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.wash, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   stickyPill: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
-    backgroundColor: COLORS.wash, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
   },
   stickyPillTap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
   stickyPillText: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink, flexShrink: 1 },

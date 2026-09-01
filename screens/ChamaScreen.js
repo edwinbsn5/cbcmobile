@@ -120,10 +120,6 @@ export default function ChamaScreen({ navigation }) {
   // Achievements mode in the first place so it can't be hidden itself.
   const topChrome = (
     <View>
-      <View style={styles.ribbon}>
-        <Text style={styles.ribbonText}>✦ INVESTMENT GROUPS ✦</Text>
-      </View>
-
       <View style={styles.stickyBar}>
         {!isFeedFilter && (
           <CountyPicker
@@ -150,7 +146,7 @@ export default function ChamaScreen({ navigation }) {
           style={styles.stickyIconBtn}
           onPress={() => (hasAccess ? navigation.navigate("CreateChama") : setAccessModalVisible(true))}
         >
-          <Ionicons name="add" size={18} color={COLORS.ink} />
+          <Ionicons name="add" size={18} color={COLORS.accentInk} />
         </TouchableOpacity>
       </View>
 
@@ -290,19 +286,17 @@ export default function ChamaScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  ribbon: { backgroundColor: COLORS.accentInk, paddingVertical: 8, paddingHorizontal: 14, alignItems: "center" },
-  ribbonText: { color: COLORS.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
   stickyBar: {
     flexDirection: "row", justifyContent: "flex-end", gap: 8, padding: 10, paddingHorizontal: 12,
-    backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.wash, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   stickyPill: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
-    backgroundColor: COLORS.wash, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 8,
   },
   stickyPillTap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
   stickyPillText: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink, flexShrink: 1 },
-  stickyIconBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
+  stickyIconBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: COLORS.accent, alignItems: "center", justifyContent: "center" },
   accordionHead: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingVertical: 12, paddingHorizontal: 16, backgroundColor: COLORS.surface,
@@ -313,7 +307,7 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12 },
   searchInput: { flex: 1, paddingVertical: 10, color: COLORS.ink },
   filterRow: { flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 10 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: COLORS.wash },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
   filterChipActive: { backgroundColor: COLORS.accent },
   filterChipText: { color: COLORS.ink, fontWeight: "600", fontSize: 12.5 },
   filterChipTextActive: { color: COLORS.accentInk },
