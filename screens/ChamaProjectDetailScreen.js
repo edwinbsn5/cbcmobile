@@ -43,6 +43,7 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
   const [expenseReason, setExpenseReason] = useState("");
   const [posting, setPosting] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [addingMilestone, setAddingMilestone] = useState(false);
 
   const load = useCallback(() => {
     client.get(`/chama/${chamaId}/projects/${projectId}`)
@@ -55,13 +56,20 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function addMilestone() {
-    if (!milestoneTitle.trim()) return;
+    // Guards against the exact bug reported: the round trip has enough
+    // delay that a second tap (or a second Enter, since the same input's
+    // onSubmitEditing calls this too) before the first request lands used
+    // to fire a second, near-identical POST — two milestones from one tap.
+    if (!milestoneTitle.trim() || addingMilestone) return;
+    setAddingMilestone(true);
     try {
       await client.post(`/chama/${chamaId}/projects/${projectId}/milestones`, { title: milestoneTitle.trim() });
       setMilestoneTitle("");
       load();
     } catch (e) {
       Alert.alert("Couldn't add milestone", e.response?.data?.error || e.message);
+    } finally {
+      setAddingMilestone(false);
     }
   }
 
@@ -246,8 +254,17 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
         )}
         {isAdmin && (
           <View style={[styles.composer, { marginTop: 10 }]}>
-            <TextInput style={styles.input} placeholder="New milestone" value={milestoneTitle} onChangeText={setMilestoneTitle} onSubmitEditing={addMilestone} />
-            <TouchableOpacity style={styles.secondaryButton} onPress={addMilestone}><Text style={styles.secondaryButtonText}>Add</Text></TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="New milestone"
+              value={milestoneTitle}
+              onChangeText={setMilestoneTitle}
+              onSubmitEditing={addMilestone}
+              editable={!addingMilestone}
+            />
+            <TouchableOpacity style={styles.secondaryButton} onPress={addMilestone} disabled={addingMilestone}>
+              {addingMilestone ? <ActivityIndicator size="small" color={COLORS.accent} /> : <Text style={styles.secondaryButtonText}>Add</Text>}
+            </TouchableOpacity>
           </View>
         )}
         {project.milestones.map((m, idx) => (
