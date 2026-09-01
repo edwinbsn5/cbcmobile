@@ -16,11 +16,19 @@ export default function AdCard({ ad }) {
         <Text style={styles.sponsored}>Sponsored</Text>
         <Text style={styles.advertiser}>· {ad.advertiser}</Text>
       </View>
-      <Image source={{ uri: ad.imageUrl }} style={styles.media} contentFit="cover" />
+      {/* A boosted post that's pure text (no photo/video) has no imageUrl
+          at all — rendering the Image unconditionally left a blank grey
+          box in that case. */}
+      {!!ad.imageUrl && <Image source={{ uri: ad.imageUrl }} style={styles.media} contentFit="cover" />}
       <Text style={styles.headline}>{ad.headline}</Text>
-      <TouchableOpacity style={styles.cta} onPress={() => openInAppBrowser(ad.targetUrl)}>
-        <Text style={styles.ctaText}>{ad.cta}</Text>
-      </TouchableOpacity>
+      {/* A boosted post (as opposed to an admin-created ad) never has a
+          cta/targetUrl — rendering the button unconditionally left an
+          empty, non-functional button under every user-boosted post. */}
+      {!!ad.cta && (
+        <TouchableOpacity style={styles.cta} onPress={() => openInAppBrowser(ad.targetUrl)}>
+          <Text style={styles.ctaText}>{ad.cta}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
