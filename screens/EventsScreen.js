@@ -127,38 +127,37 @@ export default function EventsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {filtersOpen && (
+        <View style={styles.accordionBody}>
+          <View style={styles.searchRow}>
+            <Ionicons name="search-outline" size={16} color={COLORS.sub} />
+            <TextInput
+              style={styles.searchInput}
+              value={q}
+              onChangeText={setQ}
+              placeholder="Search events..."
+              placeholderTextColor={COLORS.sub}
+              returnKeyType="search"
+            />
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow}>
+            {FILTERS.map((f) => (
+              <TouchableOpacity key={f.key} style={styles.tab} onPress={() => setFilter(f.key)}>
+                <Text style={[styles.tabText, filter === f.key && styles.tabTextActive]}>{f.label}</Text>
+                <View style={[styles.tabMarker, filter === f.key && styles.tabMarkerActive]} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       <FlatList
         data={events}
         keyExtractor={(e) => e.id}
         refreshing={loading}
         onRefresh={load}
         contentContainerStyle={{ padding: 12, paddingBottom: insets.bottom + 90 }}
-        ListHeaderComponent={
-          filtersOpen ? (
-            <View>
-              <View style={styles.searchRow}>
-                <Ionicons name="search-outline" size={16} color={COLORS.sub} />
-                <TextInput
-                  style={styles.searchInput}
-                  value={q}
-                  onChangeText={setQ}
-                  placeholder="Search events..."
-                  placeholderTextColor={COLORS.sub}
-                  returnKeyType="search"
-                />
-              </View>
-
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow}>
-                {FILTERS.map((f) => (
-                  <TouchableOpacity key={f.key} style={styles.tab} onPress={() => setFilter(f.key)}>
-                    <Text style={[styles.tabText, filter === f.key && styles.tabTextActive]}>{f.label}</Text>
-                    <View style={[styles.tabMarker, filter === f.key && styles.tabMarkerActive]} />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          ) : null
-        }
         ListEmptyComponent={
           loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : (
             <Text style={styles.empty}>
@@ -239,7 +238,13 @@ const styles = StyleSheet.create({
   },
   stickyPillTap: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
   stickyPillText: { fontSize: 11.5, fontWeight: "700", color: COLORS.ink, flexShrink: 1 },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingHorizontal: 12, marginBottom: 12 },
+  // Fixed right below the sticky bar, not scrolled inside the list — a
+  // FlatList's ListHeaderComponent scrolls out of view with the rest of
+  // the content, so a trigger that's always visible (the pill above) but a
+  // body that isn't was the actual bug behind "search & filter not
+  // visible": opening it while scrolled down opened it off-screen.
+  accordionBody: { backgroundColor: COLORS.surface, padding: 12, paddingBottom: 0, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingHorizontal: 12, marginBottom: 12 },
   searchInput: { flex: 1, paddingVertical: 10, color: COLORS.ink },
   tabRow: { borderBottomWidth: 1, borderBottomColor: COLORS.border, marginBottom: 12 },
   tab: { marginRight: 22, paddingBottom: 9, alignItems: "center" },

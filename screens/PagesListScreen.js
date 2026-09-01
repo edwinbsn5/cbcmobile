@@ -159,67 +159,68 @@ export default function PagesListScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {/* Fixed right below the sticky bar, not scrolled inside the list —
+          a FlatList's ListHeaderComponent scrolls out of view with the
+          rest of the content, so opening this while already scrolled down
+          used to open it off-screen above the visible area. */}
+      {!county && loadedCounty && (
+        <Text style={styles.countyWarning}>Select a county above before browsing</Text>
+      )}
+
+      {categoryId ? (
+        <View style={styles.browsingBanner}>
+          <Text style={styles.browsingBannerText}>Browsing: {categoryName}{county ? ` · ${county}` : ""}</Text>
+          <TouchableOpacity onPress={clearCategory}>
+            <Ionicons name="close-circle" size={18} color={COLORS.sub} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View>
+          <TouchableOpacity style={styles.accordionHead} onPress={() => setCategoryAccordionOpen((o) => !o)}>
+            <Text style={styles.accordionTitle}>Browse by category</Text>
+            <Ionicons name={categoryAccordionOpen ? "chevron-up" : "chevron-down"} size={16} color={COLORS.sub} />
+          </TouchableOpacity>
+          {categoryAccordionOpen && (
+            <View style={styles.directory}>
+              <View style={styles.catGrid}>
+                {directory.map((cat) => {
+                  const expanded = expandedCategoryId === cat.id;
+                  return (
+                    <TouchableOpacity key={cat.id} style={styles.catTile} onPress={() => tapCategoryTile(cat)}>
+                      <View style={[styles.catTileIcon, expanded && styles.catTileIconActive]}>
+                        <Ionicons name={iconForCategory(cat.name)} size={22} color={expanded ? "#fff" : COLORS.accentInk} />
+                      </View>
+                      <Text style={styles.catTileText} numberOfLines={2}>{cat.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {expandedCategoryId && (() => {
+                const cat = directory.find((c) => c.id === expandedCategoryId);
+                if (!cat) return null;
+                return (
+                  <View style={styles.subChipsBox}>
+                    <TouchableOpacity style={styles.chip} onPress={() => browseCategory(cat.id, cat.name)}>
+                      <Text style={styles.chipText}>All {cat.name}</Text>
+                    </TouchableOpacity>
+                    {cat.subcategories.map((sub) => (
+                      <TouchableOpacity key={sub.id} style={styles.chip} onPress={() => browseCategory(sub.id, sub.name)}>
+                        <Text style={styles.chipText}>{sub.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                );
+              })()}
+            </View>
+          )}
+        </View>
+      )}
+
       <FlatList
         style={styles.container}
         data={pages}
         keyExtractor={(p) => p.id}
-        ListHeaderComponent={
-          <View>
-            {!county && loadedCounty && (
-              <Text style={styles.countyWarning}>Select a county above before browsing</Text>
-            )}
-
-            {categoryId ? (
-              <View style={styles.browsingBanner}>
-                <Text style={styles.browsingBannerText}>Browsing: {categoryName}{county ? ` · ${county}` : ""}</Text>
-                <TouchableOpacity onPress={clearCategory}>
-                  <Ionicons name="close-circle" size={18} color={COLORS.sub} />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View>
-                <TouchableOpacity style={styles.accordionHead} onPress={() => setCategoryAccordionOpen((o) => !o)}>
-                  <Text style={styles.accordionTitle}>Browse by category</Text>
-                  <Ionicons name={categoryAccordionOpen ? "chevron-up" : "chevron-down"} size={16} color={COLORS.sub} />
-                </TouchableOpacity>
-                {categoryAccordionOpen && (
-                  <View style={styles.directory}>
-                    <View style={styles.catGrid}>
-                      {directory.map((cat) => {
-                        const expanded = expandedCategoryId === cat.id;
-                        return (
-                          <TouchableOpacity key={cat.id} style={styles.catTile} onPress={() => tapCategoryTile(cat)}>
-                            <View style={[styles.catTileIcon, expanded && styles.catTileIconActive]}>
-                              <Ionicons name={iconForCategory(cat.name)} size={22} color={expanded ? "#fff" : COLORS.accentInk} />
-                            </View>
-                            <Text style={styles.catTileText} numberOfLines={2}>{cat.name}</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-
-                    {expandedCategoryId && (() => {
-                      const cat = directory.find((c) => c.id === expandedCategoryId);
-                      if (!cat) return null;
-                      return (
-                        <View style={styles.subChipsBox}>
-                          <TouchableOpacity style={styles.chip} onPress={() => browseCategory(cat.id, cat.name)}>
-                            <Text style={styles.chipText}>All {cat.name}</Text>
-                          </TouchableOpacity>
-                          {cat.subcategories.map((sub) => (
-                            <TouchableOpacity key={sub.id} style={styles.chip} onPress={() => browseCategory(sub.id, sub.name)}>
-                              <Text style={styles.chipText}>{sub.name}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      );
-                    })()}
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        }
         ListEmptyComponent={
           <Text style={styles.empty}>
             {!county

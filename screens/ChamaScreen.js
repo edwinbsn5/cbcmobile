@@ -166,6 +166,48 @@ export default function ChamaScreen({ navigation }) {
         ))}
       </View>
 
+      {/* Fixed here (not the FlatList's ListHeaderComponent) — a
+          ListHeaderComponent scrolls out of view with the rest of the
+          list, so opening this while already scrolled down used to open
+          it off-screen above the visible area. Search, sub-county, and
+          the Random/Filled-Up/Unfilled sub-filter, collapsed by default.
+          Not shown at all in Achievements mode, same as before. */}
+      {!isFeedFilter && (
+        <View>
+          <TouchableOpacity style={styles.accordionHead} onPress={() => setMoreOpen((o) => !o)}>
+            <Text style={styles.accordionTitle}>Search &amp; sub-filters</Text>
+            <Ionicons name={moreOpen ? "chevron-up" : "chevron-down"} size={16} color={COLORS.sub} />
+          </TouchableOpacity>
+          {moreOpen && (
+            <View style={styles.accordionBody}>
+              {!!county && (
+                <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} placeholder="Any sub-county" />
+              )}
+              <View style={[styles.searchRow, county ? { marginTop: 8 } : null]}>
+                <Ionicons name="search-outline" size={16} color={COLORS.sub} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search Investment Groups"
+                  value={search}
+                  onChangeText={setSearch}
+                  onSubmitEditing={() => { setLoading(true); load(); }}
+                  returnKeyType="search"
+                />
+              </View>
+              {isBrowseFilter && (
+                <View style={styles.subFilterRow}>
+                  {SUB_FILTERS.map((f) => (
+                    <TouchableOpacity key={f.key} style={[styles.subFilterChip, subFilter === f.key && styles.subFilterChipActive]} onPress={() => setSubFilter(f.key)}>
+                      <Text style={[styles.subFilterChipText, subFilter === f.key && styles.subFilterChipTextActive]}>{f.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      )}
+
       <FeatureAccessModal
         visible={accessModalVisible}
         onClose={() => setAccessModalVisible(false)}
@@ -176,45 +218,6 @@ export default function ChamaScreen({ navigation }) {
     </View>
   );
 
-  // Scrolls with the list (ListHeaderComponent) — search, sub-county, and
-  // the Random/Filled-Up/Unfilled sub-filter, collapsed by default. Not
-  // shown at all in Achievements mode, same as before.
-  const header = !isFeedFilter ? (
-    <View>
-      <TouchableOpacity style={styles.accordionHead} onPress={() => setMoreOpen((o) => !o)}>
-        <Text style={styles.accordionTitle}>Search &amp; sub-filters</Text>
-        <Ionicons name={moreOpen ? "chevron-up" : "chevron-down"} size={16} color={COLORS.sub} />
-      </TouchableOpacity>
-      {moreOpen && (
-        <View style={styles.accordionBody}>
-          {!!county && (
-            <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} placeholder="Any sub-county" />
-          )}
-          <View style={[styles.searchRow, county ? { marginTop: 8 } : null]}>
-            <Ionicons name="search-outline" size={16} color={COLORS.sub} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search Investment Groups"
-              value={search}
-              onChangeText={setSearch}
-              onSubmitEditing={() => { setLoading(true); load(); }}
-              returnKeyType="search"
-            />
-          </View>
-          {isBrowseFilter && (
-            <View style={styles.subFilterRow}>
-              {SUB_FILTERS.map((f) => (
-                <TouchableOpacity key={f.key} style={[styles.subFilterChip, subFilter === f.key && styles.subFilterChipActive]} onPress={() => setSubFilter(f.key)}>
-                  <Text style={[styles.subFilterChipText, subFilter === f.key && styles.subFilterChipTextActive]}>{f.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      )}
-    </View>
-  ) : null;
-
   if (filter === "achievements") {
     return (
       <>
@@ -223,7 +226,6 @@ export default function ChamaScreen({ navigation }) {
           style={styles.container}
           data={chamas}
           keyExtractor={(a) => a.id}
-          ListHeaderComponent={header}
           ListEmptyComponent={loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : <Text style={styles.empty}>No public achievements shared yet</Text>}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.feedCard} onPress={() => navigation.navigate("ChamaDetail", { chamaId: item.chama?.id })}>
@@ -245,7 +247,6 @@ export default function ChamaScreen({ navigation }) {
       style={styles.container}
       data={displayedChamas}
       keyExtractor={(c) => c.id}
-      ListHeaderComponent={header}
       ListEmptyComponent={
         loading ? <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.accent} /> : (
           <Text style={styles.empty}>{!county ? "Select a county above to see Investment Groups" : "No Investment Groups found"}</Text>
