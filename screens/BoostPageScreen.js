@@ -6,11 +6,11 @@ import client from "../api/client";
 import CampusPicker from "../components/CampusPicker";
 import CountyPicker from "../components/CountyPicker";
 import SubCountyPicker from "../components/SubCountyPicker";
+import BoostTierPicker from "../components/BoostTierPicker";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
 const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
-const BOOST_COST_KES = 100; // must match backend/routes/pageBoosts.js
 
 export default function BoostPageScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
@@ -26,20 +26,27 @@ export default function BoostPageScreen({ route, navigation }) {
   const [contactEmail, setContactEmail] = useState(user?.boostContactEmail || user?.email || "");
   const [submitting, setSubmitting] = useState(false);
   const [freeBoostAvailable, setFreeBoostAvailable] = useState(false);
+  const [tiers, setTiers] = useState([]);
+  const [tier, setTier] = useState("month");
 
   // Gold-tier Influencer Quest users get one free Page boost every 30 days
   // (see backend/services/influencerQuest.js's isGoldTier) — the wallet
   // charge is waived server-side automatically; this just decides what to
-  // show here.
+  // show here. Tiers themselves come from the backend
+  // (services/boostTiers.js) rather than being hardcoded — one source of
+  // truth for pricing.
   useEffect(() => {
     client.get("/influencer-quest/benefits").then((r) => setFreeBoostAvailable(r.data.freePageBoostAvailable)).catch(() => {});
+    client.get("/boosts/tiers").then((r) => setTiers(r.data)).catch(() => {});
   }, []);
 
   async function handleBoost() {
+    const selectedTier = tiers.find((t) => t.id === tier);
     setSubmitting(true);
     try {
       const { data } = await client.post("/page-boosts", {
         pageId: page.id,
+        tierId: tier,
         targetCampus: targetCampus || undefined,
         targetCounty: targetCounty || undefined,
         targetSubCounty: targetSubCounty || undefined,
@@ -50,11 +57,12 @@ export default function BoostPageScreen({ route, navigation }) {
         contactEmail: contactEmail.trim() || undefined,
       });
       updateWalletBalance(data.walletBalance);
+      const durationLabel = selectedTier?.durationDays === 1 ? "1 day" : selectedTier?.durationDays >= 180 ? "6 months" : `${selectedTier?.durationDays} days`;
       Alert.alert(
         "Page boosted!",
         data.usedFreeBoost
-          ? "Your Page is now featured in the home feed for the next 7 days — this month's free Gold tier perk."
-          : "Your Page is now featured in the home feed's Featured Pages slot for the next 7 days."
+          ? `Your Page is now featured in the home feed for the next ${durationLabel} — this month's free Gold tier perk.`
+          : `Your Page is now featured in the home feed's Featured Pages slot for the next ${durationLabel}.`
       );
       navigation.goBack();
     } catch (e) {
@@ -127,19 +135,17 @@ export default function BoostPageScreen({ route, navigation }) {
       <Text style={styles.label}>Email</Text>
       <TextInput style={styles.input} value={contactEmail} onChangeText={setContactEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
 
-      {freeBoostAvailable ? (
-        <View style={styles.freeBox}>
-          <Text style={styles.freeText}>🔵 Free this month — your Gold tier benefit covers this boost for 7 days</Text>
-        </View>
-      ) : (
-        <View style={styles.costBox}>
-          <Text style={styles.costText}>Cost: KES {BOOST_COST_KES} for 7 days</Text>
-        </View>
+      <Text style={styles.sectionTitle}>Choose a duration</Text>
+      {freeBoostAvailable && (
+        <Text style={styles.hint}>🔵 Free this month — your Gold tier benefit covers whichever plan you pick below</Text>
       )}
+      <BoostTierPicker tiers={tiers} value={tier} onChange={setTier} freeBoostAvailable={freeBoostAvailable} loading={!tiers.length} />
 
-      <TouchableOpacity style={styles.button} onPress={handleBoost} disabled={submitting}>
+      <TouchableOpacity style={styles.button} onPress={handleBoost} disabled={submitting || !tiers.length}>
         {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : (
-          <Text style={styles.buttonText}>{freeBoostAvailable ? "Boost for free" : `Boost for KES ${BOOST_COST_KES}`}</Text>
+          <Text style={styles.buttonText}>
+            {freeBoostAvailable ? "Boost for free" : `Boost for KES ${tiers.find((t) => t.id === tier)?.costKES ?? ""}`}
+          </Text>
         )}
       </TouchableOpacity>
     </ScrollView>
@@ -163,10 +169,6 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
   chipText: { color: COLORS.ink, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: COLORS.accentInk },
-  costBox: { backgroundColor: COLORS.wash, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24 },
-  costText: { color: COLORS.accent, fontWeight: "700" },
-  freeBox: { backgroundColor: "#E6F4EA", borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24 },
-  freeText: { color: "#1E7E34", fontWeight: "700", textAlign: "center" },
   button: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 16 },
   buttonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 16 },
 });

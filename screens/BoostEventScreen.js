@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,11 +6,11 @@ import client from "../api/client";
 import CampusPicker from "../components/CampusPicker";
 import CountyPicker from "../components/CountyPicker";
 import SubCountyPicker from "../components/SubCountyPicker";
+import BoostTierPicker from "../components/BoostTierPicker";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
 const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
-const BOOST_COST_KES = 100; // must match backend/routes/eventBoosts.js
 
 export default function BoostEventScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
@@ -25,12 +25,23 @@ export default function BoostEventScreen({ route, navigation }) {
   const [contactPhone, setContactPhone] = useState(user?.boostContactPhone || user?.phone || "");
   const [contactEmail, setContactEmail] = useState(user?.boostContactEmail || user?.email || "");
   const [submitting, setSubmitting] = useState(false);
+  const [tiers, setTiers] = useState([]);
+  const [tier, setTier] = useState("month");
+
+  // Tiers come from the backend (services/boostTiers.js) rather than being
+  // hardcoded — one source of truth for pricing. No free-boost path for
+  // events, unlike posts/groups/pages/market listings.
+  useEffect(() => {
+    client.get("/boosts/tiers").then((r) => setTiers(r.data)).catch(() => {});
+  }, []);
 
   async function handleBoost() {
+    const selectedTier = tiers.find((t) => t.id === tier);
     setSubmitting(true);
     try {
       const { data } = await client.post("/event-boosts", {
         eventId: event.id,
+        tierId: tier,
         targetCampus: targetCampus || undefined,
         targetCounty: targetCounty || undefined,
         targetSubCounty: targetSubCounty || undefined,
@@ -41,7 +52,8 @@ export default function BoostEventScreen({ route, navigation }) {
         contactEmail: contactEmail.trim() || undefined,
       });
       updateWalletBalance(data.walletBalance);
-      Alert.alert("Event boosted!", "Your event is now pinned at the top of the Events list for the next 7 days.");
+      const durationLabel = selectedTier?.durationDays === 1 ? "1 day" : selectedTier?.durationDays >= 180 ? "6 months" : `${selectedTier?.durationDays} days`;
+      Alert.alert("Event boosted!", `Your event is now pinned at the top of the Events list for the next ${durationLabel}.`);
       navigation.goBack();
     } catch (e) {
       if (e.response?.status === 402) {
@@ -113,13 +125,12 @@ export default function BoostEventScreen({ route, navigation }) {
       <Text style={styles.label}>Email</Text>
       <TextInput style={styles.input} value={contactEmail} onChangeText={setContactEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
 
-      <View style={styles.costBox}>
-        <Text style={styles.costText}>Cost: KES {BOOST_COST_KES} for 7 days</Text>
-      </View>
+      <Text style={styles.sectionTitle}>Choose a duration</Text>
+      <BoostTierPicker tiers={tiers} value={tier} onChange={setTier} loading={!tiers.length} />
 
-      <TouchableOpacity style={styles.button} onPress={handleBoost} disabled={submitting}>
+      <TouchableOpacity style={styles.button} onPress={handleBoost} disabled={submitting || !tiers.length}>
         {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : (
-          <Text style={styles.buttonText}>Boost for KES {BOOST_COST_KES}</Text>
+          <Text style={styles.buttonText}>Boost for KES {tiers.find((t) => t.id === tier)?.costKES ?? ""}</Text>
         )}
       </TouchableOpacity>
     </ScrollView>
@@ -143,8 +154,6 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
   chipText: { color: COLORS.ink, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: COLORS.accentInk },
-  costBox: { backgroundColor: COLORS.wash, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 24 },
-  costText: { color: COLORS.accent, fontWeight: "700" },
   button: { backgroundColor: COLORS.accent, borderRadius: 8, padding: 14, alignItems: "center", marginTop: 16 },
   buttonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 16 },
 });
