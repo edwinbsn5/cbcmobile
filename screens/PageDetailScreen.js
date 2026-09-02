@@ -801,6 +801,7 @@ export default function PageDetailScreen({ route, navigation }) {
           </View>
           <MentionTextInput
             style={styles.composerInput}
+            containerStyle={styles.composerInputContainer}
             placeholder={`Share something as ${postAs === "page" ? page.name : "yourself"}...`}
             value={composerText}
             onChangeText={setComposerText}
@@ -949,6 +950,11 @@ const styles = StyleSheet.create({
   postAsText: { fontSize: 12, fontWeight: "700", color: COLORS.sub },
   postAsTextActive: { color: COLORS.accentInk },
   composerInput: { minHeight: 40, fontSize: 15, color: COLORS.ink },
+  // Overrides MentionTextInput's own default flex:1 wrapper (meant for a
+  // row-layout composer bar) — this composer stacks its input in a column
+  // inside a Modal sheet, where flex:1 has nothing bounded to grow into
+  // and the input collapses to near-zero height instead of opening.
+  composerInputContainer: { flex: 0 },
   previewWrap: { marginTop: 10, borderRadius: 8, overflow: "hidden" },
   preview: { width: "100%", height: 180, backgroundColor: "#000" },
   removeButton: {

@@ -18,8 +18,16 @@ import { COLORS } from "../theme";
  * comment on why group/page display names aren't regex round-trippable
  * from plain text) — tapping a suggestion replaces the partial token with
  * "@username " (the exact shape the backend's regex re-extracts on submit).
+ *
+ * containerStyle?: merged onto the wrapping View (default flex:1 — see its
+ * own comment). Needed any time this sits in a column layout instead of a
+ * row: flex:1 there has nothing bounded to grow into and the wrapper (so
+ * the TextInput inside it) collapses to near-zero height — the same
+ * "flex:1 lands on the wrong element for this layout" trap as
+ * CountyPicker's own `style` passthrough. Pass `{ flex: 0 }` to opt out
+ * and let the TextInput's own style (e.g. minHeight) size it instead.
  */
-const MentionTextInput = forwardRef(function MentionTextInput({ value, onChangeText, style, ...rest }, ref) {
+const MentionTextInput = forwardRef(function MentionTextInput({ value, onChangeText, style, containerStyle, ...rest }, ref) {
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -59,7 +67,7 @@ const MentionTextInput = forwardRef(function MentionTextInput({ value, onChangeT
   }
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, containerStyle]}>
       <TextInput
         ref={ref}
         style={style}
