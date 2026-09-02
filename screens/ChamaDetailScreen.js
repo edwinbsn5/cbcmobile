@@ -62,6 +62,33 @@ export default function ChamaDetailScreen({ route, navigation }) {
   const [joinModalVisible, setJoinModalVisible] = useState(false);
   const [accessBlocked, setAccessBlocked] = useState(false);
   const [accessModalVisible, setAccessModalVisible] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  // Admin-only — most chamas never set a cover photo at creation (it was
+  // always optional there) and, until this, had no way to add one
+  // afterward either, so they were stuck showing the plain navy
+  // placeholder permanently. Reuses the exact upload flow
+  // CreateChamaScreen's own cover picker uses.
+  async function handleChangeCover() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return Alert.alert("Permission needed", "Allow photo library access to pick a cover photo");
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
+    if (result.canceled || !result.assets?.length) return;
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType || "image/jpeg";
+    setUploadingCover(true);
+    try {
+      const form = new FormData();
+      form.append("file", { uri: asset.uri, name: asset.fileName || `cover.${mimeType.split("/")[1]}`, type: mimeType });
+      const { data: uploaded } = await client.post("/upload", form, { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 });
+      await client.patch(`/chama/${chamaId}/cover`, { coverUrl: uploaded.url });
+      setChama((prev) => ({ ...prev, coverUrl: uploaded.url }));
+    } catch (e) {
+      Alert.alert("Couldn't update cover photo", e.response?.data?.error || e.message);
+    } finally {
+      setUploadingCover(false);
+    }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -120,13 +147,27 @@ export default function ChamaDetailScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
-        {chama.coverUrl ? (
-          <Image source={{ uri: chama.coverUrl }} style={styles.cover} contentFit="cover" />
-        ) : (
-          <View style={styles.coverPlaceholder}>
-            <Ionicons name="cash-outline" size={34} color={COLORS.accent} />
-          </View>
-        )}
+        <View>
+          {chama.coverUrl ? (
+            <Image source={{ uri: chama.coverUrl }} style={styles.cover} contentFit="cover" />
+          ) : (
+            <View style={styles.coverPlaceholder}>
+              <Ionicons name="cash-outline" size={34} color={COLORS.accent} />
+            </View>
+          )}
+          {isAdmin && (
+            <TouchableOpacity style={styles.coverEditBadge} onPress={handleChangeCover} disabled={uploadingCover}>
+              {uploadingCover ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="camera-outline" size={14} color="#fff" />
+                  <Text style={styles.coverEditBadgeText}>{chama.coverUrl ? "Change cover" : "Add cover photo"}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
         <View style={styles.headerBody}>
           <Text style={styles.name}>{chama.name}</Text>
           <Text style={styles.desc}>{chama.description}</Text>
@@ -1586,7 +1627,16 @@ function JoinRequestModal({ visible, onClose, chamaId, groupCounty, navigation, 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   cover: { width: "100%", height: 150, backgroundColor: "#eee" },
-  coverPlaceholder: { width: "100%", height: 150, backgroundColor: COLORS.accentInk, alignItems: "center", justifyContent: "center" },
+  // Was a solid navy block — softened to the same "empty state" wash tone
+  // used elsewhere in the app (e.g. FeedScreen's quick-link icons) now
+  // that admins can actually clear this by adding a real photo (see
+  // coverEditBadge below) instead of being stuck with it permanently.
+  coverPlaceholder: { width: "100%", height: 150, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center" },
+  coverEditBadge: {
+    position: "absolute", bottom: 10, right: 10, flexDirection: "row", alignItems: "center", gap: 5,
+    backgroundColor: "rgba(11,31,58,0.75)", borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  coverEditBadgeText: { color: "#fff", fontSize: 11.5, fontWeight: "700" },
   headerBody: { padding: 16, backgroundColor: COLORS.surface },
   name: { fontSize: 20, fontWeight: "800", color: COLORS.ink },
   desc: { color: COLORS.sub, marginTop: 4 },
