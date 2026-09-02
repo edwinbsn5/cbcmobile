@@ -1,7 +1,13 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
+import client from "../api/client";
 import { openInAppBrowser } from "../utils/inAppBrowser";
+import { useAuth } from "../context/AuthContext";
+import { formatCount } from "../utils/formatCount";
+import ReactionBar from "./ReactionBar";
+import PostCommentsModal from "./PostCommentsModal";
 import { COLORS } from "../theme";
 
 // Renders an admin-created sponsored ad or a user-paid boosted post — both
@@ -10,6 +16,22 @@ import { COLORS } from "../theme";
 // Google ads never reach this component — FeedScreen.js intercepts the
 // feed's googleAd slot and renders AdMobBanner instead.
 export default function AdCard({ ad }) {
+  const { user } = useAuth();
+  // A user-boosted post carries the full real post (see adInterleave.js's
+  // boostedAdCandidates) — an admin-created ad never has one, since there's
+  // no real post underneath it to react to or comment on.
+  const [post, setPost] = useState(ad.post || null);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+
+  async function handleReact(reaction) {
+    try {
+      const { data } = await client.post(`/feed/${ad.boostedPostId}/react`, { reaction });
+      setPost((prev) => (prev ? { ...prev, reactions: data.reactions } : prev));
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
+  }
+
   return (
     <View style={styles.card}>
       <View style={styles.badgeRow}>
@@ -29,6 +51,23 @@ export default function AdCard({ ad }) {
           <Text style={styles.ctaText}>{ad.cta}</Text>
         </TouchableOpacity>
       )}
+      {!!post && (
+        <>
+          <View style={styles.actionsRow}>
+            <ReactionBar reactions={post.reactions} myUserId={user?.id} onReact={handleReact} />
+            <TouchableOpacity style={styles.pill} onPress={() => setCommentsOpen(true)}>
+              <Ionicons name="chatbubble-outline" size={14} color={COLORS.accent} />
+              <Text style={styles.pillText}>{formatCount(post.commentCount || 0)}</Text>
+            </TouchableOpacity>
+          </View>
+          <PostCommentsModal
+            visible={commentsOpen}
+            post={post}
+            basePath={`/feed/${ad.boostedPostId}/comments`}
+            onClose={() => setCommentsOpen(false)}
+          />
+        </>
+      )}
     </View>
   );
 }
@@ -42,4 +81,7 @@ const styles = StyleSheet.create({
   headline: { color: COLORS.ink, fontSize: 15, fontWeight: "600", marginBottom: 8 },
   cta: { backgroundColor: COLORS.wash, paddingVertical: 8, borderRadius: 6, alignItems: "center" },
   ctaText: { color: COLORS.accent, fontWeight: "700" },
+  actionsRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.bg },
+  pill: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: COLORS.wash, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 6 },
+  pillText: { fontSize: 12, fontWeight: "700", color: COLORS.ink },
 });
