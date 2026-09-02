@@ -587,14 +587,39 @@ export default function GroupDetailScreen({ route, navigation }) {
             {!!group.description && <Text style={styles.desc}>{group.description}</Text>}
 
             {!!group.tiers.length && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.tierChipsContent}>
-                {group.tiers.map((tier) => (
-                  <TouchableOpacity key={tier.id} style={styles.tierChip} onPress={handleScrollToTiers}>
-                    <Text style={styles.tierChipText}>{tier.name}</Text>
-                    <Text style={styles.tierChipPrice}>KES {tier.priceKES}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+              <View onLayout={(e) => { tiersYRef.current = e.nativeEvent.layout.y; }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.tierChipsContent}>
+                  {group.tiers.map((tier) => {
+                    const disabled = group.adminId === user?.id || isSuspended || subscribing === tier.id;
+                    return (
+                      <TouchableOpacity
+                        key={tier.id}
+                        style={[styles.tierChip, disabled && styles.tierChipDisabled]}
+                        onPress={() => handleSubscribe(tier)}
+                        disabled={disabled}
+                      >
+                        <Text style={styles.tierChipText}>{tier.name}</Text>
+                        <Text style={styles.tierChipPrice}>KES {tier.priceKES}/{tier.periodDays}d</Text>
+                        {tier.perks.slice(0, 2).map((perk, i) => (
+                          <Text key={i} style={styles.tierChipPerk} numberOfLines={1}>• {perk}</Text>
+                        ))}
+                        {tier.perks.length > 2 && <Text style={styles.tierChipPerkMore}>+{tier.perks.length - 2} more</Text>}
+                        <Text style={styles.tierChipCta}>
+                          {group.adminId === user?.id
+                            ? "You're the admin"
+                            : isSuspended
+                            ? "Suspended"
+                            : subscribing === tier.id
+                            ? "Processing..."
+                            : mySub?.subscribed
+                            ? "Renew / switch"
+                            : "Subscribe"}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
             )}
 
             {isAdmin && (
@@ -621,40 +646,6 @@ export default function GroupDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
               </View>
             )}
-
-            <View onLayout={(e) => { tiersYRef.current = e.nativeEvent.layout.y; }}>
-              <Text style={styles.sectionTitle}>Membership tiers</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 4 }}>
-                {group.tiers.map((tier) => (
-                  <View key={tier.id} style={styles.tierCard}>
-                    <View style={styles.tierHeader}>
-                      <Text style={styles.tierName}>{tier.name}</Text>
-                      <Text style={styles.tierPrice}>KES {tier.priceKES}/{tier.periodDays}d</Text>
-                    </View>
-                    {tier.perks.map((perk, i) => (
-                      <Text key={i} style={styles.perk}>• {perk}</Text>
-                    ))}
-                    <TouchableOpacity
-                      style={[styles.subscribeButton, (group.adminId === user?.id || isSuspended) && styles.disabledButton]}
-                      disabled={group.adminId === user?.id || isSuspended || subscribing === tier.id}
-                      onPress={() => handleSubscribe(tier)}
-                    >
-                      <Text style={styles.subscribeButtonText}>
-                        {group.adminId === user?.id
-                          ? "You're the admin"
-                          : isSuspended
-                          ? "Suspended"
-                          : subscribing === tier.id
-                          ? "Processing..."
-                          : mySub?.subscribed
-                          ? "Renew / switch tier"
-                          : "Subscribe from wallet"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
 
             <View style={styles.tabRow}>
               {TABS.map((t) => (
@@ -898,15 +889,21 @@ const styles = StyleSheet.create({
   statValue: { color: COLORS.ink, fontSize: 15, fontWeight: "800" },
   statLabel: { color: COLORS.sub, fontSize: 10.5, fontWeight: "600", marginTop: 2 },
   statDivider: { width: 1, height: 26, backgroundColor: COLORS.border },
-  // Was "Since {year}" / "N plans" — two generic, non-actionable chips.
-  // Now one chip per real membership tier (name + price), tappable to jump
-  // straight to that tier's full card below — more useful at a glance and
-  // saves the round trip of scrolling down just to see what tiers exist.
+  // Was "Since {year}" / "N plans" — two generic, non-actionable chips, then
+  // briefly a name+price pill that just scrolled down to a separate full
+  // "Membership tiers" section below. That section was pure duplication —
+  // same tiers, same Subscribe action — so it's gone, and this single row
+  // of cards is now the only tier UI: every package, its price/perks, and
+  // a direct Subscribe action, right below the description.
   chipsRow: { marginTop: 14 },
   tierChipsContent: { flexDirection: "row", gap: 8 },
-  tierChip: { backgroundColor: COLORS.wash, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6, alignItems: "center" },
-  tierChipText: { color: COLORS.ink, fontSize: 11.5, fontWeight: "700" },
-  tierChipPrice: { color: COLORS.accent, fontSize: 10, fontWeight: "800", marginTop: 1 },
+  tierChip: { width: 168, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 10, alignItems: "flex-start" },
+  tierChipDisabled: { opacity: 0.55 },
+  tierChipText: { color: COLORS.ink, fontSize: 13, fontWeight: "800" },
+  tierChipPrice: { color: COLORS.accent, fontSize: 11.5, fontWeight: "800", marginTop: 1, marginBottom: 6 },
+  tierChipPerk: { color: COLORS.sub, fontSize: 10.5, lineHeight: 14 },
+  tierChipPerkMore: { color: COLORS.sub, fontSize: 10, fontStyle: "italic", marginTop: 1 },
+  tierChipCta: { color: COLORS.accent, fontSize: 11.5, fontWeight: "800", marginTop: 8 },
   ctaRow: { flexDirection: "row", gap: 10, marginTop: 16 },
   subscribeCta: { flex: 1, backgroundColor: COLORS.accent, borderRadius: 10, paddingVertical: 12, alignItems: "center" },
   subscribeCtaText: { color: COLORS.accentInk, fontWeight: "800", fontSize: 13.5 },
@@ -921,14 +918,6 @@ const styles = StyleSheet.create({
   suspendedBannerText: { color: "#fff", fontWeight: "600", fontSize: 13, lineHeight: 18 },
   suspendedBannerReason: { color: "#FFE0E0", fontSize: 12.5, marginTop: 8, fontStyle: "italic" },
   sectionTitle: { color: COLORS.ink, fontSize: 16, fontWeight: "700", marginTop: 20, marginBottom: 10 },
-  tierCard: { width: 210, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 14 },
-  tierHeader: { marginBottom: 8 },
-  tierName: { color: COLORS.ink, fontSize: 15, fontWeight: "800" },
-  tierPrice: { fontSize: 14.5, fontWeight: "700", color: COLORS.accent, marginTop: 2 },
-  perk: { color: COLORS.sub, fontSize: 12.5, marginBottom: 3 },
-  subscribeButton: { backgroundColor: COLORS.accent, borderRadius: 8, paddingVertical: 10, alignItems: "center", marginTop: 10 },
-  disabledButton: { backgroundColor: "#BCC0C4" },
-  subscribeButtonText: { color: COLORS.accentInk, fontWeight: "700" },
   tabRow: { flexDirection: "row", marginTop: 22, borderTopWidth: 1, borderTopColor: COLORS.border },
   tab: { flex: 1, alignItems: "center", paddingVertical: 12 },
   tabActive: { borderBottomWidth: 2, borderBottomColor: COLORS.accent },
