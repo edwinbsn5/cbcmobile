@@ -85,6 +85,8 @@ function RequestsTab({ chamaId, onChange }) {
 
 function MembersTab({ chamaId, chama, onChange }) {
   const [members, setMembers] = useState(null);
+  const [addUsername, setAddUsername] = useState("");
+  const [adding, setAdding] = useState(false);
   const load = useCallback(() => { client.get(`/chama/${chamaId}/members`).then((r) => setMembers(r.data)).catch(() => setMembers([])); }, [chamaId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -98,6 +100,27 @@ function MembersTab({ chamaId, chama, onChange }) {
     ]);
   }
 
+  // The only way to bring back someone this admin (or a co-admin) removed —
+  // POST /:id/join refuses to let a removed user rejoin on their own
+  // initiative, only a self-left one can. Also just a quick way to add a
+  // brand-new member directly without them going through the request flow.
+  async function addByUsername() {
+    const username = addUsername.trim();
+    if (!username) return;
+    setAdding(true);
+    try {
+      const { data } = await client.post(`/chama/${chamaId}/members/add`, { username });
+      setAddUsername("");
+      Alert.alert("Added", `${data.user?.name || username} is now a member.`);
+      load();
+      onChange();
+    } catch (e) {
+      Alert.alert("Couldn't add member", e.response?.data?.error || e.message);
+    } finally {
+      setAdding(false);
+    }
+  }
+
   async function makeTreasurer(userId) {
     try { await client.post(`/chama/${chamaId}/treasurer`, { userId }); load(); }
     catch (e) { Alert.alert("Couldn't assign", e.response?.data?.error || e.message); }
@@ -106,6 +129,24 @@ function MembersTab({ chamaId, chama, onChange }) {
   if (!members) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
+      <Text style={styles.sectionTitle}>Add a member by username</Text>
+      <Text style={styles.tabHint}>The only way to bring back someone you removed — they can't request to rejoin on their own.</Text>
+      <View style={styles.rowActions}>
+        <TextInput
+          style={[styles.input, { flex: 1, marginBottom: 0 }]}
+          placeholder="username"
+          autoCapitalize="none"
+          value={addUsername}
+          onChangeText={setAddUsername}
+          onSubmitEditing={addByUsername}
+          editable={!adding}
+        />
+        <TouchableOpacity style={styles.approveBtn} onPress={addByUsername} disabled={adding || !addUsername.trim()}>
+          {adding ? <ActivityIndicator size="small" color={COLORS.accentInk} /> : <Text style={styles.approveBtnText}>Add</Text>}
+        </TouchableOpacity>
+      </View>
+
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Members ({members.length})</Text>
       {members.map((m) => (
         <View key={m.id} style={styles.memberCard}>
           <View style={{ flex: 1 }}>

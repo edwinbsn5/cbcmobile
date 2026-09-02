@@ -217,6 +217,16 @@ export default function ChamaDetailScreen({ route, navigation }) {
               <Text style={styles.secondaryButtonText}>Your request was declined — request again</Text>
             </TouchableOpacity>
           )}
+          {/* A "removed" row's own decidedBy tells self-left apart from
+              admin-removed — see routes/chama.js's POST /:id/join. Only a
+              self-left member can ask to rejoin here; someone an admin
+              removed gets no way back in from this screen at all — only
+              that admin can add them back, from Manage > Members. */}
+          {membership?.status === "removed" && membership.decidedBy === user?.id && (
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => setJoinModalVisible(true)}>
+              <Text style={styles.secondaryButtonText}>{chama.joinPolicy === "open" && chama.remaining > 0 ? "Rejoin Investment Group" : "Request to rejoin"}</Text>
+            </TouchableOpacity>
+          )}
 
           {isMember && (
             <View style={styles.actionRow}>
@@ -343,7 +353,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
 
   function handleLeave() {
     Alert.alert(
-      "Leave this chama?",
+      "Leave this Investment Group?",
       "You'll lose access immediately and would need to request to join again.",
       [
         { text: "Cancel", style: "cancel" },
@@ -485,7 +495,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
 
       {isMember && (
         <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>Active loans in this chama</Text>
+          <Text style={styles.infoLabel}>Active loans in this Investment Group</Text>
           {!allLoans ? (
             <ActivityIndicator size="small" color={COLORS.accent} />
           ) : activeLoans.length ? (
@@ -624,7 +634,7 @@ function LoansTab({ chamaId, chama }) {
       <View style={[styles.guarantorStatusPill, !mine.myGuarantorViability.viable && styles.guarantorStatusPillWarn]}>
         <Ionicons name={mine.myGuarantorViability.viable ? "checkmark-circle-outline" : "alert-circle-outline"} size={15} color={mine.myGuarantorViability.viable ? "#2E7D32" : "#8A6D00"} />
         <Text style={styles.guarantorStatusText}>
-          {mine.myGuarantorViability.viable ? "You're currently a viable guarantor for others in this chama" : `Not currently a viable guarantor: ${mine.myGuarantorViability.reason}`}
+          {mine.myGuarantorViability.viable ? "You're currently a viable guarantor for others in this Investment Group" : `Not currently a viable guarantor: ${mine.myGuarantorViability.reason}`}
         </Text>
       </View>
       {hasOpenApplication ? (
@@ -668,7 +678,7 @@ function LoansTab({ chamaId, chama }) {
       ))}
       {!mine.loans.length && <Text style={styles.gatedText}>You haven't borrowed anything yet.</Text>}
 
-      <Text style={[styles.tabHint, { marginTop: 16, fontWeight: "700" }]}>All loans in this chama</Text>
+      <Text style={[styles.tabHint, { marginTop: 16, fontWeight: "700" }]}>All loans in this Investment Group</Text>
       {all.map((l) => (
         <View key={l.id} style={styles.ledgerRow}>
           <View style={{ flex: 1 }}>
@@ -911,7 +921,7 @@ function MembersTab({ chamaId, isMember, chama, myUserId, isAdmin }) {
   function handleRemoveMember(m) {
     Alert.alert(
       `Remove ${m.user?.name}?`,
-      "They'll lose access to this chama immediately. This can't be undone from here — they'd need to request to join again.",
+      "They'll lose access to this Investment Group immediately. Unlike leaving on their own, they won't be able to request to rejoin themselves — you'd need to add them back from Manage > Members.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -1577,7 +1587,7 @@ function JoinRequestModal({ visible, onClose, chamaId, groupCounty, navigation, 
     if (countyMismatch) {
       return Alert.alert(
         "Wrong county",
-        `This chama is based in ${groupCounty}, not ${county} — joining one outside your own county is risky since you likely won't be able to attend physical meetings. Please look for one based in your own county instead.`
+        `This Investment Group is based in ${groupCounty}, not ${county} — joining one outside your own county is risky since you likely won't be able to attend physical meetings. Please look for one based in your own county instead.`
       );
     }
     setSubmitting(true);
@@ -1617,7 +1627,7 @@ function JoinRequestModal({ visible, onClose, chamaId, groupCounty, navigation, 
         <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
         {countyMismatch && (
           <Text style={styles.owedTextWarn}>
-            This chama is based in {groupCounty} — you likely won't be able to attend physical meetings from {county}.
+            This Investment Group is based in {groupCounty} — you likely won't be able to attend physical meetings from {county}.
           </Text>
         )}
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>

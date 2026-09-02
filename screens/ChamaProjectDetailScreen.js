@@ -369,7 +369,7 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
         {!project.expenses.length && <Text style={styles.emptySmall}>No expenses logged yet.</Text>}
 
         <Text style={styles.sectionTitle}>Project members ({project.members.length})</Text>
-        <Text style={styles.tabHint}>Only a chama's own members who register here can log a contribution to this project — a small crew running one project doesn't need the whole group involved.</Text>
+        <Text style={styles.tabHint}>Only an Investment Group's own members who register here can log a contribution to this project — a small crew running one project doesn't need the whole group involved.</Text>
         {(() => {
           const isRegistered = project.members.some((m) => m.userId === user?.id);
           return (
@@ -436,7 +436,7 @@ function FundProjectModal({ visible, onClose, onSubmit, busy }) {
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
         <Text style={styles.sheetTitle}>Fund from group pool</Text>
-        <Text style={styles.tabHint}>Moves money out of the chama's ledger into this project — it leaves the pool the same way a payout does, so it can't also be lent out.</Text>
+        <Text style={styles.tabHint}>Moves money out of the Investment Group's ledger into this project — it leaves the pool the same way a payout does, so it can't also be lent out.</Text>
         <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
         <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={busy}>
