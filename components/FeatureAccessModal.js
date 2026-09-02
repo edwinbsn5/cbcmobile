@@ -26,6 +26,7 @@ export default function FeatureAccessModal({ visible, onClose, feature, featureL
   }, [visible, feature]);
 
   async function purchase(tierKey) {
+    if (tierKey === "free") return claimFree();
     setPurchasing(tierKey);
     try {
       const { data } = await client.post("/access/purchase", { feature, tier: tierKey });
@@ -50,7 +51,30 @@ export default function FeatureAccessModal({ visible, onClose, feature, featureL
     }
   }
 
+  // Free is claimed, not bought — no wallet involved, and it's rate-limited
+  // to once every 30 days server-side (services/featureAccess.js's
+  // freeAccessAvailable), which the tier row below already reflects by
+  // disabling the button until it's available again.
+  async function claimFree() {
+    setPurchasing("free");
+    try {
+      const { data } = await client.post("/access/claim-free", { feature });
+      Alert.alert("Free access claimed!", `Your ${featureLabel} access is active for the next 2 days.`);
+      onPurchased?.(data.pass);
+      onClose();
+    } catch (e) {
+      if (e.response?.status === 429 && e.response?.data?.availableAt) {
+        Alert.alert("Not available yet", `Your free access will be available again on ${new Date(e.response.data.availableAt).toLocaleDateString()}.`);
+      } else {
+        Alert.alert("Couldn't claim", e.response?.data?.error || e.message);
+      }
+    } finally {
+      setPurchasing(null);
+    }
+  }
+
   const activePass = status?.access?.[feature];
+  const freeAvailable = status?.freeAccess?.[feature];
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -74,25 +98,32 @@ export default function FeatureAccessModal({ visible, onClose, feature, featureL
               <Text style={styles.tabHint}>You need an active pass to use {featureLabel}. Pick a tier below.</Text>
             )}
 
-            {status.tiers.map((tier) => (
-              <View key={tier.key} style={styles.tierCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.tierName}>{tier.label}</Text>
-                  <Text style={styles.tierMeta}>{formatKES(tier.priceKES)} — {tier.durationLabel} access</Text>
+            {status.tiers.map((tier) => {
+              const isFree = tier.key === "free";
+              const locked = isFree && !freeAvailable;
+              return (
+                <View key={tier.key} style={styles.tierCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tierName}>{tier.label}</Text>
+                    <Text style={styles.tierMeta}>
+                      {isFree ? "Free" : formatKES(tier.priceKES)} — {tier.durationLabel} access
+                    </Text>
+                    {locked && <Text style={styles.tierLockedHint}>Used recently — available again 30 days after your last free claim</Text>}
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.tierButton, locked && styles.tierButtonLocked]}
+                    onPress={() => purchase(tier.key)}
+                    disabled={!!purchasing || locked}
+                  >
+                    {purchasing === tier.key ? (
+                      <ActivityIndicator size="small" color={COLORS.accentInk} />
+                    ) : (
+                      <Text style={styles.tierButtonText}>{isFree ? "Claim" : activePass ? "Extend" : "Buy"}</Text>
+                    )}
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.tierButton}
-                  onPress={() => purchase(tier.key)}
-                  disabled={!!purchasing}
-                >
-                  {purchasing === tier.key ? (
-                    <ActivityIndicator size="small" color={COLORS.accentInk} />
-                  ) : (
-                    <Text style={styles.tierButtonText}>{activePass ? "Extend" : "Buy"}</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            ))}
+              );
+            })}
           </>
         )}
       </View>
@@ -111,6 +142,8 @@ const styles = StyleSheet.create({
   tierCard: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.wash, borderRadius: 10, padding: 12, marginBottom: 10 },
   tierName: { color: COLORS.ink, fontWeight: "800", fontSize: 14.5 },
   tierMeta: { color: COLORS.sub, fontSize: 12, marginTop: 2 },
+  tierLockedHint: { color: COLORS.sub, fontSize: 10.5, marginTop: 4, fontStyle: "italic", lineHeight: 14 },
   tierButton: { backgroundColor: COLORS.accent, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, minWidth: 64, alignItems: "center" },
+  tierButtonLocked: { backgroundColor: "#BCC0C4" },
   tierButtonText: { color: COLORS.accentInk, fontWeight: "700", fontSize: 12.5 },
 });

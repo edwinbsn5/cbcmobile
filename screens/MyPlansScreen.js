@@ -108,7 +108,7 @@ export default function MyPlansScreen({ navigation }) {
           {!hasAccess && (
             <TouchableOpacity style={styles.accessBanner} onPress={() => setAccessModalVisible(true)}>
               <Ionicons name="lock-closed-outline" size={16} color="#8A6D00" />
-              <Text style={styles.accessBannerText}>Unlock The PLAN access to write your vision and track your goals — from KES 5</Text>
+              <Text style={styles.accessBannerText}>Unlock The PLAN access to write your vision and track your goals — free 2-day trial every 30 days</Text>
               <Ionicons name="chevron-forward" size={16} color="#8A6D00" />
             </TouchableOpacity>
           )}
