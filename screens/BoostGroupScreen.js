@@ -60,7 +60,7 @@ export default function BoostGroupScreen({ route, navigation }) {
       Alert.alert(
         "Group boosted!",
         data.usedFreeBoost
-          ? `Your group is now featured in the home feed for the next ${durationLabel} — this month's free Student Leader feature.`
+          ? `Your group is now featured in the home feed for the next ${durationLabel} — this month's free Blue tier feature.`
           : `Your group is now featured in the home feed's Featured Groups slot for the next ${durationLabel}.`
       );
       navigation.goBack();
@@ -136,7 +136,7 @@ export default function BoostGroupScreen({ route, navigation }) {
 
       <Text style={styles.sectionTitle}>Choose a duration</Text>
       {freeBoostAvailable && (
-        <Text style={styles.hint}>🔵 Free this month — your Student Leader benefit covers whichever plan you pick below</Text>
+        <Text style={styles.hint}>🔵 Free this month — your Blue tier benefit covers whichever plan you pick below</Text>
       )}
       <BoostTierPicker tiers={tiers} value={tier} onChange={setTier} freeBoostAvailable={freeBoostAvailable} loading={!tiers.length} />
 

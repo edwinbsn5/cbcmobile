@@ -60,7 +60,7 @@ export default function BoostPostScreen({ route, navigation }) {
       Alert.alert(
         "Post boosted!",
         data.usedFreeBoost
-          ? `Your post is now live as a sponsored post for the next ${durationLabel} — this month's free Student Leader boost.`
+          ? `Your post is now live as a sponsored post for the next ${durationLabel} — this month's free Blue tier boost.`
           : `Your post is now live as a sponsored post for the next ${durationLabel}.`
       );
       navigation.goBack();
@@ -134,7 +134,7 @@ export default function BoostPostScreen({ route, navigation }) {
 
       <Text style={styles.sectionTitle}>Choose a duration</Text>
       {freeBoostAvailable && (
-        <Text style={styles.hint}>🔵 Free this month — your Student Leader benefit covers whichever plan you pick below</Text>
+        <Text style={styles.hint}>🔵 Free this month — your Blue tier benefit covers whichever plan you pick below</Text>
       )}
       <BoostTierPicker tiers={tiers} value={tier} onChange={setTier} freeBoostAvailable={freeBoostAvailable} loading={!tiers.length} />
 
