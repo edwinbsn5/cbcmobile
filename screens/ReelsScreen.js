@@ -147,7 +147,7 @@ export default function ReelsScreen({ route, navigation }) {
               <Text style={styles.caption}>{item.caption}</Text>
             </View>
             <View style={[styles.reactionColumn, { bottom: 70 + insets.bottom }]} pointerEvents="box-none">
-              <ReactionBar reactions={item.reactions} myUserId={user?.id} onReact={(r) => handleReact(item.id, r)} />
+              <ReactionBar reactions={item.reactions} myUserId={user?.id} onReact={(r) => handleReact(item.id, r)} align="right" />
               <TouchableOpacity style={styles.commentButton} onPress={() => setCommentsOpenId(item.id)}>
                 <Ionicons name="chatbubble-outline" size={26} color="#fff" />
                 <Text style={styles.commentCount}>{item.commentCount || 0}</Text>
