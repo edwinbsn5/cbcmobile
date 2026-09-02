@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import FeatureAccessModal from "../components/FeatureAccessModal";
+import AccessStatusBanner from "../components/AccessStatusBanner";
 import DatePicker from "../components/DatePicker";
 import { COLORS } from "../theme";
 
@@ -36,6 +37,8 @@ const STATUS_COLORS = {
 
 export default function MyPlansScreen({ navigation }) {
   const [hasAccess, setHasAccess] = useState(true);
+  const [accessPass, setAccessPass] = useState(null);
+  const [accessTiers, setAccessTiers] = useState(null);
   const [accessModalVisible, setAccessModalVisible] = useState(false);
   const [vision, setVision] = useState(null);
   const [goals, setGoals] = useState(null);
@@ -43,7 +46,11 @@ export default function MyPlansScreen({ navigation }) {
   const [goalModalVisible, setGoalModalVisible] = useState(false);
 
   const load = useCallback(() => {
-    client.get("/access/status").then((r) => setHasAccess(!!r.data.access?.project)).catch(() => {});
+    client.get("/access/status").then((r) => {
+      setHasAccess(!!r.data.access?.project);
+      setAccessPass(r.data.access?.project || null);
+      setAccessTiers(r.data.tiers || null);
+    }).catch(() => {});
     client.get("/myplans/vision").then((r) => setVision(r.data)).catch(() => {});
     client.get("/myplans/goals").then((r) => setGoals(r.data)).catch((e) => {
       setGoals([]);
@@ -112,6 +119,7 @@ export default function MyPlansScreen({ navigation }) {
               <Ionicons name="chevron-forward" size={16} color="#8A6D00" />
             </TouchableOpacity>
           )}
+          <AccessStatusBanner pass={accessPass} tiers={accessTiers} onPress={() => setAccessModalVisible(true)} />
 
           <TouchableOpacity
             style={styles.visionCard}

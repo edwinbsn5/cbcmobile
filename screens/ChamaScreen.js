@@ -8,6 +8,7 @@ import client from "../api/client";
 import CountyPicker from "../components/CountyPicker";
 import SubCountyPicker from "../components/SubCountyPicker";
 import FeatureAccessModal from "../components/FeatureAccessModal";
+import AccessStatusBanner from "../components/AccessStatusBanner";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
@@ -48,6 +49,8 @@ export default function ChamaScreen({ navigation }) {
   const [loadedCounty, setLoadedCounty] = useState(false);
   const [subCounty, setSubCounty] = useState("");
   const [hasAccess, setHasAccess] = useState(true); // optimistic — avoids a flash of the banner before the check lands
+  const [accessPass, setAccessPass] = useState(null);
+  const [accessTiers, setAccessTiers] = useState(null);
   const [accessModalVisible, setAccessModalVisible] = useState(false);
   // Search, sub-county, and the Random/Filled-Up/Unfilled sub-filter are
   // collapsed behind this by default — county, Create, and the main
@@ -56,7 +59,11 @@ export default function ChamaScreen({ navigation }) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   useFocusEffect(useCallback(() => {
-    client.get("/access/status").then((r) => setHasAccess(!!r.data.access?.chama)).catch(() => {});
+    client.get("/access/status").then((r) => {
+      setHasAccess(!!r.data.access?.chama);
+      setAccessPass(r.data.access?.chama || null);
+      setAccessTiers(r.data.tiers || null);
+    }).catch(() => {});
   }, []));
 
   // The chosen county is saved and pre-selected on every future visit. If
@@ -158,6 +165,7 @@ export default function ChamaScreen({ navigation }) {
           <Ionicons name="chevron-forward" size={16} color="#8A6D00" />
         </TouchableOpacity>
       )}
+      <AccessStatusBanner pass={accessPass} tiers={accessTiers} onPress={() => setAccessModalVisible(true)} />
 
       <View style={styles.filterRow}>
         {FILTERS.map((f) => (
@@ -214,7 +222,7 @@ export default function ChamaScreen({ navigation }) {
         onClose={() => setAccessModalVisible(false)}
         feature="chama"
         featureLabel="Investment Group"
-        onPurchased={() => setHasAccess(true)}
+        onPurchased={(pass) => { setHasAccess(true); setAccessPass(pass); }}
       />
     </View>
   );
