@@ -285,7 +285,7 @@ export default function FeedScreen({ navigation, route }) {
               </View>
               <Text style={styles.partnersLockTitle}>"Partners" is a discussion board for users who have boosted items</Text>
               <Text style={styles.partnersLockText}>
-                If you have promoted/boosted a post or your business on our app, this is a wall where we discuss ways to further help you make more sales, boost your ideas, and engage and work together.
+                If you have promoted/boosted a post or your business on our app, this is a WALL where we discuss ways to further help you make more sales, boost your ideas, engage and work together.
               </Text>
             </View>
           ) : (
