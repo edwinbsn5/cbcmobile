@@ -283,9 +283,9 @@ export default function FeedScreen({ navigation, route }) {
               <View style={styles.partnersLockIconWrap}>
                 <Ionicons name="ribbon-outline" size={22} color={COLORS.accent} />
               </View>
-              <Text style={styles.partnersLockTitle}>Partners is for boosted businesses</Text>
+              <Text style={styles.partnersLockTitle}>"Partners" is a discussion board for users who have boosted items</Text>
               <Text style={styles.partnersLockText}>
-                Boost a Page, post, group, event, or Marketplace listing to unlock this space — swap marketing tips and experiences with other boosted members.
+                If you have promoted/boosted a post or your business on our app, this is a wall where we discuss ways to further help you make more sales, boost your ideas, and engage and work together.
               </Text>
             </View>
           ) : (
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   partnersLockWrap: { alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 14, margin: 10, padding: 22 },
   partnersLockIconWrap: { width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center", marginBottom: 10 },
   partnersLockTitle: { fontSize: 15, fontWeight: "700", color: COLORS.ink, marginBottom: 6, textAlign: "center" },
-  partnersLockText: { fontSize: 13, color: COLORS.sub, textAlign: "center", lineHeight: 19 },
+  partnersLockText: { fontSize: 14.5, color: COLORS.sub, textAlign: "center", lineHeight: 21 },
   reshareHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginHorizontal: 20, marginTop: 6 },
   reshareHeaderText: { fontSize: 12, fontWeight: "700", color: COLORS.sub },
   reshareCaption: { fontSize: 14, color: COLORS.ink, marginHorizontal: 20, marginTop: 4, lineHeight: 19 },
