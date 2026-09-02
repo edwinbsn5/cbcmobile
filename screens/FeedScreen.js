@@ -278,7 +278,18 @@ export default function FeedScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
 
-          {activeTab === "partners" && partnersLocked ? (
+          {activeTab === "partners" && loading ? (
+            // partnersLocked doesn't reset until this tab's own load
+            // resolves — without this check it still holds whatever it was
+            // on the PREVIOUS tab (false, unless you switched away from an
+            // already-locked Partners view), so the composer below would
+            // flash for a beat implying you can post here before flipping
+            // to the locked message once the 403 (or success) actually
+            // lands. A plain spinner in its place has nothing to get wrong.
+            <View style={styles.partnersLockWrap}>
+              <ActivityIndicator color={COLORS.accent} />
+            </View>
+          ) : activeTab === "partners" && partnersLocked ? (
             <View style={styles.partnersLockWrap}>
               <View style={styles.partnersLockIconWrap}>
                 <Ionicons name="ribbon-outline" size={22} color={COLORS.accent} />
