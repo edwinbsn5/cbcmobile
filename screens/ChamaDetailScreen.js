@@ -380,10 +380,12 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
     <View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statStripOuter}>
         <View style={styles.statStrip}>
-          <View style={[styles.tileOutline, styles.tileOutlineAccent]}>
-            <Text style={styles.tileOutlineLabel}>Group Account</Text>
-            <Text style={styles.tileOutlineValue}>{formatKES(chama.poolBalance)}</Text>
-          </View>
+          {isMember && (
+            <View style={[styles.tileOutline, styles.tileOutlineAccent]}>
+              <Text style={styles.tileOutlineLabel}>Group Account</Text>
+              <Text style={styles.tileOutlineValue}>{formatKES(chama.poolBalance)}</Text>
+            </View>
+          )}
           {isMember && (
             <View style={styles.tileOutline}>
               <Text style={styles.tileOutlineLabel}>Share points</Text>
