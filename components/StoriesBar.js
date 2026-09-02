@@ -32,7 +32,7 @@ function CardBackground({ story }) {
   return <Image source={{ uri: story.mediaUrl }} style={styles.cardBg} contentFit="cover" />;
 }
 
-export default function StoriesBar({ storyGroups, myUserId, onOpenStory, onAddStory }) {
+export default function StoriesBar({ storyGroups, myUserId, myAvatar, myName, onOpenStory, onAddStory }) {
   const myGroup = storyGroups.find((g) => g.author.id === myUserId);
   const otherGroups = storyGroups.filter((g) => g.author.id !== myUserId);
   const myHasUnseen = myGroup?.stories.some((s) => !s.viewedByMe);
@@ -43,7 +43,7 @@ export default function StoriesBar({ storyGroups, myUserId, onOpenStory, onAddSt
         <CardBackground story={myGroup?.stories[0]} />
         <View style={styles.cardOverlay} />
         <View style={[styles.avatarRing, myGroup && !myHasUnseen && styles.avatarRingSeen]}>
-          <Avatar uri={myGroup?.author.avatar} name={myGroup?.author.name} style={styles.avatar} />
+          <Avatar uri={myGroup?.author.avatar ?? myAvatar} name={myGroup?.author.name ?? myName} style={styles.avatar} />
         </View>
         <TouchableOpacity style={styles.addBadge} onPress={onAddStory} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="add" size={15} color="#fff" />

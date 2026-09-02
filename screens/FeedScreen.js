@@ -257,6 +257,8 @@ export default function FeedScreen({ navigation, route }) {
           <StoriesBar
             storyGroups={storyGroups}
             myUserId={user?.id}
+            myAvatar={user?.avatar}
+            myName={user?.name}
             onOpenStory={(group) => navigation.navigate("StoryViewer", { storyGroups, startGroupId: group.author.id })}
             onAddStory={() => navigation.navigate("CreateStory")}
           />
