@@ -16,6 +16,8 @@ const POINT_SOURCES = [
   { icon: "create-outline", label: "Posting or sharing a reel", points: "+3" },
   { icon: "person-add-outline", label: "Gaining a new follower", points: "+5" },
   { icon: "play-circle-outline", label: "Watching a rewarded ad", points: "+7" },
+  { icon: "rocket-outline", label: "Boosting a post, Page, group, event, or listing", points: "+100" },
+  { icon: "ribbon-outline", label: "Getting access to Investment Groups or The PLAN", points: "+100" },
 ];
 
 export default function InfluencerQuestScreen({ navigation }) {
