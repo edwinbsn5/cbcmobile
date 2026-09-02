@@ -298,7 +298,7 @@ function RootNavigator() {
         <RootStack.Screen name="Profile" component={ProfileScreen} options={{ title: "My Profile" }} />
         <RootStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="GroupVideoPlayer" component={GroupVideoPlayerScreen} options={{ headerShown: false }} />
-        <RootStack.Screen name="Pages" component={PagesListScreen} options={{ title: "BSN & Services" }} />
+        <RootStack.Screen name="Pages" component={PagesListScreen} options={{ title: "PAGES" }} />
         <RootStack.Screen name="PageDetail" component={PageDetailScreen} options={{ headerShown: false }} />
         <RootStack.Screen name="CreatePage" component={CreatePageScreen} options={{ title: "Create Page" }} />
         <RootStack.Screen name="PageTeamManagement" component={PageTeamManagementScreen} options={{ title: "Manage Team" }} />

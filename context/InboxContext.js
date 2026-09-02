@@ -5,8 +5,8 @@ import { connectSocket } from "../api/socket";
 const InboxContext = createContext(null);
 
 /**
- * Live per-tab + total unread counts for the 4-tab Inbox (Inbox/BSN &
- * Services/MarketPlace/Events), used by the header inbox-icon badge
+ * Live per-tab + total unread counts for the 4-tab Inbox (Inbox/PAGES/
+ * MarketPlace/Events), used by the header inbox-icon badge
  * from anywhere in the app — mirrors NotificationContext's always-on-socket
  * pattern exactly, just backed by GET /api/inbox/unread-counts instead of
  * /notifications.

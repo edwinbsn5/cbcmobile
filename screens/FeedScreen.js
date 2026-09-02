@@ -19,7 +19,7 @@ import { useSingleActiveVideo } from "../hooks/useSingleActiveVideo";
 import { COLORS } from "../theme";
 
 const QUICK_LINKS = [
-  { icon: "flash-outline", label: "BSN & Services", screen: "Pages" },
+  { icon: "flash-outline", label: "PAGES", screen: "Pages" },
   { icon: "calendar-outline", label: "Events", screen: "Events" },
   { icon: "cart-outline", label: "MarketPlace", screen: "AGirlsMarket" },
   { icon: "people-outline", label: "Plugs & Mentors", screen: "Groups" },

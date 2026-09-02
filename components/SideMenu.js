@@ -16,7 +16,7 @@ const FEATURE_ITEMS = [
   { icon: "people-outline", label: "Plugs & Mentors", screen: "Groups" },
   { icon: "cash-outline", label: "Investment Groups", screen: "ChamaHome" },
   { icon: "rocket-outline", label: "The PLAN", screen: "MyPlansHome" },
-  { icon: "flag-outline", label: "BSN & Services", screen: "Pages" },
+  { icon: "flag-outline", label: "PAGES", screen: "Pages" },
   { icon: "storefront-outline", label: "MarketPlace", screen: "AGirlsMarket" },
   { icon: "calendar-outline", label: "Events", screen: "Events" },
   { icon: "stats-chart-outline", label: "My Ads Board", screen: "MyAdsBoard" },

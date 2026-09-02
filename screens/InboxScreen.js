@@ -11,7 +11,7 @@ import { COLORS } from "../theme";
 
 const TABS = [
   { key: "inbox", label: "Inbox" },
-  { key: "mtu_wako", label: "BSN & Services" },
+  { key: "mtu_wako", label: "PAGES" },
   { key: "market", label: "Market" },
   { key: "events", label: "Events" },
 ];

@@ -14,7 +14,7 @@ import { connectSocket } from "../api/socket";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../theme";
 
-// Header title with an optional second line — used for the BSN & Services
+// Header title with an optional second line — used for the PAGES
 // context ("Grace Muthoni" / "Messaging Faith's Hair Studio").
 function ChatHeaderTitle({ name, subtitle }) {
   return (
