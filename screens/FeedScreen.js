@@ -249,7 +249,7 @@ export default function FeedScreen({ navigation, route }) {
                 <View style={styles.quickIconWrap}>
                   <Ionicons name={item.icon} size={18} color={COLORS.accent} />
                 </View>
-                <Text style={styles.quickLabel}>{item.label}</Text>
+                <Text style={styles.quickLabel} numberOfLines={2}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   quickRow: { flexDirection: "row", paddingHorizontal: 10, paddingTop: 10, gap: 8 },
   quickItem: { flex: 1, alignItems: "center", backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 10 },
   quickIconWrap: { width: 32, height: 32, borderRadius: 10, backgroundColor: COLORS.wash, alignItems: "center", justifyContent: "center", marginBottom: 6 },
-  quickLabel: { fontSize: 11, fontWeight: "700", color: COLORS.ink },
+  quickLabel: { fontSize: 11, fontWeight: "700", color: COLORS.ink, textAlign: "center", lineHeight: 14, minHeight: 28 },
   feedTabs: { flexDirection: "row", marginHorizontal: 10, marginTop: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   feedTab: { flex: 1, alignItems: "center", paddingBottom: 10 },
   feedTabText: { fontSize: 14, fontWeight: "700", color: COLORS.sub },

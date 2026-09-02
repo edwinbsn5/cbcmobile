@@ -248,16 +248,16 @@ export default function UserProfileScreen({ route, navigation }) {
 
       <View style={styles.segment}>
         <TouchableOpacity style={[styles.segmentItem, activeTab === "Posts" && styles.segmentItemActive]} onPress={() => setActiveTab("Posts")}>
-          <Text style={[styles.segmentText, activeTab === "Posts" && styles.segmentTextActive]}>Posts</Text>
+          <Text style={[styles.segmentText, activeTab === "Posts" && styles.segmentTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Posts</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.segmentItem, activeTab === "Reels" && styles.segmentItemActive]} onPress={() => setActiveTab("Reels")}>
-          <Text style={[styles.segmentText, activeTab === "Reels" && styles.segmentTextActive]}>Reels</Text>
+          <Text style={[styles.segmentText, activeTab === "Reels" && styles.segmentTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Reels</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.segmentItem, activeTab === "My Products" && styles.segmentItemActive]} onPress={() => setActiveTab("My Products")}>
-          <Text style={[styles.segmentText, activeTab === "My Products" && styles.segmentTextActive]}>My Products</Text>
+          <Text style={[styles.segmentText, activeTab === "My Products" && styles.segmentTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>My Products</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.segmentItem, activeTab === "Reviews" && styles.segmentItemActive]} onPress={() => setActiveTab("Reviews")}>
-          <Text style={[styles.segmentText, activeTab === "Reviews" && styles.segmentTextActive]}>Reviews</Text>
+          <Text style={[styles.segmentText, activeTab === "Reviews" && styles.segmentTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Reviews</Text>
         </TouchableOpacity>
       </View>
 
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 15, fontWeight: "800", color: COLORS.accent },
   statLabel: { fontSize: 8.5, color: COLORS.sub, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.3, marginTop: 2 },
   segment: { flexDirection: "row", backgroundColor: COLORS.surface, borderRadius: 10, padding: 3, gap: 3, marginTop: 14, marginBottom: 4 },
-  segmentItem: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 8 },
+  segmentItem: { flex: 1, alignItems: "center", paddingVertical: 8, paddingHorizontal: 2, borderRadius: 8 },
   segmentItemActive: { backgroundColor: COLORS.accent },
   segmentText: { fontSize: 12, fontWeight: "700", color: COLORS.sub },
   segmentTextActive: { color: COLORS.accentInk },

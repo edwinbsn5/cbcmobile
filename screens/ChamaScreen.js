@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   accordionBody: { paddingHorizontal: 14, paddingVertical: 12, backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, paddingHorizontal: 12 },
   searchInput: { flex: 1, paddingVertical: 10, color: COLORS.ink },
-  filterRow: { flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 10 },
+  filterRow: { flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 10, flexWrap: "wrap" },
   filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
   filterChipActive: { backgroundColor: COLORS.accent },
   filterChipText: { color: COLORS.ink, fontWeight: "600", fontSize: 12.5 },
