@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
 import client from "../api/client";
+import DatePicker from "../components/DatePicker";
 import { COLORS } from "../theme";
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// A project's own dates can reasonably be a little in the past (already
+// under way when someone logs it) or a few years out.
+const PROJECT_YEARS = Array.from({ length: 9 }, (_, i) => new Date().getFullYear() - 3 + i);
 
 function parseDate(s) {
-  if (!s?.trim()) return undefined;
-  if (!DATE_RE.test(s.trim())) return null;
-  const t = new Date(`${s.trim()}T00:00:00`).getTime();
-  return isNaN(t) ? null : t;
+  return s ? new Date(`${s}T00:00:00`).getTime() : undefined;
 }
 
 export default function CreateChamaProjectScreen({ route, navigation }) {
@@ -25,8 +25,6 @@ export default function CreateChamaProjectScreen({ route, navigation }) {
     if (!title.trim()) return Alert.alert("Title required", "Give this project a name");
     const start = parseDate(startDate);
     const end = parseDate(endDate);
-    if (start === null) return Alert.alert("Invalid start date", "Use the format YYYY-MM-DD, e.g. 2026-09-01");
-    if (end === null) return Alert.alert("Invalid end date", "Use the format YYYY-MM-DD, e.g. 2026-12-31");
     const budgetKES = budget.trim() ? parseInt(budget, 10) : undefined;
     if (budget.trim() && (!Number.isInteger(budgetKES) || budgetKES < 0)) return Alert.alert("Invalid budget", "Enter a whole number in KES");
 
@@ -55,10 +53,10 @@ export default function CreateChamaProjectScreen({ route, navigation }) {
       <TextInput style={styles.input} placeholder="e.g. 150000" keyboardType="number-pad" value={budget} onChangeText={setBudget} />
 
       <Text style={styles.label}>Start date (optional)</Text>
-      <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={startDate} onChangeText={setStartDate} />
+      <DatePicker value={startDate} onChange={setStartDate} years={PROJECT_YEARS} />
 
       <Text style={styles.label}>Target end date (optional)</Text>
-      <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={endDate} onChangeText={setEndDate} />
+      <DatePicker value={endDate} onChange={setEndDate} years={PROJECT_YEARS} />
 
       <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
         <Text style={styles.primaryButtonText}>{submitting ? "Creating..." : "Create project"}</Text>

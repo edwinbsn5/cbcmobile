@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import FeatureAccessModal from "../components/FeatureAccessModal";
+import DatePicker from "../components/DatePicker";
 import { COLORS } from "../theme";
 
 // "Business" and "Mental Health" split out from the more general
@@ -239,6 +240,10 @@ function VisionModal({ visible, onClose, initialContent, onSaved }) {
   );
 }
 
+// Goal target dates skew future but a slightly-past one is still valid (a
+// goal logged after its own deadline) — current year minus 1 through +10.
+const GOAL_YEARS = Array.from({ length: 12 }, (_, i) => new Date().getFullYear() - 1 + i);
+
 function GoalModal({ visible, onClose, onSaved }) {
   const [title, setTitle] = useState("");
   const [lifeArea, setLifeArea] = useState(null);
@@ -249,12 +254,7 @@ function GoalModal({ visible, onClose, onSaved }) {
 
   async function save() {
     if (!title.trim()) return Alert.alert("Title required", "Give this goal a name");
-    let target;
-    if (targetDate.trim()) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate.trim())) return Alert.alert("Invalid date", "Use the format YYYY-MM-DD, e.g. 2026-12-31");
-      target = new Date(`${targetDate.trim()}T00:00:00`).getTime();
-      if (isNaN(target)) return Alert.alert("Invalid date", "Use the format YYYY-MM-DD, e.g. 2026-12-31");
-    }
+    const target = targetDate ? new Date(`${targetDate}T00:00:00`).getTime() : undefined;
     setSubmitting(true);
     try {
       await client.post("/myplans/goals", { title: title.trim(), lifeArea: lifeArea || undefined, targetDate: target });
@@ -283,7 +283,7 @@ function GoalModal({ visible, onClose, onSaved }) {
           ))}
         </View>
         <Text style={styles.label}>Target date (optional)</Text>
-        <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={targetDate} onChangeText={setTargetDate} />
+        <DatePicker value={targetDate} onChange={setTargetDate} years={GOAL_YEARS} />
         <TouchableOpacity style={styles.primaryButton} onPress={save} disabled={submitting}>
           <Text style={styles.primaryButtonText}>{submitting ? "Adding..." : "Add goal"}</Text>
         </TouchableOpacity>

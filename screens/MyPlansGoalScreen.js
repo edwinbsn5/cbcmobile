@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
+import DatePicker from "../components/DatePicker";
 import { COLORS } from "../theme";
 
 function timeAgo(ts) {
@@ -226,6 +227,10 @@ export default function MyPlansGoalScreen({ route, navigation }) {
   );
 }
 
+// Wide enough either direction to cover a goal edited well after its
+// original target date passed (already-achieved goals keep their date).
+const EDIT_GOAL_YEARS = Array.from({ length: 31 }, (_, i) => new Date().getFullYear() - 15 + i);
+
 function EditGoalModal({ visible, onClose, goal, onSaved }) {
   const [title, setTitle] = useState(goal.title);
   const [description, setDescription] = useState(goal.description || "");
@@ -236,14 +241,7 @@ function EditGoalModal({ visible, onClose, goal, onSaved }) {
 
   async function save() {
     if (!title.trim()) return Alert.alert("Title required", "Give this goal a name");
-    let target;
-    if (targetDate.trim()) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate.trim())) return Alert.alert("Invalid date", "Use the format YYYY-MM-DD");
-      target = new Date(`${targetDate.trim()}T00:00:00`).getTime();
-      if (isNaN(target)) return Alert.alert("Invalid date", "Use the format YYYY-MM-DD");
-    } else {
-      target = null;
-    }
+    const target = targetDate ? new Date(`${targetDate}T00:00:00`).getTime() : null;
     const justAchieved = status === "achieved" && goal.status !== "achieved";
     setSubmitting(true);
     try {
@@ -288,7 +286,7 @@ function EditGoalModal({ visible, onClose, goal, onSaved }) {
         </View>
 
         <Text style={styles.label}>Target date</Text>
-        <TextInput style={styles.input} value={targetDate} onChangeText={setTargetDate} placeholder="YYYY-MM-DD" />
+        <DatePicker value={targetDate} onChange={setTargetDate} years={EDIT_GOAL_YEARS} />
 
         <TouchableOpacity style={styles.primaryButton} onPress={save} disabled={submitting}>
           <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Save changes"}</Text>

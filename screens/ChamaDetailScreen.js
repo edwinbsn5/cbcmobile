@@ -9,6 +9,7 @@ import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import ReactionBar from "../components/ReactionBar";
 import LinkifiedText from "../components/LinkifiedText";
+import DatePicker from "../components/DatePicker";
 import PostCard from "../components/PostCard";
 import CountyPicker from "../components/CountyPicker";
 import SubCountyPicker from "../components/SubCountyPicker";
@@ -1317,14 +1318,16 @@ function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-const MINUTES_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// Covers both a late write-up (backdating meetingDate) and scheduling the
+// next meeting a while out — wider and centered differently than
+// EventDatePicker's future-only range or DateOfBirthPicker's past-only one.
+const MINUTES_YEARS = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - 3 + i);
 
 // Fields chosen from how a chama secretary actually writes minutes: who
 // showed up (and who sent apologies), what was discussed, what was
 // decided, who owes a follow-up action, and when the group reconvenes.
 // meetingDate defaults to today (minutes are almost always typed up the
-// same day) but stays a plain editable YYYY-MM-DD field, same convention
-// as users.date_of_birth, so a late write-up can still backdate it.
+// same day) but stays editable so a late write-up can still backdate it.
 function RecordMinutesModal({ visible, chamaId, onClose, onSaved }) {
   const [title, setTitle] = useState("");
   const [meetingDate, setMeetingDate] = useState(todayISO());
@@ -1345,16 +1348,15 @@ function RecordMinutesModal({ visible, chamaId, onClose, onSaved }) {
 
   async function submit() {
     if (!title.trim()) return Alert.alert("Title required", "Give this meeting a title");
-    if (!MINUTES_DATE_RE.test(meetingDate)) return Alert.alert("Invalid date", "Meeting date must be in YYYY-MM-DD format");
+    if (!meetingDate) return Alert.alert("Meeting date required", "Pick the date this meeting happened");
     if (!agenda.trim()) return Alert.alert("Agenda required", "Summarize what was discussed");
-    if (nextMeetingDate && !MINUTES_DATE_RE.test(nextMeetingDate)) return Alert.alert("Invalid date", "Next meeting date must be in YYYY-MM-DD format");
 
     setSubmitting(true);
     try {
       await client.post(`/chama/${chamaId}/minutes`, {
         title: title.trim(), meetingDate, attendees: attendees.trim(), apologies: apologies.trim(),
         agenda: agenda.trim(), decisions: decisions.trim(), actionItems: actionItems.trim(),
-        nextMeetingDate: nextMeetingDate.trim() || undefined,
+        nextMeetingDate: nextMeetingDate || undefined,
       });
       onSaved();
     } catch (e) {
@@ -1377,7 +1379,7 @@ function RecordMinutesModal({ visible, chamaId, onClose, onSaved }) {
           <TextInput style={styles.input} placeholder="e.g. August General Meeting" value={title} onChangeText={setTitle} />
 
           <Text style={styles.fieldLabel}>Meeting date</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={meetingDate} onChangeText={setMeetingDate} />
+          <DatePicker value={meetingDate} onChange={setMeetingDate} years={MINUTES_YEARS} />
 
           <Text style={styles.fieldLabel}>Attendees present</Text>
           <TextInput style={[styles.input, styles.multilineInput]} placeholder="Names of members present" value={attendees} onChangeText={setAttendees} multiline />
@@ -1394,8 +1396,8 @@ function RecordMinutesModal({ visible, chamaId, onClose, onSaved }) {
           <Text style={styles.fieldLabel}>Action items</Text>
           <TextInput style={[styles.input, styles.multilineInput]} placeholder="Who's doing what before the next meeting (optional)" value={actionItems} onChangeText={setActionItems} multiline />
 
-          <Text style={styles.fieldLabel}>Next meeting date</Text>
-          <TextInput style={styles.input} placeholder="YYYY-MM-DD (optional)" value={nextMeetingDate} onChangeText={setNextMeetingDate} />
+          <Text style={styles.fieldLabel}>Next meeting date (optional)</Text>
+          <DatePicker value={nextMeetingDate} onChange={setNextMeetingDate} years={MINUTES_YEARS} />
 
           <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
             <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Save minutes"}</Text>
