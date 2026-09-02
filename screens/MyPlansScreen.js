@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, SectionList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal, TouchableWithoutFeedback, Alert } from "react-native";
+import { View, Text, SectionList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal, TouchableWithoutFeedback, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
@@ -223,6 +223,7 @@ function VisionModal({ visible, onClose, initialContent, onSaved }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -233,6 +234,7 @@ function VisionModal({ visible, onClose, initialContent, onSaved }) {
           <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Save vision"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -266,6 +268,7 @@ function GoalModal({ visible, onClose, onSaved }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -285,6 +288,7 @@ function GoalModal({ visible, onClose, onSaved }) {
           <Text style={styles.primaryButtonText}>{submitting ? "Adding..." : "Add goal"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -333,6 +337,7 @@ const styles = StyleSheet.create({
   areaPill: { backgroundColor: COLORS.wash, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   areaPillText: { color: COLORS.accent, fontSize: 10.5, fontWeight: "700" },
   goalMetaText: { color: COLORS.sub, fontSize: 11.5, marginTop: 4 },
+  kbAvoid: { flex: 1 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, paddingBottom: 28, maxHeight: "85%" },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },

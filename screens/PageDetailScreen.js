@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert, Modal, TouchableWithoutFeedback } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert, Modal, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -788,6 +788,7 @@ export default function PageDetailScreen({ route, navigation }) {
 
     {canPost && !isSuspended && (
       <Modal visible={feedComposerOpen} transparent animationType="slide" onRequestClose={() => setFeedComposerOpen(false)}>
+        <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <TouchableWithoutFeedback onPress={() => setFeedComposerOpen(false)}><View style={styles.backdrop} /></TouchableWithoutFeedback>
         <View style={styles.sheet}>
           <View style={styles.sheetHandle} />
@@ -848,6 +849,7 @@ export default function PageDetailScreen({ route, navigation }) {
             <Text style={styles.postButtonText}>{uploading ? "Uploading..." : posting ? "Posting..." : "Post"}</Text>
           </TouchableOpacity>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
     )}
     </View>
@@ -941,6 +943,7 @@ const styles = StyleSheet.create({
   composerTeaser: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 4 },
   composerTeaserAvatar: { width: 32, height: 32, borderRadius: 16 },
   composerTeaserText: { flex: 1, color: COLORS.sub, fontSize: 13.5 },
+  kbAvoid: { flex: 1 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16, paddingBottom: 28 },
   sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },

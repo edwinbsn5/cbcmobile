@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, TextInput, Modal, TouchableWithoutFeedback, Alert } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, TextInput, Modal, TouchableWithoutFeedback, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -261,6 +261,7 @@ function EditGoalModal({ visible, onClose, goal, onSaved }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }}>
         <View style={styles.sheetHandle} />
@@ -293,6 +294,7 @@ function EditGoalModal({ visible, onClose, goal, onSaved }) {
           <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Save changes"}</Text>
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -328,6 +330,7 @@ const styles = StyleSheet.create({
   journalContent: { color: COLORS.ink, fontSize: 13.5, lineHeight: 19, marginTop: 6 },
   dangerButton: { flexDirection: "row", gap: 6, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#D32F2F", borderRadius: 8, padding: 12, marginTop: 28 },
   dangerButtonText: { color: "#D32F2F", fontWeight: "700" },
+  kbAvoid: { flex: 1 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, maxHeight: "85%" },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },

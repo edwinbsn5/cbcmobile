@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, FlatList, StyleSheet, ActivityIndicator, Alert, Modal } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, FlatList, StyleSheet, ActivityIndicator, Alert, Modal, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -201,6 +201,7 @@ export default function WalletScreen({ navigation }) {
 
       {/* Deposit bottom sheet */}
       <Modal visible={depositVisible} transparent animationType="slide" onRequestClose={() => setDepositVisible(false)}>
+        <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <TouchableWithoutFeedback onPress={() => setDepositVisible(false)}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
@@ -225,10 +226,12 @@ export default function WalletScreen({ navigation }) {
             <Text style={styles.sheetBtnText}>{depositSubmitting ? "Sending prompt..." : "Deposit"}</Text>
           </TouchableOpacity>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Withdraw bottom sheet */}
       <Modal visible={withdrawVisible} transparent animationType="slide" onRequestClose={() => setWithdrawVisible(false)}>
+        <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <TouchableWithoutFeedback onPress={() => setWithdrawVisible(false)}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
@@ -266,6 +269,7 @@ export default function WalletScreen({ navigation }) {
             <Text style={styles.sheetBtnText}>{withdrawSubmitting ? "Requesting..." : "Withdraw"}</Text>
           </TouchableOpacity>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -295,6 +299,7 @@ const styles = StyleSheet.create({
   txNegative: { color: "#D32F2F" },
   viewAll: { textAlign: "center", color: COLORS.accent, fontWeight: "800", fontSize: 13, marginVertical: 12 },
   empty: { textAlign: "center", color: "#999", marginTop: 20 },
+  kbAvoid: { flex: 1 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, paddingBottom: 28 },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },

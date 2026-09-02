@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, TextInput, Modal, TouchableWithoutFeedback, Alert } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, TextInput, Modal, TouchableWithoutFeedback, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -431,6 +431,7 @@ function FundProjectModal({ visible, onClose, onSubmit, busy }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -442,6 +443,7 @@ function FundProjectModal({ visible, onClose, onSubmit, busy }) {
           <Text style={styles.primaryButtonText}>{busy ? "Transferring..." : "Transfer funds"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -467,6 +469,7 @@ function EditProjectModal({ visible, onClose, project, onSaved, chamaId }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -488,6 +491,7 @@ function EditProjectModal({ visible, onClose, project, onSaved, chamaId }) {
           <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Save changes"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -542,6 +546,7 @@ const styles = StyleSheet.create({
   updateCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 8 },
   updateMeta: { color: COLORS.sub, fontSize: 11, marginBottom: 6, fontWeight: "600" },
   updateContent: { color: COLORS.ink, fontSize: 13.5, lineHeight: 19 },
+  kbAvoid: { flex: 1 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, paddingBottom: 28, maxHeight: "85%" },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },

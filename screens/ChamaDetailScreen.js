@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, FlatList, TextInput, Modal, TouchableWithoutFeedback, Alert, Switch, Linking } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, FlatList, TextInput, Modal, TouchableWithoutFeedback, Alert, Switch, Linking, KeyboardAvoidingView, Platform } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "@react-navigation/native";
@@ -375,22 +375,24 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
 
       {isAdmin && (
         <Modal visible={announceModalVisible} transparent animationType="slide" onRequestClose={() => setAnnounceModalVisible(false)}>
-          <TouchableWithoutFeedback onPress={() => setAnnounceModalVisible(false)}><View style={styles.backdrop} /></TouchableWithoutFeedback>
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Post an announcement</Text>
-            <TextInput
-              style={[styles.input, styles.multiline]}
-              placeholder="Meeting date, reschedule, other news..."
-              value={announceText}
-              onChangeText={setAnnounceText}
-              multiline
-              autoFocus
-            />
-            <TouchableOpacity style={styles.primaryButton} onPress={postAnnouncement} disabled={posting || !announceText.trim()}>
-              <Text style={styles.primaryButtonText}>{posting ? "Posting..." : "Post"}</Text>
-            </TouchableOpacity>
-          </View>
+          <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <TouchableWithoutFeedback onPress={() => setAnnounceModalVisible(false)}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+            <View style={styles.sheet}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>Post an announcement</Text>
+              <TextInput
+                style={[styles.input, styles.multiline]}
+                placeholder="Meeting date, reschedule, other news..."
+                value={announceText}
+                onChangeText={setAnnounceText}
+                multiline
+                autoFocus
+              />
+              <TouchableOpacity style={styles.primaryButton} onPress={postAnnouncement} disabled={posting || !announceText.trim()}>
+                <Text style={styles.primaryButtonText}>{posting ? "Posting..." : "Post"}</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </Modal>
       )}
 
@@ -658,6 +660,7 @@ function LoanRequestModal({ visible, onClose, chamaId, maxAmount, tiers, onCreat
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -680,6 +683,7 @@ function LoanRequestModal({ visible, onClose, chamaId, maxAmount, tiers, onCreat
           <Text style={styles.primaryButtonText}>{submitting ? "Submitting..." : "Next: choose guarantors"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -738,6 +742,7 @@ function GuarantorPickerModal({ loan, chamaId, requiredGuarantors, onClose, onDo
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -788,6 +793,7 @@ function GuarantorPickerModal({ loan, chamaId, requiredGuarantors, onClose, onDo
           </>
         )}
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -815,6 +821,7 @@ function LoanRepayModal({ loan, chamaId, onClose, onDone }) {
 
   return (
     <Modal visible={!!loan} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -825,6 +832,7 @@ function LoanRepayModal({ loan, chamaId, onClose, onDone }) {
           <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Record repayment"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -991,6 +999,7 @@ function StartVoteModal({ chamaId, target, onClose, onDone }) {
 
   return (
     <Modal visible={!!target} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -1001,6 +1010,7 @@ function StartVoteModal({ chamaId, target, onClose, onDone }) {
           <Text style={styles.primaryButtonText}>{submitting ? "Starting..." : "Start vote"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1078,6 +1088,7 @@ function PostAchievementModal({ visible, chamaId, onClose, onDone }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -1103,6 +1114,7 @@ function PostAchievementModal({ visible, chamaId, onClose, onDone }) {
           <Text style={styles.primaryButtonText}>{submitting ? (uploading ? "Uploading photo..." : "Posting...") : "Post achievement"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1129,6 +1141,7 @@ function ReportFraudModal({ groupPath, target, onClose, onDone }) {
 
   return (
     <Modal visible={!!target} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -1140,6 +1153,7 @@ function ReportFraudModal({ groupPath, target, onClose, onDone }) {
           <Text style={styles.primaryButtonText}>{submitting ? "Filing..." : "File report"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1352,6 +1366,7 @@ function RecordMinutesModal({ visible, chamaId, onClose, onSaved }) {
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.minutesSheetWrap}>
         <ScrollView contentContainerStyle={styles.sheet} keyboardShouldPersistTaps="handled">
@@ -1387,6 +1402,7 @@ function RecordMinutesModal({ visible, chamaId, onClose, onSaved }) {
           </TouchableOpacity>
         </ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1404,6 +1420,7 @@ function MinutesDetailRow({ label, value }) {
 function MinutesDetailModal({ minutes, canDelete, onDelete, onClose }) {
   return (
     <Modal visible={!!minutes} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.minutesSheetWrap}>
         <ScrollView contentContainerStyle={styles.sheet}>
@@ -1427,6 +1444,7 @@ function MinutesDetailModal({ minutes, canDelete, onDelete, onClose }) {
           )}
         </ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1458,6 +1476,7 @@ function ContributeModal({ visible, onClose, chamaId, owed, lateFeesOwed, onDone
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -1471,6 +1490,7 @@ function ContributeModal({ visible, onClose, chamaId, owed, lateFeesOwed, onDone
           <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Mark as contributed"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1535,6 +1555,7 @@ function JoinRequestModal({ visible, onClose, chamaId, groupCounty, navigation, 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
@@ -1555,6 +1576,7 @@ function JoinRequestModal({ visible, onClose, chamaId, groupCounty, navigation, 
           <Text style={styles.primaryButtonText}>{submitting ? "Sending..." : "Send request"}</Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1657,6 +1679,11 @@ const styles = StyleSheet.create({
   optionChipActive: { backgroundColor: COLORS.accent },
   optionChipText: { color: COLORS.ink, fontWeight: "600", fontSize: 12.5 },
   optionChipTextActive: { color: COLORS.accentInk },
+  // Wraps every bottom-sheet Modal's backdrop+sheet pair so a focused
+  // TextInput stays above the keyboard instead of being covered by it —
+  // RN's Modal renders in its own native window on Android and doesn't
+  // inherit the Activity's windowSoftInputMode:"adjustResize" on its own.
+  kbAvoid: { flex: 1 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, paddingBottom: 28 },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: "center", marginBottom: 14 },
