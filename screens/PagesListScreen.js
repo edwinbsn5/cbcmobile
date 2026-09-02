@@ -14,11 +14,18 @@ const COUNTY_STORAGE_KEY = "pagesBrowseCounty";
 // briefcase for anything an admin adds later that isn't in this list, so
 // the grid never breaks for an unrecognized category.
 const CATEGORY_ICONS = {
-  "Beauty & Hair Services": "cut-outline",
-  "Body & Personal Care Services": "fitness-outline",
-  "Home Care Services": "home-outline",
+  "Beauty & Personal Care": "cut-outline",
+  "Health & Wellness": "fitness-outline",
+  "Food & Drink": "restaurant-outline",
+  "Retail & Shopping": "storefront-outline",
+  "Home Services": "home-outline",
+  "Business & Professional Services": "briefcase-outline",
+  "Tech & Digital Services": "laptop-outline",
+  "Education & Training": "school-outline",
+  "Events & Entertainment": "musical-notes-outline",
   "Errands & Delivery": "bicycle-outline",
-  "Business & Marketing Services": "briefcase-outline",
+  "Automotive & Transport": "car-outline",
+  "Community & Organizations": "people-outline",
   "Other Businesses": "ellipsis-horizontal-circle-outline",
 };
 function iconForCategory(name) {
