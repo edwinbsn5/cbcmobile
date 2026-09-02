@@ -203,7 +203,7 @@ function MainTabs({ navigation }) {
           name="ChamaTab"
           component={FeedScreen}
           options={{
-            tabBarLabel: "Investment Groups",
+            tabBarLabel: "iGroups",
             tabBarIcon: ({ color, size }) => <Ionicons name="cash-outline" size={size} color={color} />,
           }}
           listeners={{

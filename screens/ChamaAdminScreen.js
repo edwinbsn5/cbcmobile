@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   smallBtnText: { color: COLORS.accent, fontWeight: "700", fontSize: 12 },
   empty: { color: COLORS.sub, textAlign: "center", marginVertical: 12 },
   tabHint: { color: COLORS.sub, fontSize: 12, marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, marginBottom: 10, color: COLORS.ink },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, marginBottom: 10, color: COLORS.ink, backgroundColor: COLORS.surface },
   label: { fontSize: 12.5, color: COLORS.sub, marginBottom: 4 },
   switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8, marginBottom: 16 },
   activateBanner: { backgroundColor: "#FFF3CD", borderRadius: 10, padding: 14, marginBottom: 18, gap: 10 },

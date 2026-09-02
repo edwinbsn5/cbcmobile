@@ -57,8 +57,8 @@ export default function CampusPicker({ value, onChange, placeholder = "Start typ
 }
 
 const styles = StyleSheet.create({
-  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 15, color: COLORS.ink },
-  suggestionBox: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, marginTop: 4 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, padding: 10, fontSize: 15, color: COLORS.ink, backgroundColor: COLORS.surface },
+  suggestionBox: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 8, marginTop: 4, backgroundColor: COLORS.surface },
   suggestionRow: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: COLORS.bg },
   suggestionText: { fontSize: 14, color: COLORS.ink },
   noSuggestions: { padding: 12, color: COLORS.sub, fontSize: 13 },
