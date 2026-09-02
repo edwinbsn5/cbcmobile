@@ -514,12 +514,17 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
       )}
 
       <View style={styles.cautionBanner}>
-        <Ionicons name="shield-checkmark-outline" size={18} color="#8A6D00" />
+        <View style={styles.cautionHeaderRow}>
+          <Ionicons name="shield-checkmark-outline" size={18} color="#8A6D00" />
+          <Text style={styles.cautionTitle}>Simple guidelines before you join an Investment Group</Text>
+        </View>
         <Text style={styles.cautionText}>
           Don't send money to a stranger without doing some due diligence (uchunguzi kidogo). Make sure you attend physical meetings of the
-          chama, meet the other members, and get to know one another.{"\n\n"}
-          If this chama is not in your county/sub-county, LEAVE. Don't risk getting conned.{"\n\n"}
-          And lastly, if a project/chama involves large sums of money, please protect yourself and involve legal practitioners.
+          investment group, meet the other members, and get to know one another.{"\n\n"}
+          If this investment group is not in your county/sub-county, LEAVE. Don't risk getting conned.{"\n\n"}
+          And lastly, if a project/investment group involves large sums of money, please protect yourself and involve legal practitioners.{"\n\n"}
+          We wish you all to get a group that strives to build assets, have great leadership, have a chance to read books together and
+          sharpen your minds, go out together for team-building, and take care of one another. Have fun exploring!
         </Text>
       </View>
 
@@ -1666,8 +1671,10 @@ const styles = StyleSheet.create({
   defaulterText: { color: "#8A6D00", fontSize: 12, flex: 1 },
   frozenBanner: { flexDirection: "row", gap: 8, alignItems: "center", backgroundColor: "#FBE7E7", borderRadius: 8, padding: 10, marginTop: 8 },
   frozenText: { color: "#C4433C", fontSize: 12, flex: 1 },
-  cautionBanner: { flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginBottom: 12 },
-  cautionText: { color: "#6B5300", fontSize: 12, lineHeight: 18, flex: 1 },
+  cautionBanner: { backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginBottom: 12 },
+  cautionHeaderRow: { flexDirection: "row", gap: 8, alignItems: "center", marginBottom: 8 },
+  cautionTitle: { color: "#6B5300", fontSize: 13, fontWeight: "800", flex: 1 },
+  cautionText: { color: "#6B5300", fontSize: 12, lineHeight: 18 },
   announcementsCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 8 },
   // A small "+ Post" trigger next to the heading, opening a bottom-sheet
   // modal (same pattern as every other composer in this file) — was
