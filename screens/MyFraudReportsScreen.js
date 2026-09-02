@@ -43,7 +43,7 @@ export default function MyFraudReportsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
-      <Text style={styles.intro}>Fraud/dispute reports filed against you, across every Chama and Project group.</Text>
+      <Text style={styles.intro}>Fraud/dispute reports filed against you, across every Investment Group and Project group.</Text>
       {reports.map((r) => {
         const canAppeal = r.status === "confirmed" && !r.appealUsed && Date.now() < r.appealDeadlineAt;
         return (

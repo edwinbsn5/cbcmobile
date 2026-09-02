@@ -89,7 +89,7 @@ function MembersTab({ chamaId, chama, onChange }) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function remove(memberId, name) {
-    Alert.alert("Remove member", `Remove ${name} from this Chama?`, [
+    Alert.alert("Remove member", `Remove ${name} from this Investment Group?`, [
       { text: "Cancel", style: "cancel" },
       { text: "Remove", style: "destructive", onPress: async () => {
         try { await client.post(`/chama/${chamaId}/members/${memberId}/remove`); load(); onChange(); }
@@ -388,7 +388,7 @@ function SettingsTab({ chamaId, chama, onChange }) {
   }
 
   async function activate() {
-    Alert.alert("Activate this Chama", "Contribution deadlines start counting from this moment — members who haven't contributed each period will start showing as late. This can't be undone.", [
+    Alert.alert("Activate this Investment Group", "Contribution deadlines start counting from this moment — members who haven't contributed each period will start showing as late. This can't be undone.", [
       { text: "Cancel", style: "cancel" },
       { text: "Activate", onPress: async () => {
         setActivating(true);
@@ -400,7 +400,7 @@ function SettingsTab({ chamaId, chama, onChange }) {
   }
 
   async function save() {
-    if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county this Chama meets in");
+    if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county this Investment Group meets in");
     setSaving(true);
     try {
       const body = { membersVisibleToMembers: membersVisible, requireGuarantorsToJoin: requireGuarantors, county, subCounty };
@@ -439,7 +439,7 @@ function SettingsTab({ chamaId, chama, onChange }) {
   }
 
   async function archive() {
-    Alert.alert("Archive Chama", "This closes the Chama permanently. Continue?", [
+    Alert.alert("Archive Investment Group", "This closes the Investment Group permanently. Continue?", [
       { text: "Cancel", style: "cancel" },
       { text: "Archive", style: "destructive", onPress: async () => {
         try { await client.post(`/chama/${chamaId}/archive`); onChange(); }
@@ -461,9 +461,9 @@ function SettingsTab({ chamaId, chama, onChange }) {
     <View>
       {!chama.activatedAt ? (
         <View style={styles.activateBanner}>
-          <Text style={styles.activateBannerText}>This Chama isn't active yet — contribution deadlines, late fees, and member votes won't apply until you activate it.</Text>
+          <Text style={styles.activateBannerText}>This Investment Group isn't active yet — contribution deadlines, late fees, and member votes won't apply until you activate it.</Text>
           <TouchableOpacity style={styles.approveBtn} onPress={activate} disabled={activating}>
-            <Text style={styles.approveBtnText}>{activating ? "Activating..." : "Activate Chama"}</Text>
+            <Text style={styles.approveBtnText}>{activating ? "Activating..." : "Activate Investment Group"}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -529,7 +529,7 @@ function SettingsTab({ chamaId, chama, onChange }) {
         <Text style={styles.smallBtnText}>Export financial report (CSV)</Text>
       </TouchableOpacity>
       <TouchableOpacity style={[styles.rejectBtn, { marginTop: 20, alignSelf: "flex-start" }]} onPress={archive}>
-        <Text style={styles.rejectBtnText}>Archive Chama</Text>
+        <Text style={styles.rejectBtnText}>Archive Investment Group</Text>
       </TouchableOpacity>
     </View>
   );

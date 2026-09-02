@@ -111,7 +111,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
       if (e.response?.data?.requiresAccess) {
         setAccessBlocked(true);
       } else {
-        Alert.alert("Couldn't load Chama", e.response?.data?.error || e.message);
+        Alert.alert("Couldn't load Investment Group", e.response?.data?.error || e.message);
       }
     } finally {
       setLoading(false);
@@ -124,8 +124,8 @@ export default function ChamaDetailScreen({ route, navigation }) {
     return (
       <View style={styles.accessBlockedContainer}>
         <Ionicons name="lock-closed-outline" size={40} color={COLORS.accent} />
-        <Text style={styles.accessBlockedTitle}>Chama access required</Text>
-        <Text style={styles.accessBlockedText}>You need an active Chama access pass to view this chama's profile.</Text>
+        <Text style={styles.accessBlockedTitle}>Investment Group access required</Text>
+        <Text style={styles.accessBlockedText}>You need an active Investment Group access pass to view this investment group's profile.</Text>
         <TouchableOpacity style={styles.primaryButton} onPress={() => setAccessModalVisible(true)}>
           <Text style={styles.primaryButtonText}>Get access</Text>
         </TouchableOpacity>
@@ -207,7 +207,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
 
           {!membership && (
             <TouchableOpacity style={styles.primaryButton} onPress={() => setJoinModalVisible(true)}>
-              <Text style={styles.primaryButtonText}>{chama.joinPolicy === "open" && chama.remaining > 0 ? "Join Chama" : "Request to Join"}</Text>
+              <Text style={styles.primaryButtonText}>{chama.joinPolicy === "open" && chama.remaining > 0 ? "Join Investment Group" : "Request to Join"}</Text>
             </TouchableOpacity>
           )}
           {membership?.status === "pending" && <Text style={styles.pendingNote}>Your request to join is awaiting admin approval.</Text>}
@@ -275,7 +275,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
                 <DocumentsTab chamaId={chamaId} isMember={isMember} isAdmin={isAdmin} />
               </View>
             ) : (
-              <Text style={styles.gatedText}>Join this Chama to view the ledger, payouts, and members.</Text>
+              <Text style={styles.gatedText}>Join this Investment Group to view the ledger, payouts, and members.</Text>
             )
           )}
           {tab === "achievements" && <AchievementsTab chamaId={chamaId} isMember={isMember} />}
@@ -509,7 +509,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
       {chama.frozenAt && (
         <View style={styles.frozenBanner}>
           <Ionicons name="lock-closed-outline" size={16} color="#C4433C" />
-          <Text style={styles.frozenText}>This Chama's funds are frozen pending investigation.</Text>
+          <Text style={styles.frozenText}>This Investment Group's funds are frozen pending investigation.</Text>
         </View>
       )}
 
@@ -525,7 +525,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
 
       {isMember && userId !== chama.creatorId && (
         <TouchableOpacity style={styles.leaveButton} onPress={handleLeave}>
-          <Text style={styles.leaveButtonText}>Leave this Chama</Text>
+          <Text style={styles.leaveButtonText}>Leave this Investment Group</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -543,7 +543,7 @@ function LedgerTab({ chamaId, isMember, chama }) {
     }
   }, [chamaId, isMember, chama?.contributionType, chama?.activatedAt]));
 
-  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view the group ledger.</Text>;
+  if (!isMember) return <Text style={styles.gatedText}>Join this Investment Group to view the group ledger.</Text>;
   if (!items) return <ActivityIndicator color={COLORS.accent} />;
   const owing = (members || []).filter((m) => m.defaulter?.payableNow > 0);
   return (
@@ -924,7 +924,7 @@ function MembersTab({ chamaId, isMember, chama, myUserId, isAdmin }) {
     );
   }
 
-  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view members.</Text>;
+  if (!isMember) return <Text style={styles.gatedText}>Join this Investment Group to view members.</Text>;
   if (error) return <Text style={styles.gatedText}>{error}</Text>;
   if (!members) return <ActivityIndicator color={COLORS.accent} />;
   return (
@@ -996,7 +996,7 @@ function DocumentsTab({ chamaId, isMember, isAdmin }) {
     }
   }
 
-  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view its documents.</Text>;
+  if (!isMember) return <Text style={styles.gatedText}>Join this Investment Group to view its documents.</Text>;
   if (!docs) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
@@ -1046,7 +1046,7 @@ function StartVoteModal({ chamaId, target, onClose, onDone }) {
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
         <Text style={styles.sheetTitle}>Start a vote to remove {target?.user?.name}</Text>
-        <Text style={styles.tabHint}>This isn't an admin decision — it passes only once more than half the other active members vote yes, and ends their membership in this Chama.</Text>
+        <Text style={styles.tabHint}>This isn't an admin decision — it passes only once more than half the other active members vote yes, and ends their membership in this Investment Group.</Text>
         <TextInput style={[styles.input, styles.multiline]} placeholder="Reason (optional)" value={reason} onChangeText={setReason} multiline />
         <TouchableOpacity style={[styles.primaryButton, { backgroundColor: "#D32F2F" }]} onPress={submit} disabled={submitting}>
           <Text style={styles.primaryButtonText}>{submitting ? "Starting..." : "Start vote"}</Text>
@@ -1067,7 +1067,7 @@ function AchievementsTab({ chamaId, isMember }) {
   }, [chamaId, isMember]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view achievements.</Text>;
+  if (!isMember) return <Text style={styles.gatedText}>Join this Investment Group to view achievements.</Text>;
   if (!items) return <ActivityIndicator color={COLORS.accent} />;
   return (
     <View>
@@ -1084,7 +1084,7 @@ function AchievementsTab({ chamaId, isMember }) {
             {a.isPublic ? (
               <View style={styles.publicPill}><Ionicons name="globe-outline" size={10} color="#2E7D32" /><Text style={styles.publicPillText}>Public</Text></View>
             ) : (
-              <View style={styles.privatePill}><Ionicons name="lock-closed-outline" size={10} color={COLORS.sub} /><Text style={styles.privatePillText}>Chama only</Text></View>
+              <View style={styles.privatePill}><Ionicons name="lock-closed-outline" size={10} color={COLORS.sub} /><Text style={styles.privatePillText}>Investment Group only</Text></View>
             )}
           </View>
           <Text style={styles.postMeta}>{new Date(a.createdAt).toLocaleDateString()}</Text>
@@ -1151,7 +1151,7 @@ function PostAchievementModal({ visible, chamaId, onClose, onDone }) {
           <Text style={styles.switchLabel}>Show on the public Achievements tab (homepage)</Text>
           <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: COLORS.accent }} />
         </View>
-        <Text style={styles.tabHint}>{isPublic ? "Visible to everyone browsing Chamas." : "Only visible to this Chama's members."}</Text>
+        <Text style={styles.tabHint}>{isPublic ? "Visible to everyone browsing Investment Groups." : "Only visible to this Investment Group's members."}</Text>
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
           <Text style={styles.primaryButtonText}>{submitting ? (uploading ? "Uploading photo..." : "Posting...") : "Post achievement"}</Text>
         </TouchableOpacity>
@@ -1211,7 +1211,7 @@ const DISCUSSION_SUB_TABS = [
 function FeedTab({ chamaId, chamaName, isMember, isAdmin, userId, navigation }) {
   const [subTab, setSubTab] = useState("feed");
 
-  if (!isMember) return <Text style={styles.gatedText}>Join this Chama to view discussions.</Text>;
+  if (!isMember) return <Text style={styles.gatedText}>Join this Investment Group to view discussions.</Text>;
 
   return (
     <View>
@@ -1580,14 +1580,14 @@ function JoinRequestModal({ visible, onClose, chamaId, groupCounty, navigation, 
       const { data } = await client.post(`/chama/${chamaId}/join`, { email: email.trim(), phone: phone.trim(), county, subCounty });
       Alert.alert(
         data.membership.status === "active" ? "You're in!" : data.membership.status === "waitlisted" ? "Added to waitlist" : "Request sent",
-        data.membership.status === "active" ? "You're now a member." : data.membership.status === "waitlisted" ? "This Chama is full — you'll be notified if a spot opens up." : "The admin will review your request."
+        data.membership.status === "active" ? "You're now a member." : data.membership.status === "waitlisted" ? "This Investment Group is full — you'll be notified if a spot opens up." : "The admin will review your request."
       );
       onDone(data.membership);
     } catch (e) {
       if (e.response?.data?.requiresGuarantors) {
         Alert.alert("Guarantors required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Add guarantors", onPress: () => navigation.navigate("Guarantors") }]);
       } else if (e.response?.data?.requiresAccess) {
-        Alert.alert("Chama access required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Get access", onPress: () => { onClose(); navigation.navigate("ChamaHome"); } }]);
+        Alert.alert("Investment Group access required", e.response.data.error, [{ text: "Not now", style: "cancel" }, { text: "Get access", onPress: () => { onClose(); navigation.navigate("ChamaHome"); } }]);
       } else {
         Alert.alert("Couldn't join", e.response?.data?.error || e.message);
       }

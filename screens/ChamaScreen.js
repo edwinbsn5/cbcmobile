@@ -115,7 +115,7 @@ export default function ChamaScreen({ navigation }) {
     client
       .get("/chama", { params: { filter: filter || undefined, search: search || undefined, county, subCounty: subCounty || undefined } })
       .then((r) => setChamas(r.data))
-      .catch((e) => Alert.alert("Couldn't load Chamas", e.response?.data?.error || e.message))
+      .catch((e) => Alert.alert("Couldn't load Investment Groups", e.response?.data?.error || e.message))
       .finally(() => setLoading(false));
   }, [filter, search, county, subCounty]);
 

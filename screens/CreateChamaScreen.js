@@ -61,7 +61,7 @@ export default function CreateChamaScreen({ navigation }) {
   }
 
   async function handleCreate() {
-    if (!name.trim()) return Alert.alert("Name required", "Give your Chama a name");
+    if (!name.trim()) return Alert.alert("Name required", "Give your Investment Group a name");
     const max = parseInt(maxMembers, 10);
     if (!Number.isInteger(max) || max < 2) return Alert.alert("Invalid size", "Max members must be 2 or more");
     if (contributionType === "fixed_recurring" && (!parseInt(contributionAmount, 10) || parseInt(contributionAmount, 10) <= 0)) {
@@ -82,7 +82,7 @@ export default function CreateChamaScreen({ navigation }) {
     if (loanEligibilityDays !== "" && (!Number.isInteger(parseInt(loanEligibilityDays, 10)) || parseInt(loanEligibilityDays, 10) < 0)) {
       return Alert.alert("Invalid incubation period", "Enter a non-negative number of days, or leave blank for none");
     }
-    if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county your Chama meets in");
+    if (!county || !subCounty) return Alert.alert("Location required", "Select the county and sub-county your Investment Group meets in");
 
     setSubmitting(true);
     try {
@@ -109,12 +109,12 @@ export default function CreateChamaScreen({ navigation }) {
         loanEligibilityDays: loanEligibilityDays !== "" ? parseInt(loanEligibilityDays, 10) : undefined,
         county, subCounty,
       });
-      Alert.alert("Chama created!", "You're the admin — start inviting members.");
+      Alert.alert("Investment Group created!", "You're the admin — start inviting members.");
       navigation.replace("ChamaDetail", { chamaId: data.id });
     } catch (e) {
       if (e.response?.data?.requiresAccess) {
         Alert.alert(
-          "Chama access required",
+          "Investment Group access required",
           e.response.data.error,
           [
             { text: "Not now", style: "cancel" },
@@ -122,7 +122,7 @@ export default function CreateChamaScreen({ navigation }) {
           ]
         );
       } else {
-        Alert.alert("Couldn't create Chama", e.response?.data?.error || e.message);
+        Alert.alert("Couldn't create Investment Group", e.response?.data?.error || e.message);
       }
     } finally {
       setUploading(false);
@@ -133,11 +133,11 @@ export default function CreateChamaScreen({ navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}>
       <View style={styles.card}>
-        <Text style={styles.label}>Chama name</Text>
+        <Text style={styles.label}>Investment Group name</Text>
         <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Umoja Savings Group" />
 
         <Text style={styles.label}>Description</Text>
-        <TextInput style={[styles.input, styles.multiline]} value={description} onChangeText={setDescription} placeholder="What's this Chama for?" multiline />
+        <TextInput style={[styles.input, styles.multiline]} value={description} onChangeText={setDescription} placeholder="What's this Investment Group for?" multiline />
 
         <Text style={styles.label}>Cover photo</Text>
         {cover ? (
@@ -198,18 +198,18 @@ export default function CreateChamaScreen({ navigation }) {
         <OptionRow options={[{ value: "approval", label: "Requires approval" }, { value: "open", label: "Open until full" }]} value={joinPolicy} onChange={setJoinPolicy} />
 
         <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>Members can see who else is in the Chama</Text>
+          <Text style={styles.switchLabel}>Members can see who else is in the Investment Group</Text>
           <Switch value={membersVisible} onValueChange={setMembersVisible} trackColor={{ true: COLORS.accent }} />
         </View>
 
-        <Text style={styles.sectionTitle}>Where does this Chama meet?</Text>
+        <Text style={styles.sectionTitle}>Where does this Investment Group meet?</Text>
         <Text style={styles.label}>County</Text>
         <CountyPicker value={county} onChange={handleCountyChange} />
         <Text style={styles.label}>Sub-county</Text>
         <SubCountyPicker county={county} value={subCounty} onChange={setSubCounty} />
 
         <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting}>
-          {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : <Text style={styles.buttonText}>{uploading ? "Uploading cover..." : "Create Chama"}</Text>}
+          {submitting ? <ActivityIndicator color={COLORS.accentInk} /> : <Text style={styles.buttonText}>{uploading ? "Uploading cover..." : "Create Investment Group"}</Text>}
         </TouchableOpacity>
       </View>
     </ScrollView>
