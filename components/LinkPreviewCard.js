@@ -4,24 +4,18 @@ import { Image } from "expo-image";
 import { COLORS } from "../theme";
 import { openInAppBrowser } from "../utils/inAppBrowser";
 
-// The "full-bleed hero" link-preview design (Design 1 of the 5 drafts) —
-// nested inside PostCard, right where a photo/video would go. The image
-// portion bleeds to the true screen edges using the same negative-margin
-// trick as PostCard's own `mediaFullBleed` (-22 = the card's own
-// marginHorizontal:10 + padding:12 — must stay in sync with PostCard.js if
-// that ever changes); the title/description strip stays inset like normal
-// card content. Missing image degrades gracefully — the tinted strip alone
-// still renders full-width, not a different layout.
+// "Compact Row" link-preview design — a small square thumbnail with
+// domain/title/description stacked beside it in one bordered band, instead
+// of the old full-bleed hero image. Roughly half the vertical space, so a
+// feed with several link posts back to back doesn't turn into a wall of
+// photos. Missing image degrades gracefully — the text column just takes
+// the full width instead of a placeholder box.
 export default function LinkPreviewCard({ preview }) {
   if (!preview) return null;
 
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={() => openInAppBrowser(preview.url)}>
-      {!!preview.imageUrl && (
-        <View style={styles.mediaFullBleed}>
-          <Image source={{ uri: preview.imageUrl }} style={styles.image} contentFit="cover" />
-        </View>
-      )}
+    <TouchableOpacity activeOpacity={0.85} style={styles.card} onPress={() => openInAppBrowser(preview.url)}>
+      {!!preview.imageUrl && <Image source={{ uri: preview.imageUrl }} style={styles.thumb} contentFit="cover" />}
       <View style={styles.body}>
         {!!preview.siteName && <Text style={styles.domain} numberOfLines={1}>{preview.siteName.toUpperCase()}</Text>}
         <Text style={styles.title} numberOfLines={2}>{preview.title}</Text>
@@ -34,10 +28,10 @@ export default function LinkPreviewCard({ preview }) {
 }
 
 const styles = StyleSheet.create({
-  mediaFullBleed: { marginHorizontal: -22, marginBottom: 8 },
-  image: { width: "100%", height: 180, backgroundColor: COLORS.wash },
-  body: { backgroundColor: COLORS.wash, borderRadius: 8, padding: 10, marginBottom: 8 },
-  domain: { fontSize: 10, fontWeight: "800", color: COLORS.sub, letterSpacing: 0.4 },
-  title: { fontSize: 14, fontWeight: "800", color: COLORS.ink, marginTop: 3, lineHeight: 19 },
-  desc: { fontSize: 12, color: COLORS.sub, marginTop: 3, lineHeight: 16 },
+  card: { flexDirection: "row", gap: 10, alignItems: "center", borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 8, marginBottom: 8 },
+  thumb: { width: 58, height: 58, borderRadius: 7, backgroundColor: COLORS.wash, flexShrink: 0 },
+  body: { flex: 1 },
+  domain: { fontSize: 9, fontWeight: "800", color: COLORS.sub, letterSpacing: 0.4 },
+  title: { fontSize: 12.5, fontWeight: "700", color: COLORS.ink, marginTop: 2, lineHeight: 16 },
+  desc: { fontSize: 10.5, color: COLORS.sub, marginTop: 2, lineHeight: 14 },
 });

@@ -108,13 +108,13 @@ export default function AdCard({
           <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.sub} />
         </TouchableOpacity>
       </View>
-      {!!ad.imageUrl && <Image source={{ uri: ad.imageUrl }} style={styles.media} contentFit="cover" />}
-      <Text style={styles.headline}>{ad.headline}</Text>
-      {!!ad.cta && (
-        <TouchableOpacity style={styles.cta} onPress={() => openInAppBrowser(ad.targetUrl)}>
-          <Text style={styles.ctaText}>{ad.cta}</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity style={styles.linkRow} activeOpacity={0.85} onPress={() => openInAppBrowser(ad.targetUrl)}>
+        {!!ad.imageUrl && <Image source={{ uri: ad.imageUrl }} style={styles.thumb} contentFit="cover" />}
+        <View style={styles.linkBody}>
+          <Text style={styles.headline} numberOfLines={2}>{ad.headline}</Text>
+          {!!ad.cta && <Text style={styles.ctaInline}>{ad.cta} →</Text>}
+        </View>
+      </TouchableOpacity>
       {reportMenu}
     </View>
   );
@@ -128,10 +128,15 @@ const styles = StyleSheet.create({
   badgeRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   sponsored: { color: COLORS.sub, fontSize: 12, fontWeight: "600" },
   advertiser: { color: COLORS.sub, fontSize: 12, marginLeft: 4 },
-  media: { width: "100%", height: 180, borderRadius: 8, backgroundColor: "#eee", marginBottom: 8 },
-  headline: { color: COLORS.ink, fontSize: 15, fontWeight: "600", marginBottom: 8 },
-  cta: { backgroundColor: COLORS.wash, paddingVertical: 8, borderRadius: 6, alignItems: "center" },
-  ctaText: { color: COLORS.accent, fontWeight: "700" },
+  // Same "Compact Row" layout as LinkPreviewCard.js — a boosted ad is
+  // conceptually just a link, so it gets the identical treatment: small
+  // square thumbnail beside a text column, instead of the old full-width
+  // hero image.
+  linkRow: { flexDirection: "row", gap: 10, alignItems: "center", borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 8 },
+  thumb: { width: 58, height: 58, borderRadius: 7, backgroundColor: COLORS.wash, flexShrink: 0 },
+  linkBody: { flex: 1 },
+  headline: { color: COLORS.ink, fontSize: 12.5, fontWeight: "700", lineHeight: 16 },
+  ctaInline: { color: COLORS.accent, fontSize: 11, fontWeight: "800", marginTop: 4 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "flex-end" },
   menuCard: { backgroundColor: COLORS.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingVertical: 8, paddingBottom: 24 },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingVertical: 14 },
