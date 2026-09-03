@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, StyleSheet, ActivityIndicator, Alert, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Video, ResizeMode } from "expo-av";
@@ -108,6 +108,13 @@ export default function GroupDetailScreen({ route, navigation }) {
   const [changingAvatar, setChangingAvatar] = useState(false);
   const [messaging, setMessaging] = useState(false);
   const tiersYRef = useRef(0);
+  const { width: screenWidth } = useWindowDimensions();
+  // Sized so up to 3 tiers sit side by side without scrolling — the
+  // profile's own outer padding is `body`'s 16 on each side, tier cards sit
+  // in an 8-gap row (tierChipsContent below). A 4th+ tier still scrolls in,
+  // sized the same as the first 3 rather than shrinking further.
+  const TIER_GAP = 8;
+  const tierWidth = (screenWidth - 32 - TIER_GAP * 2) / 3;
 
   const [composerText, setComposerText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -637,7 +644,7 @@ export default function GroupDetailScreen({ route, navigation }) {
                     return (
                       <TouchableOpacity
                         key={tier.id}
-                        style={[styles.tierChip, disabled && styles.tierChipDisabled]}
+                        style={[styles.tierChip, { width: tierWidth }, disabled && styles.tierChipDisabled]}
                         onPress={() => handleSubscribe(tier)}
                         disabled={disabled}
                       >
@@ -946,7 +953,7 @@ const styles = StyleSheet.create({
   // a direct Subscribe action, right below the description.
   chipsRow: { marginTop: 14 },
   tierChipsContent: { flexDirection: "row", gap: 8 },
-  tierChip: { width: 168, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 10, alignItems: "flex-start" },
+  tierChip: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 10, alignItems: "flex-start" },
   tierChipDisabled: { opacity: 0.55 },
   tierChipText: { color: COLORS.ink, fontSize: 13, fontWeight: "800" },
   tierChipPrice: { color: COLORS.accent, fontSize: 11.5, fontWeight: "800", marginTop: 1, marginBottom: 6 },
