@@ -92,8 +92,8 @@ android {
         applicationId 'the.campusbiashara.club'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 33
-        versionName "1.5.9"
+        versionCode 34
+        versionName "1.6.0"
     }
     signingConfigs {
         debug {
