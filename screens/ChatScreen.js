@@ -51,6 +51,32 @@ function EventPin({ event, onView }) {
   );
 }
 
+function GroupPin({ group, onView }) {
+  if (!group) {
+    return (
+      <View style={styles.pinUnavailable}>
+        <Ionicons name="alert-circle-outline" size={14} color={COLORS.sub} />
+        <Text style={styles.pinUnavailableText}>This Group is no longer available</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.pin}>
+      {group.avatarUrl || group.coverUrl ? (
+        <Image source={{ uri: group.avatarUrl || group.coverUrl }} style={styles.pinThumb} contentFit="cover" />
+      ) : (
+        <View style={[styles.pinThumb, styles.pinThumbPlaceholder]} />
+      )}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.pinTitle} numberOfLines={1}>{group.name}</Text>
+      </View>
+      <TouchableOpacity style={[styles.pinButton, styles.pinButtonGhost]} onPress={onView}>
+        <Text style={styles.pinButtonGhostText}>View</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function ProductPin({ product, isSeller, onMarkSold, marking, onView }) {
   if (!product) {
     return (
@@ -299,6 +325,11 @@ export default function ChatScreen({ route, navigation }) {
     navigation.navigate("EventDetail", { eventId: conversation.contextEvent.id });
   }
 
+  function handleViewGroup() {
+    if (!conversation?.contextGroup) return;
+    navigation.navigate("GroupDetail", { groupId: conversation.contextGroup.id });
+  }
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.accent} />;
 
   return (
@@ -320,6 +351,9 @@ export default function ChatScreen({ route, navigation }) {
       )}
       {conversation?.contextType === "event" && (
         <EventPin event={conversation.contextEvent} onView={handleViewEvent} />
+      )}
+      {conversation?.contextType === "group" && (
+        <GroupPin group={conversation.contextGroup} onView={handleViewGroup} />
       )}
 
       <FlatList

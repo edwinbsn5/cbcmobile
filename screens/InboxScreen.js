@@ -14,6 +14,7 @@ const TABS = [
   { key: "mtu_wako", label: "PAGES" },
   { key: "market", label: "Market" },
   { key: "events", label: "Events" },
+  { key: "groups", label: "Groups" },
 ];
 
 function timeAgo(ts) {
@@ -120,7 +121,7 @@ export default function InboxScreen({ navigation }) {
   }, [navigation, selectionMode, selectedIds, deleting]);
 
   const tabCounts = useMemo(() => {
-    const counts = { inbox: 0, mtu_wako: 0, market: 0, events: 0 };
+    const counts = { inbox: 0, mtu_wako: 0, market: 0, events: 0, groups: 0 };
     for (const c of conversations) counts[c.tab] = (counts[c.tab] || 0) + c.unreadCount;
     return counts;
   }, [conversations]);
@@ -142,6 +143,7 @@ export default function InboxScreen({ navigation }) {
       contextPage: item.contextPage,
       contextProduct: item.contextProduct,
       contextEvent: item.contextEvent,
+      contextGroup: item.contextGroup,
     });
   }
 
@@ -181,6 +183,8 @@ export default function InboxScreen({ navigation }) {
               ? "No messages from Pages yet"
               : activeTab === "events"
               ? "No event organiser chats yet"
+              : activeTab === "groups"
+              ? "No Group admin chats yet"
               : "No MarketPlace conversations yet"}
           </Text>
         }

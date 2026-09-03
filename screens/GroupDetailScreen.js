@@ -471,7 +471,7 @@ export default function GroupDetailScreen({ route, navigation }) {
     if (!group?.admin?.id) return;
     setMessaging(true);
     try {
-      const { data } = await client.post("/inbox/start", { userId: group.admin.id });
+      const { data } = await client.post("/inbox/start", { userId: group.admin.id, contextType: "group", contextGroupId: group.id });
       navigation.navigate("Chat", { conversationId: data.id, otherUser: data.otherUser });
     } catch (e) {
       Alert.alert("Couldn't start chat", e.response?.data?.error || e.message);
@@ -684,9 +684,15 @@ export default function GroupDetailScreen({ route, navigation }) {
                 <TouchableOpacity style={styles.subscribeCta} onPress={handleScrollToTiers}>
                   <Text style={styles.subscribeCtaText}>{mySub?.subscribed ? "Manage subscription" : "Subscribe"}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.messageCta} onPress={handleMessageAdmin} disabled={messaging}>
-                  <Text style={styles.messageCtaText}>{messaging ? "Opening..." : `Message ${firstName(group.admin?.name)}`}</Text>
-                </TouchableOpacity>
+                {/* Messaging the admin this way is a subscriber perk, not a
+                    public contact form — enforced server-side too
+                    (routes/inbox.js's POST /start), this just keeps
+                    non-subscribers from seeing a button that would 403. */}
+                {mySub?.subscribed && (
+                  <TouchableOpacity style={styles.messageCta} onPress={handleMessageAdmin} disabled={messaging}>
+                    <Text style={styles.messageCtaText}>{messaging ? "Opening..." : `Message ${firstName(group.admin?.name)}`}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
 
