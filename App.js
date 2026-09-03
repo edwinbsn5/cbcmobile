@@ -91,6 +91,7 @@ import AvatarViewerScreen from "./screens/AvatarViewerScreen";
 import StoryInsightsScreen from "./screens/StoryInsightsScreen";
 import EditPostScreen from "./screens/EditPostScreen";
 import ReportPostScreen from "./screens/ReportPostScreen";
+import ReportAdScreen from "./screens/ReportAdScreen";
 import BlockedUsersScreen from "./screens/BlockedUsersScreen";
 import SupportScreen from "./screens/SupportScreen";
 import NewTicketScreen from "./screens/NewTicketScreen";
@@ -358,6 +359,7 @@ function RootNavigator() {
         <RootStack.Screen name="StoryInsights" component={StoryInsightsScreen} options={{ title: "Story Insights" }} />
         <RootStack.Screen name="EditPost" component={EditPostScreen} options={{ title: "Edit Post", presentation: "modal" }} />
         <RootStack.Screen name="ReportPost" component={ReportPostScreen} options={{ title: "Report Post", presentation: "modal" }} />
+        <RootStack.Screen name="ReportAd" component={ReportAdScreen} options={{ title: "Report Ad", presentation: "modal" }} />
         <RootStack.Screen name="BlockedUsers" component={BlockedUsersScreen} options={{ title: "Blocked Users" }} />
         <RootStack.Screen name="Support" component={SupportScreen} options={{ title: "Support" }} />
         <RootStack.Screen name="NewTicket" component={NewTicketScreen} options={{ title: "New Ticket" }} />
