@@ -49,5 +49,17 @@ export async function navigateForData(navigation, data) {
     navigation.navigate("MyMarketProducts");
   } else if (data.screen === "InfluencerQuest") {
     navigation.navigate("InfluencerQuest");
+  } else if (data.screen === "ChamaDetail" && data.groupId) {
+    // The chama.js/collab* notifiers call this param `groupId` (it's the
+    // collab group's id, shared with the "project" collab kind) but
+    // ChamaDetailScreen itself reads `chamaId` — same value, just renamed
+    // here to match what the screen actually expects.
+    navigation.navigate("ChamaDetail", { chamaId: data.groupId, focusPostId: data.postId, focusCommentId: data.commentId });
+  } else if (data.screen === "ChamaAdmin" && data.groupId) {
+    navigation.navigate("ChamaAdmin", { chamaId: data.groupId, tab: data.tab });
+  } else if (data.screen === "ChamaProjectDetail" && data.chamaId && data.projectId) {
+    navigation.navigate("ChamaProjectDetail", { chamaId: data.chamaId, projectId: data.projectId });
+  } else if (data.screen === "Guarantors") {
+    navigation.navigate("Guarantors");
   }
 }

@@ -11,8 +11,13 @@ function formatKES(n) { return `KES ${Math.round(n || 0).toLocaleString()}`; }
 const TABS = ["Requests", "Members", "Contributions", "Loans", "Votes", "Settings", "Audit"];
 
 export default function ChamaAdminScreen({ route }) {
-  const { chamaId } = route.params;
-  const [tab, setTab] = useState("Requests");
+  const { chamaId, tab: initialTab } = route.params;
+  // A notification (e.g. "New join request", "Contribution received") can
+  // suggest which tab to land on via a lowercase `tab` param — matched
+  // case-insensitively against the real tab labels below, defaulting to
+  // "Requests" for an unset/unrecognized value.
+  const matchedTab = initialTab && TABS.find((t) => t.toLowerCase() === String(initialTab).toLowerCase());
+  const [tab, setTab] = useState(matchedTab || "Requests");
   const [chama, setChama] = useState(null);
 
   const load = useCallback(() => { client.get(`/chama/${chamaId}`).then((r) => setChama(r.data)).catch(() => {}); }, [chamaId]);
