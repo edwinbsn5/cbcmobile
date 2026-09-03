@@ -8,7 +8,7 @@ import { COLORS } from "../theme";
 
 function formatKES(n) { return `KES ${Math.round(n || 0).toLocaleString()}`; }
 
-const TABS = ["Requests", "Members", "Contributions", "Loans", "Votes", "Settings", "Audit"];
+const TABS = ["Requests", "Members", "Contributions", "Loans", "Withdrawals", "Votes", "Settings", "Audit"];
 
 export default function ChamaAdminScreen({ route }) {
   const { chamaId, tab: initialTab } = route.params;
@@ -39,6 +39,7 @@ export default function ChamaAdminScreen({ route }) {
         {tab === "Members" && <MembersTab chamaId={chamaId} chama={chama} onChange={load} />}
         {tab === "Contributions" && <ContributionsTab chamaId={chamaId} chama={chama} />}
         {tab === "Loans" && <LoansTab chamaId={chamaId} chama={chama} onChange={load} />}
+        {tab === "Withdrawals" && <WithdrawalsTab chamaId={chamaId} />}
         {tab === "Votes" && <VotesTab chamaId={chamaId} />}
         {tab === "Settings" && <SettingsTab chamaId={chamaId} chama={chama} onChange={load} />}
         {tab === "Audit" && <AuditTab chamaId={chamaId} />}
@@ -388,6 +389,70 @@ function LoansTab({ chamaId, chama }) {
         </View>
       ))}
       {!past.length && <Text style={styles.empty}>No completed or rejected loans yet</Text>}
+    </View>
+  );
+}
+
+// A member cashing out their own share points (services/collab.js
+// #sharePointsFor), not the group's whole pool. pending -> approved (any
+// one admin/treasurer) -> paid ("mark as disbursed", once actually handed
+// over — often physically at a meeting), or -> rejected from pending.
+function WithdrawalsTab({ chamaId }) {
+  const [requests, setRequests] = useState(null);
+  const load = useCallback(() => { client.get(`/chama/${chamaId}/withdrawals`).then((r) => setRequests(r.data)).catch(() => setRequests([])); }, [chamaId]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function decide(id, action) {
+    try {
+      await client.post(`/chama/${chamaId}/withdrawals/${id}/${action}`);
+      load();
+    } catch (e) {
+      Alert.alert("Action failed", e.response?.data?.error || e.message);
+    }
+  }
+
+  if (!requests) return <ActivityIndicator color={COLORS.accent} />;
+  const pending = requests.filter((w) => w.status === "pending");
+  const approved = requests.filter((w) => w.status === "approved");
+  const past = requests.filter((w) => ["paid", "rejected"].includes(w.status));
+
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>Pending requests ({pending.length})</Text>
+      {pending.map((w) => (
+        <View key={w.id} style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowName}>{w.requester?.name} — {formatKES(w.amount)}</Text>
+            <Text style={styles.rowSub}>{w.reason || "No reason given"}</Text>
+          </View>
+          <View style={styles.rowActions}>
+            <TouchableOpacity style={styles.approveBtn} onPress={() => decide(w.id, "approve")}><Text style={styles.approveBtnText}>Approve</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.rejectBtn} onPress={() => decide(w.id, "reject")}><Text style={styles.rejectBtnText}>Reject</Text></TouchableOpacity>
+          </View>
+        </View>
+      ))}
+      {!pending.length && <Text style={styles.empty}>Nothing pending</Text>}
+
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Approved, awaiting disbursement ({approved.length})</Text>
+      {approved.map((w) => (
+        <View key={w.id} style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowName}>{w.requester?.name} — {formatKES(w.amount)}</Text>
+            <Text style={styles.rowSub}>{w.reason || "No reason given"}</Text>
+          </View>
+          <TouchableOpacity style={styles.approveBtn} onPress={() => decide(w.id, "disburse")}><Text style={styles.approveBtnText}>Mark as disbursed</Text></TouchableOpacity>
+        </View>
+      ))}
+      {!approved.length && <Text style={styles.empty}>Nothing awaiting disbursement</Text>}
+
+      <Text style={[styles.sectionTitle, { marginTop: 20 }]}>History</Text>
+      {past.map((w) => (
+        <View key={w.id} style={styles.row}>
+          <Text style={styles.rowName}>{w.requester?.name} — {formatKES(w.amount)}</Text>
+          <Text style={styles.rowSub}>{w.status === "paid" ? "Disbursed" : "Rejected"}</Text>
+        </View>
+      ))}
+      {!past.length && <Text style={styles.empty}>No disbursed or rejected requests yet</Text>}
     </View>
   );
 }

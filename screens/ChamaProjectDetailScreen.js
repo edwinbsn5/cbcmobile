@@ -41,6 +41,7 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
   const [contributionAmount, setContributionAmount] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseReason, setExpenseReason] = useState("");
+  const [profitVisible, setProfitVisible] = useState(false);
   const [posting, setPosting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [addingMilestone, setAddingMilestone] = useState(false);
@@ -115,6 +116,19 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
       load();
     } catch (e) {
       Alert.alert("Couldn't fund project", e.response?.data?.error || e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function recordProfit(amount, note, distribution) {
+    setBusy(true);
+    try {
+      await client.post(`/chama/${chamaId}/projects/${projectId}/profit`, { amount, note, distribution });
+      setProfitVisible(false);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't record profit", e.response?.data?.error || e.message);
     } finally {
       setBusy(false);
     }
@@ -307,17 +321,41 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
 
         <Text style={styles.sectionTitle}>Funding</Text>
         <View style={styles.fundingCard}>
-          <View style={styles.fundingRow}><Text style={styles.fundingLabel}>Funded from group pool</Text><Text style={styles.fundingValue}>{formatKES(project.fundedFromPool)}</Text></View>
+          <View style={styles.fundingRow}><Text style={styles.fundingLabel}>Funded from members' share points</Text><Text style={styles.fundingValue}>{formatKES(project.fundedFromPool)}</Text></View>
           <View style={styles.fundingRow}><Text style={styles.fundingLabel}>Raised from project members</Text><Text style={styles.fundingValue}>{formatKES(project.raisedFromMembers)}</Text></View>
+          {!!project.profitRetained && (
+            <View style={styles.fundingRow}><Text style={styles.fundingLabel}>Retained profit</Text><Text style={styles.fundingValue}>{formatKES(project.profitRetained)}</Text></View>
+          )}
           <View style={[styles.fundingRow, { marginTop: 4, paddingTop: 8, borderTopWidth: 1, borderTopColor: COLORS.border }]}>
             <Text style={[styles.fundingLabel, { fontWeight: "800" }]}>Total funded</Text>
             <Text style={[styles.fundingValue, { fontWeight: "800" }]}>{formatKES(project.totalFunded)}</Text>
           </View>
         </View>
+        <Text style={styles.tabHint}>Funding a project now draws EQUALLY from each registered member's own share points below — not the group's whole pool. A member at 0 blocks any further pool funding until they contribute again (they can still contribute directly to the project instead).</Text>
         {isAdmin && (
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => setFundVisible(true)}>
-            <Text style={styles.secondaryButtonText}>Fund from group pool</Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={styles.secondaryButtonFlex} onPress={() => setFundVisible(true)}>
+              <Text style={styles.secondaryButtonText}>Fund from share points</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButtonFlex} onPress={() => setProfitVisible(true)}>
+              <Text style={styles.secondaryButtonText}>Record profit</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!!project.profits.length && (
+          <>
+            <Text style={styles.subHeading}>Profit log</Text>
+            {project.profits.map((p) => (
+              <View key={p.id} style={styles.expenseCard}>
+                <View style={styles.fundingRow}>
+                  <Text style={styles.milestoneText}>{p.distribution === "retained" ? "Retained on project" : "Distributed to members"}{!!p.note && ` — ${p.note}`}</Text>
+                  <Text style={styles.ledgerAmount}>{formatKES(p.amount)}</Text>
+                </View>
+                <Text style={styles.updateMeta}>{p.recordedByUser?.name} · {timeAgo(p.createdAt)}</Text>
+              </View>
+            ))}
+          </>
         )}
 
         <Text style={styles.sectionTitle}>Ledger</Text>
@@ -381,6 +419,16 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
         {project.members.map((m) => (
           <View key={m.id} style={styles.memberRow}>
             <Text style={styles.milestoneText}>{m.user?.name}</Text>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={styles.ledgerAmount}>{formatKES(m.sharePoints)} share points</Text>
+              {(!!m.drawnFromShare || !!m.profitShareReceived) && (
+                <Text style={styles.tabHint}>
+                  {!!m.drawnFromShare && `-${formatKES(m.drawnFromShare)} drawn`}
+                  {!!m.drawnFromShare && !!m.profitShareReceived && " · "}
+                  {!!m.profitShareReceived && `+${formatKES(m.profitShareReceived)} profit`}
+                </Text>
+              )}
+            </View>
           </View>
         ))}
         {!project.members.length && <Text style={styles.emptySmall}>Nobody's registered yet.</Text>}
@@ -414,6 +462,12 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
         onSubmit={fundProject}
         busy={busy}
       />
+      <ProfitModal
+        visible={profitVisible}
+        onClose={() => setProfitVisible(false)}
+        onSubmit={recordProfit}
+        busy={busy}
+      />
     </View>
   );
 }
@@ -435,12 +489,58 @@ function FundProjectModal({ visible, onClose, onSubmit, busy }) {
       <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Fund from group pool</Text>
-        <Text style={styles.tabHint}>Moves money out of the Investment Group's ledger into this project — it leaves the pool the same way a payout does, so it can't also be lent out.</Text>
+        <Text style={styles.sheetTitle}>Fund from share points</Text>
+        <Text style={styles.tabHint}>Splits equally across this project's registered members' own share points — the whole amount is rejected if it doesn't divide evenly, or if any member can't cover their equal share.</Text>
         <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
         <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={busy}>
           <Text style={styles.primaryButtonText}>{busy ? "Transferring..." : "Transfer funds"}</Text>
+        </TouchableOpacity>
+      </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+function ProfitModal({ visible, onClose, onSubmit, busy }) {
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [distribution, setDistribution] = useState("retain");
+
+  function submit() {
+    const amt = parseInt(amount, 10);
+    if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
+    onSubmit(amt, note.trim() || undefined, distribution);
+    setAmount(""); setNote(""); setDistribution("retain");
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Record profit</Text>
+        <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
+        <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
+
+        <Text style={styles.label}>What should happen to it?</Text>
+        <View style={styles.optionRow}>
+          <TouchableOpacity style={[styles.optionChip, distribution === "retain" && styles.optionChipActive]} onPress={() => setDistribution("retain")}>
+            <Text style={[styles.optionChipText, distribution === "retain" && styles.optionChipTextActive]}>Retain on project</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.optionChip, distribution === "distribute" && styles.optionChipActive]} onPress={() => setDistribution("distribute")}>
+            <Text style={[styles.optionChipText, distribution === "distribute" && styles.optionChipTextActive]}>Share with members</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.tabHint}>
+          {distribution === "retain"
+            ? "Adds to this project's own fundable balance for next time."
+            : "Split among registered members proportional to how much each has funded/contributed to this project."}
+        </Text>
+
+        <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={busy}>
+          <Text style={styles.primaryButtonText}>{busy ? "Recording..." : "Record profit"}</Text>
         </TouchableOpacity>
       </View>
       </KeyboardAvoidingView>

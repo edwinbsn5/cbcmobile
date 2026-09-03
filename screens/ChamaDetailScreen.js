@@ -53,7 +53,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
   const [membership, setMembership] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [defaulter, setDefaulter] = useState(null);
-  const [myTotal, setMyTotal] = useState(0);
+  const [mySharePoints, setMySharePoints] = useState(0);
   const [owed, setOwed] = useState(0);
   const [lateFeesOwed, setLateFeesOwed] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -103,7 +103,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
       setDefaulter(mem.defaulter);
       if (mem.membership?.status === "active") {
         const { data: mine } = await client.get(`/chama/${chamaId}/contributions/mine`);
-        setMyTotal(mine.total);
+        setMySharePoints(mine.sharePoints);
         setOwed(mine.owed || 0);
         setLateFeesOwed(mine.lateFeesOwed || 0);
       }
@@ -267,7 +267,7 @@ export default function ChamaDetailScreen({ route, navigation }) {
         </View>
 
         <View style={styles.tabBody}>
-          {tab === "overview" && <OverviewTab chama={chama} chamaId={chamaId} myTotal={myTotal} isMember={isMember} defaulter={defaulter} isAdmin={isAdmin} userId={user?.id} navigation={navigation} />}
+          {tab === "overview" && <OverviewTab chama={chama} chamaId={chamaId} mySharePoints={mySharePoints} isMember={isMember} defaulter={defaulter} isAdmin={isAdmin} userId={user?.id} navigation={navigation} />}
           {tab === "feed" && <FeedTab chamaId={chamaId} chamaName={chama.name} isMember={isMember} isAdmin={isAdmin} userId={user?.id} navigation={navigation} />}
           {tab === "ledger" && (
             isMember ? (
@@ -316,13 +316,20 @@ function formatDate(ts) {
   return ts ? new Date(ts).toLocaleDateString() : "—";
 }
 
-function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, userId, navigation }) {
+function OverviewTab({ chama, chamaId, mySharePoints, isMember, defaulter, isAdmin, userId, navigation }) {
   const [loanInfo, setLoanInfo] = useState(null);
   const [allLoans, setAllLoans] = useState(null);
   const [announcements, setAnnouncements] = useState(null);
   const [announceText, setAnnounceText] = useState("");
   const [posting, setPosting] = useState(false);
   const [announceModalVisible, setAnnounceModalVisible] = useState(false);
+  const [myWithdrawals, setMyWithdrawals] = useState(null);
+  const [withdrawalVisible, setWithdrawalVisible] = useState(false);
+
+  const loadWithdrawals = useCallback(() => {
+    client.get(`/chama/${chamaId}/withdrawals/mine`).then((r) => setMyWithdrawals(r.data)).catch(() => setMyWithdrawals([]));
+  }, [chamaId]);
+  useFocusEffect(useCallback(() => { if (isMember) loadWithdrawals(); }, [isMember, loadWithdrawals]));
 
   useFocusEffect(useCallback(() => {
     if (!isMember) return;
@@ -389,7 +396,7 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
           {isMember && (
             <View style={styles.tileOutline}>
               <Text style={styles.tileOutlineLabel}>Share points</Text>
-              <Text style={styles.tileOutlineValue}>{myTotal.toLocaleString()}</Text>
+              <Text style={styles.tileOutlineValue}>{mySharePoints.toLocaleString()}</Text>
             </View>
           )}
           {isMember && chama.contributionType === "fixed_recurring" && defaulter?.upcomingDeadlineAt && (
@@ -514,6 +521,30 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
         </View>
       )}
 
+      {isMember && (
+        <View style={styles.infoCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Your withdrawal requests</Text>
+            {!myWithdrawals ? (
+              <ActivityIndicator size="small" color={COLORS.accent} />
+            ) : myWithdrawals.length ? (
+              <View style={{ alignItems: "flex-end", marginTop: 6 }}>
+                {myWithdrawals.map((w) => (
+                  <Text key={w.id} style={styles.infoValue}>
+                    {formatKES(w.amount)} — {w.status === "paid" ? "disbursed" : w.status === "approved" ? "awaiting disbursement" : w.status}
+                  </Text>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.infoValue}>None yet</Text>
+            )}
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => setWithdrawalVisible(true)}>
+              <Text style={styles.secondaryButtonText}>Request withdrawal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       <View style={styles.infoCard}>
         <Text style={styles.infoLabel}>Join policy</Text>
         <Text style={styles.infoValue}>{chama.joinPolicy === "open" ? "Open until positions fill" : "Requires admin approval"}</Text>
@@ -545,6 +576,14 @@ function OverviewTab({ chama, chamaId, myTotal, isMember, defaulter, isAdmin, us
           <Text style={styles.leaveButtonText}>Leave this Investment Group</Text>
         </TouchableOpacity>
       )}
+
+      <WithdrawalModal
+        visible={withdrawalVisible}
+        onClose={() => setWithdrawalVisible(false)}
+        chamaId={chamaId}
+        sharePoints={mySharePoints}
+        onDone={loadWithdrawals}
+      />
     </View>
   );
 }
@@ -1548,6 +1587,54 @@ function ContributeModal({ visible, onClose, chamaId, owed, lateFeesOwed, onDone
         <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
           <Text style={styles.primaryButtonText}>{submitting ? "Saving..." : "Mark as contributed"}</Text>
+        </TouchableOpacity>
+      </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+// Requests cashing out some of the member's own share points
+// (services/collab.js#sharePointsFor) — capped client-side against the
+// live figure already shown on Overview, re-checked server-side too. An
+// admin/treasurer approves it, then separately marks it disbursed once the
+// member's actually been paid (often physically, at a meeting) — nothing
+// moves through the app itself.
+function WithdrawalModal({ visible, onClose, chamaId, sharePoints, onDone }) {
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    const amt = parseInt(amount, 10);
+    if (!amt || amt <= 0) return Alert.alert("Invalid amount", "Enter a positive amount in KES");
+    if (amt > sharePoints) return Alert.alert("Amount too high", `You only have ${formatKES(sharePoints)} in share points`);
+    setSubmitting(true);
+    try {
+      await client.post(`/chama/${chamaId}/withdrawals`, { amount: amt, reason: reason.trim() || undefined });
+      Alert.alert("Request sent", "An admin or treasurer needs to approve this before it can be paid out.");
+      setAmount(""); setReason("");
+      onDone();
+      onClose();
+    } catch (e) {
+      Alert.alert("Couldn't send request", e.response?.data?.error || e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={styles.kbAvoid} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <TouchableWithoutFeedback onPress={onClose}><View style={styles.backdrop} /></TouchableWithoutFeedback>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Request withdrawal</Text>
+        <Text style={styles.tabHint}>You have {formatKES(sharePoints)} in share points. This just requests it — the group still hands it over physically once approved and marked as disbursed.</Text>
+        <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
+        <TextInput style={styles.input} placeholder="Reason (optional)" value={reason} onChangeText={setReason} />
+        <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={submitting}>
+          <Text style={styles.primaryButtonText}>{submitting ? "Sending..." : "Send request"}</Text>
         </TouchableOpacity>
       </View>
       </KeyboardAvoidingView>
