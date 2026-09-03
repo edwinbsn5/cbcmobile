@@ -12,6 +12,7 @@ import AdCard from "../components/AdCard";
 import AdMobBanner from "../components/AdMobBanner";
 import Avatar from "../components/Avatar";
 import { useSaved } from "../hooks/useSaved";
+import { useReshared } from "../hooks/useReshared";
 import { COLORS } from "../theme";
 
 function formatCount(n) {
@@ -132,6 +133,11 @@ export default function GroupDetailScreen({ route, navigation }) {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   const { isSaved, toggleSave, loadSaved } = useSaved();
+  // A boosted-post ad's underlying post (services/adInterleave.js) is
+  // always a plain feed post, never a group post — so unlike this screen's
+  // own group posts (reshare hidden by PostCard, see its groupId check),
+  // a boosted ad shown here needs real reshare support for feed parity.
+  const { isReshared, unreshare, loadReshared } = useReshared();
 
   const isMember = !!mySub?.subscribed || group?.adminId === user?.id;
   const isAdmin = group?.adminId === user?.id;
@@ -147,6 +153,7 @@ export default function GroupDetailScreen({ route, navigation }) {
     setMySub(subRes.data);
     setReviews(reviewsRes.data);
     loadSaved();
+    loadReshared();
 
     const mine = reviewsRes.data.items.find((r) => r.userId === user?.id);
     if (mine) {
@@ -395,6 +402,28 @@ export default function GroupDetailScreen({ route, navigation }) {
     }
   }
 
+  // A boosted-post ad's underlying post (see AdCard/adInterleave.js) is
+  // always a plain feed post, never one of THIS group's own posts — so it
+  // needs the generic /feed endpoints, not the group-scoped ones above
+  // (which 404 on a post that isn't actually in this group).
+  async function handleAdReact(postId, reaction) {
+    try {
+      await client.post(`/feed/${postId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
+  }
+
+  async function handleAdDeletePost(postId) {
+    try {
+      await client.delete(`/feed/${postId}`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
+    }
+  }
+
   async function handleSubmitReview() {
     if (myRating < 1) return Alert.alert("Pick a rating", "Tap a star to rate this group");
     setReviewSubmitting(true);
@@ -506,7 +535,21 @@ export default function GroupDetailScreen({ route, navigation }) {
             />
           );
         }
-        if (item.kind === "ad") return item.network === "google" ? <AdMobBanner /> : <AdCard ad={item} />;
+        if (item.kind === "ad") {
+          if (item.network === "google") return <AdMobBanner />;
+          return (
+            <AdCard
+              ad={item}
+              onReact={handleAdReact}
+              isSaved={isSaved}
+              toggleSave={toggleSave}
+              isReshared={isReshared}
+              unreshare={unreshare}
+              onDelete={handleAdDeletePost}
+              onChanged={load}
+            />
+          );
+        }
         return (
           <PostCard
             post={item}

@@ -317,7 +317,20 @@ export default function ProfileScreen({ navigation, route }) {
       }}
       renderItem={({ item }) =>
         item.kind === "ad" ? (
-          item.network === "google" ? <AdMobBanner /> : <AdCard ad={item} />
+          item.network === "google" ? (
+            <AdMobBanner />
+          ) : (
+            <AdCard
+              ad={item}
+              onReact={handleReact}
+              isSaved={isSaved}
+              toggleSave={toggleSave}
+              isReshared={isReshared}
+              unreshare={unreshare}
+              onDelete={handleDeletePost}
+              onChanged={load}
+            />
+          )
         ) : (
           <PostCard
             post={item}

@@ -343,6 +343,8 @@ export default function FeedScreen({ navigation, route }) {
         </>
       }
       renderItem={({ item, index }) => {
+        const isActive = isFocused && index === activeIndex;
+        const shouldMount = activeIndex >= 0 && Math.abs(index - activeIndex) <= 1;
         if (item.kind === "ad") {
           // The "Google Ad" slot renders a real AdMob banner instead of an
           // admin-entered db.ads row — see services/feedComposer.js's
@@ -350,7 +352,21 @@ export default function FeedScreen({ navigation, route }) {
           // regardless of that pool's contents. Every other ad slot
           // (sponsored/boosted) is unchanged.
           if (item.network === "google") return <AdMobBanner />;
-          return <AdCard ad={item} />;
+          return (
+            <AdCard
+              ad={item}
+              onReact={handleReact}
+              isSaved={isSaved}
+              toggleSave={toggleSave}
+              isReshared={isReshared}
+              unreshare={unreshare}
+              onDelete={handleDeletePost}
+              onChanged={load}
+              isActive={isActive}
+              shouldMount={shouldMount}
+              onOpenVideoFullscreen={openVideoFullscreen}
+            />
+          );
         }
         if (item.kind === "nearby") {
           return (
@@ -402,8 +418,6 @@ export default function FeedScreen({ navigation, route }) {
             </View>
           );
         }
-        const isActive = isFocused && index === activeIndex;
-        const shouldMount = activeIndex >= 0 && Math.abs(index - activeIndex) <= 1;
         if (item.kind === "reshare") {
           return (
             <View>

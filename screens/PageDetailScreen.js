@@ -13,6 +13,7 @@ import AdMobBanner from "../components/AdMobBanner";
 import Avatar from "../components/Avatar";
 import MentionTextInput from "../components/MentionTextInput";
 import { useSaved } from "../hooks/useSaved";
+import { useReshared } from "../hooks/useReshared";
 import { COLORS } from "../theme";
 
 const TABS = ["Feed", "Photos", "Videos", "Reviews"];
@@ -254,6 +255,10 @@ export default function PageDetailScreen({ route, navigation }) {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   const { isSaved, toggleSave, loadSaved } = useSaved();
+  // A boosted-post ad's underlying post is always a plain feed post, never
+  // one of THIS page's own posts — needs real reshare support for feed
+  // parity, unlike this page's own posts (reshare hidden by PostCard).
+  const { isReshared, unreshare, loadReshared } = useReshared();
 
   const myRole = page?.myRole || null;
   const canPost = POST_ROLES.includes(myRole);
@@ -268,6 +273,7 @@ export default function PageDetailScreen({ route, navigation }) {
     const pageRes = await client.get(`/pages/${pageId}`);
     setPage(pageRes.data);
     loadSaved();
+    loadReshared();
 
     const [feedRes, photosRes, videosRes, reviewsRes] = await Promise.all([
       client.get(`/pages/${pageRes.data.slug}/feed`),
@@ -352,6 +358,28 @@ export default function PageDetailScreen({ route, navigation }) {
       load();
     } catch (e) {
       Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
+  }
+
+  // A boosted-post ad's underlying post (see AdCard/adInterleave.js) is
+  // always a plain feed post, never one of THIS page's own posts — so it
+  // needs the generic /feed endpoints, not the page-scoped ones above
+  // (which 404 on a post that isn't actually on this page).
+  async function handleAdReact(postId, reaction) {
+    try {
+      await client.post(`/feed/${postId}/react`, { reaction });
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't react", e.response?.data?.error || e.message);
+    }
+  }
+
+  async function handleAdDeletePost(postId) {
+    try {
+      await client.delete(`/feed/${postId}`);
+      load();
+    } catch (e) {
+      Alert.alert("Couldn't delete post", e.response?.data?.error || e.message);
     }
   }
 
@@ -553,7 +581,21 @@ export default function PageDetailScreen({ route, navigation }) {
             />
           );
         }
-        if (item.kind === "ad") return item.network === "google" ? <AdMobBanner /> : <AdCard ad={item} />;
+        if (item.kind === "ad") {
+          if (item.network === "google") return <AdMobBanner />;
+          return (
+            <AdCard
+              ad={item}
+              onReact={handleAdReact}
+              isSaved={isSaved}
+              toggleSave={toggleSave}
+              isReshared={isReshared}
+              unreshare={unreshare}
+              onDelete={handleAdDeletePost}
+              onChanged={load}
+            />
+          );
+        }
         return (
           <PostCard
             post={item}
