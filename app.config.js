@@ -38,7 +38,7 @@ module.exports = {
       supportsTablet: true,
       bundleIdentifier: "the.campusbiashara.club",
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: "Tujijenge uses your location to show you Comrades Nearby on your feed.",
+        NSLocationWhenInUseUsageDescription: "Tujijenge uses your location to show you MAJIRANI on your feed.",
       },
     },
     android: {

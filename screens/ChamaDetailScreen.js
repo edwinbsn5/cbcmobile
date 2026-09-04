@@ -556,6 +556,31 @@ function OverviewTab({ chama, chamaId, mySharePoints, isMember, defaulter, isAdm
         </View>
       )}
 
+      <View style={styles.howItWorksCard}>
+        <Text style={styles.howItWorksTitle}>How Investment Groups Work!</Text>
+        <View style={styles.howItWorksRow}>
+          <View style={styles.howItWorksNumber}><Text style={styles.howItWorksNumberText}>1</Text></View>
+          <Text style={styles.howItWorksText}>
+            <Text style={styles.howItWorksBold}>Contribute, and build your share. </Text>
+            Members make regular contributions into the group's shared pool — every shilling you put in becomes part of your own share points, your personal stake in the group.
+          </Text>
+        </View>
+        <View style={styles.howItWorksRow}>
+          <View style={styles.howItWorksNumber}><Text style={styles.howItWorksNumberText}>2</Text></View>
+          <Text style={styles.howItWorksText}>
+            <Text style={styles.howItWorksBold}>Borrow, or fund a project. </Text>
+            Take a loan against the pool, or register for a group project — a project draws funding equally from its registered members' share points (or their direct contributions), and shares back any profit.
+          </Text>
+        </View>
+        <View style={[styles.howItWorksRow, { marginBottom: 0 }]}>
+          <View style={styles.howItWorksNumber}><Text style={styles.howItWorksNumberText}>3</Text></View>
+          <Text style={styles.howItWorksText}>
+            <Text style={styles.howItWorksBold}>Request a payout, anytime. </Text>
+            Need your money back? Request a withdrawal against your own share points — once an admin approves it and it's handed over, it gets marked as disbursed.
+          </Text>
+        </View>
+      </View>
+
       <View style={styles.cautionBanner}>
         <View style={styles.cautionHeaderRow}>
           <Ionicons name="shield-checkmark-outline" size={18} color="#8A6D00" />
@@ -1770,6 +1795,13 @@ const styles = StyleSheet.create({
   defaulterText: { color: "#8A6D00", fontSize: 12, flex: 1 },
   frozenBanner: { flexDirection: "row", gap: 8, alignItems: "center", backgroundColor: "#FBE7E7", borderRadius: 8, padding: 10, marginTop: 8 },
   frozenText: { color: "#C4433C", fontSize: 12, flex: 1 },
+  howItWorksCard: { backgroundColor: COLORS.wash, borderRadius: 10, padding: 14, marginBottom: 12 },
+  howItWorksTitle: { color: COLORS.ink, fontSize: 15, fontWeight: "800", marginBottom: 10 },
+  howItWorksRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  howItWorksNumber: { width: 22, height: 22, borderRadius: 11, backgroundColor: COLORS.accent, alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 },
+  howItWorksNumberText: { color: COLORS.accentInk, fontSize: 12, fontWeight: "800" },
+  howItWorksText: { flex: 1, color: COLORS.ink, fontSize: 12.5, lineHeight: 18 },
+  howItWorksBold: { fontWeight: "800" },
   cautionBanner: { backgroundColor: "#FFF3CD", borderRadius: 10, padding: 12, marginBottom: 12 },
   cautionHeaderRow: { flexDirection: "row", gap: 8, alignItems: "center", marginBottom: 8 },
   cautionTitle: { color: "#6B5300", fontSize: 13, fontWeight: "800", flex: 1 },

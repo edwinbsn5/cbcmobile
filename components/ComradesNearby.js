@@ -32,7 +32,7 @@ export default function ComradesNearby({ users, onFollow, onOpenProfile }) {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Comrades Nearby</Text>
+      <Text style={styles.sectionTitle}>MAJIRANI</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 10 }}>
         {users.map((u) => {
           const offset = CIRCUMFERENCE * (1 - fillFor(u.distanceKm));
