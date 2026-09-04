@@ -461,18 +461,21 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
         onClose={() => setFundVisible(false)}
         onSubmit={fundProject}
         busy={busy}
+        members={project.members}
       />
       <ProfitModal
         visible={profitVisible}
         onClose={() => setProfitVisible(false)}
         onSubmit={recordProfit}
         busy={busy}
+        members={project.members}
+        contributorTotals={project.contributorTotals}
       />
     </View>
   );
 }
 
-function FundProjectModal({ visible, onClose, onSubmit, busy }) {
+function FundProjectModal({ visible, onClose, onSubmit, busy, members }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
 
@@ -482,6 +485,14 @@ function FundProjectModal({ visible, onClose, onSubmit, busy }) {
     onSubmit(amt, note.trim() || undefined);
     setAmount(""); setNote("");
   }
+
+  const amt = parseInt(amount, 10);
+  const count = members?.length || 0;
+  // Live preview as the admin types — mirrors the server's own math
+  // exactly (routes/chama.js's POST .../fund) so what's shown here is what
+  // would actually happen, not a guess.
+  const perShare = amt > 0 && count ? amt / count : null;
+  const dividesEvenly = perShare !== null && Number.isInteger(perShare);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -493,6 +504,27 @@ function FundProjectModal({ visible, onClose, onSubmit, busy }) {
         <Text style={styles.tabHint}>Splits equally across this project's registered members' own share points — the whole amount is rejected if it doesn't divide evenly, or if any member can't cover their equal share.</Text>
         <TextInput style={styles.input} placeholder="Amount (KES)" keyboardType="number-pad" value={amount} onChangeText={setAmount} />
         <TextInput style={styles.input} placeholder="Note (optional)" value={note} onChangeText={setNote} />
+
+        {!!count && (
+          <>
+            <Text style={styles.label}>
+              {dividesEvenly ? `Will deduct ${formatKES(perShare)} from each of ${count} member${count === 1 ? "" : "s"}:` : "Preview (enter an amount that divides evenly to fund):"}
+            </Text>
+            {members.map((m) => {
+              const short = dividesEvenly && m.sharePoints < perShare;
+              return (
+                <View key={m.id} style={styles.previewRow}>
+                  <Text style={styles.previewName}>{m.user?.name}</Text>
+                  <Text style={[styles.previewAmount, short && styles.previewAmountWarn]}>
+                    {dividesEvenly ? `-${formatKES(perShare)}` : "—"}
+                    {short ? ` (only has ${formatKES(m.sharePoints)})` : ""}
+                  </Text>
+                </View>
+              );
+            })}
+          </>
+        )}
+
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={busy}>
           <Text style={styles.primaryButtonText}>{busy ? "Transferring..." : "Transfer funds"}</Text>
         </TouchableOpacity>
@@ -502,7 +534,7 @@ function FundProjectModal({ visible, onClose, onSubmit, busy }) {
   );
 }
 
-function ProfitModal({ visible, onClose, onSubmit, busy }) {
+function ProfitModal({ visible, onClose, onSubmit, busy, members, contributorTotals }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [distribution, setDistribution] = useState("retain");
@@ -513,6 +545,30 @@ function ProfitModal({ visible, onClose, onSubmit, busy }) {
     onSubmit(amt, note.trim() || undefined, distribution);
     setAmount(""); setNote(""); setDistribution("retain");
   }
+
+  const amt = parseInt(amount, 10);
+  const count = members?.length || 0;
+  // Mirrors the server's own proportional split exactly (routes/chama.js's
+  // POST .../profit): invested = this project's funding shares drawn from
+  // a member (across every funding round they were part of) plus their own
+  // direct contributions; falls back to an equal split if nobody's
+  // invested anything yet, same as the server does.
+  const preview = distribution === "distribute" && amt > 0 && count
+    ? (() => {
+        const invested = members.map((m) => m.drawnFromShare + (contributorTotals?.find((c) => c.userId === m.userId)?.total || 0));
+        const totalInvested = invested.reduce((sum, v) => sum + v, 0);
+        const shares = members.map((m, i) => ({
+          userId: m.userId,
+          name: m.user?.name,
+          invested: invested[i],
+          pct: totalInvested > 0 ? (invested[i] / totalInvested) * 100 : 100 / count,
+          amount: totalInvested > 0 ? Math.round((amt * invested[i]) / totalInvested) : Math.floor(amt / count),
+        }));
+        const distributed = shares.reduce((sum, s) => sum + s.amount, 0);
+        if (shares.length) shares[shares.length - 1].amount += amt - distributed;
+        return { shares, totalInvested };
+      })()
+    : null;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -538,6 +594,20 @@ function ProfitModal({ visible, onClose, onSubmit, busy }) {
             ? "Adds to this project's own fundable balance for next time."
             : "Split among registered members proportional to how much each has funded/contributed to this project."}
         </Text>
+
+        {!!preview && (
+          <>
+            <Text style={styles.label}>
+              {preview.totalInvested > 0 ? "Will receive (proportional to their total investment):" : "Nobody's invested yet — will split equally:"}
+            </Text>
+            {preview.shares.map((s) => (
+              <View key={s.userId} style={styles.previewRow}>
+                <Text style={styles.previewName}>{s.name} <Text style={styles.tabHint}>({s.pct.toFixed(1)}%)</Text></Text>
+                <Text style={styles.previewAmount}>+{formatKES(s.amount)}</Text>
+              </View>
+            ))}
+          </>
+        )}
 
         <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={busy}>
           <Text style={styles.primaryButtonText}>{busy ? "Recording..." : "Record profit"}</Text>
@@ -642,6 +712,10 @@ const styles = StyleSheet.create({
   subHeading: { fontSize: 12.5, fontWeight: "800", color: COLORS.sub, textTransform: "uppercase", letterSpacing: 0.3, marginTop: 18, marginBottom: 8 },
   ledgerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginTop: 8 },
   ledgerAmount: { color: COLORS.accent, fontWeight: "800", fontSize: 13.5 },
+  previewRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: COLORS.wash, borderRadius: 8, padding: 10, marginTop: 6 },
+  previewName: { flex: 1, color: COLORS.ink, fontSize: 12.5, fontWeight: "600" },
+  previewAmount: { color: COLORS.accent, fontWeight: "800", fontSize: 12.5 },
+  previewAmountWarn: { color: "#D32F2F" },
   expenseCard: { backgroundColor: COLORS.surface, borderRadius: 8, padding: 12, marginTop: 8 },
   updateCard: { backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginTop: 8 },
   updateMeta: { color: COLORS.sub, fontSize: 11, marginBottom: 6, fontWeight: "600" },
