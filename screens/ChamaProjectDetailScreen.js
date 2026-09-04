@@ -262,6 +262,19 @@ export default function ChamaProjectDetailScreen({ route, navigation }) {
           </View>
         )}
 
+        <Text style={styles.sectionTitle}>Business Plans</Text>
+        <Text style={styles.tabHint}>
+          {isAdmin
+            ? "A guided form covering the idea, market, pricing, costs, projected revenue, operations, and risks — so members know exactly what they're funding."
+            : "See exactly what this project's admin has laid out — the idea, market, pricing, costs, projected revenue, operations, and risks."}
+        </Text>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => navigation.navigate("ChamaProjectBusinessPlan", { chamaId, projectId, isAdmin })}
+        >
+          <Text style={styles.secondaryButtonText}>{isAdmin ? "Edit business plan" : "View business plan"}</Text>
+        </TouchableOpacity>
+
         <Text style={styles.sectionTitle}>Milestones {project.milestones.length ? `(${milestonePct}%)` : ""}</Text>
         {!!project.milestones.length && (
           <View style={styles.barTrack}><View style={[styles.barFill, { width: `${milestonePct}%` }]} /></View>

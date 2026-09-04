@@ -56,6 +56,7 @@ import MyPlansGoalScreen from "./screens/MyPlansGoalScreen";
 import ChamaProjectsScreen from "./screens/ChamaProjectsScreen";
 import CreateChamaProjectScreen from "./screens/CreateChamaProjectScreen";
 import ChamaProjectDetailScreen from "./screens/ChamaProjectDetailScreen";
+import ChamaProjectBusinessPlanScreen from "./screens/ChamaProjectBusinessPlanScreen";
 import GuarantorsScreen from "./screens/GuarantorsScreen";
 import MyFraudReportsScreen from "./screens/MyFraudReportsScreen";
 import BoostPostScreen from "./screens/BoostPostScreen";
@@ -327,6 +328,7 @@ function RootNavigator() {
         <RootStack.Screen name="ChamaProjects" component={ChamaProjectsScreen} options={{ title: "Project Updates" }} />
         <RootStack.Screen name="CreateChamaProject" component={CreateChamaProjectScreen} options={{ title: "New Project" }} />
         <RootStack.Screen name="ChamaProjectDetail" component={ChamaProjectDetailScreen} options={{ title: "Project" }} />
+        <RootStack.Screen name="ChamaProjectBusinessPlan" component={ChamaProjectBusinessPlanScreen} options={{ title: "Business Plan" }} />
         <RootStack.Screen name="MyPlansHome" component={MyPlansScreen} options={{ title: "The PLAN" }} />
         <RootStack.Screen name="MyPlansGoal" component={MyPlansGoalScreen} options={{ title: "Goal" }} />
         <RootStack.Screen name="Guarantors" component={GuarantorsScreen} options={{ title: "My Guarantors" }} />
